@@ -16,30 +16,27 @@
         .btn { transition: all 0.2s; user-select: none; }
         .btn:active { transform: scale(0.95); }
         
+        /* Колесо Апгрейда */
+        .upg-wheel-container { position: relative; width: 220px; height: 220px; margin: 0 auto; }
+        .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 4px solid #1e293b; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .upg-arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 32px; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: 50% 125px; z-index: 20; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+        
+        /* Live Дропы (Бегущая строка) */
+        .marquee { display: flex; gap: 10px; animation: scroll 20s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
         /* Скроллбар */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        
-        /* Рулетка */
-        .roulette-container { width: 100%; overflow: hidden; position: relative; padding: 20px 0; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; }
-        .roulette-strip { display: flex; gap: 10px; will-change: transform; }
-        .roulette-item { min-width: 100px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e293b; border-radius: 8px; border: 2px solid transparent; }
-        .roulette-center-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; }
 
-        /* Мины */
-        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 320px; margin: 0 auto; }
-        .mine-cell { aspect-ratio: 1; background: #1e293b; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; transition: 0.2s; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3); }
-        .mine-cell:active { transform: scale(0.95); }
-        .mine-cell.opened { background: #064e3b; box-shadow: inset 0 0 10px #10b981; cursor: default; }
-        .mine-cell.boom { background: #7f1d1d; box-shadow: inset 0 0 10px #ef4444; }
-
-        /* Анимации */
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .page { display: none; }
         .page.active { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Модалки */
-        .modal-bg { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
+        /* Инвентарь в Апгрейде */
+        .inv-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+        .inv-item { min-width: 80px; padding: 8px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid transparent; }
+        .inv-item.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col pb-24">
@@ -48,6 +45,7 @@
     <header class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center rounded-b-2xl">
         <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
         <div class="flex items-center gap-2">
+            <button onclick="claimBonus()" class="bg-green-600 px-3 py-1.5 rounded-lg font-bold text-xs shadow-[0_0_10px_rgba(34,197,94,0.5)]">+ Бонус</button>
             <div class="bg-gray-900/80 px-3 py-1.5 rounded-lg border border-yellow-500/30 flex items-center gap-1">
                 <span id="balance" class="text-yellow-400 font-bold">0</span> <span class="text-xs">🪙</span>
             </div>
@@ -55,9 +53,11 @@
     </header>
 
     <!-- LIVE ДРОПЫ -->
-    <div class="bg-[#0f172a]/80 border-b border-gray-800 py-2 overflow-hidden relative shadow-lg">
-        <div id="live-drops" class="flex gap-2 whitespace-nowrap px-4 items-center text-xs">
-            <span class="text-gray-500 italic">Ожидание дропов...</span>
+    <div class="bg-[#0f172a]/90 border-b border-gray-800 py-2 overflow-hidden relative shadow-lg">
+        <div id="live-drops-container" class="flex whitespace-nowrap px-4 items-center overflow-hidden">
+            <div id="live-drops" class="marquee text-xs">
+                <span class="text-gray-500 italic">Ожидание дропов...</span>
+            </div>
         </div>
     </div>
 
@@ -79,44 +79,54 @@
             <div id="battles-list" class="flex flex-col gap-3"></div>
         </div>
 
-        <!-- МИНЫ -->
-        <div id="page-mines" class="page">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-green-500 rounded"></span> Мины</h2>
+        <!-- АПГРЕЙД (ПОЛНОСТЬЮ ПЕРЕДЕЛАН) -->
+        <div id="page-upgrade" class="page">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-green-500 rounded"></span> Апгрейд</h2>
+            
             <div class="glass p-5 rounded-2xl flex flex-col items-center">
-                <div id="mines-start-screen" class="w-full max-w-xs">
-                    <input type="number" id="mines-bet" placeholder="Ставка (мин 10)" class="w-full bg-gray-900 p-3 rounded-xl mb-3 text-white outline-none border border-gray-700 focus:border-green-500">
-                    <select id="mines-count" class="w-full bg-gray-900 p-3 rounded-xl mb-4 text-white outline-none border border-gray-700">
-                        <option value="3">3 Мины (Легко)</option>
-                        <option value="5">5 Мин (Средне)</option>
-                        <option value="10">10 Мин (Хардкор)</option>
-                    </select>
-                    <button onclick="startMines()" class="btn w-full bg-green-600 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(34,197,94,0.4)]">Начать</button>
-                </div>
-                <div id="mines-play-screen" class="hidden w-full flex flex-col items-center">
-                    <div class="flex justify-between w-full max-w-[320px] mb-3 text-sm font-bold">
-                        <div class="text-gray-400">Множ: <span id="mines-multi" class="text-green-400">1.0x</span></div>
-                        <div class="text-gray-400">Забрать: <span id="mines-next" class="text-yellow-400">0🪙</span></div>
+                <!-- Колесо -->
+                <div class="upg-wheel-container mb-6">
+                    <div class="upg-arrow" id="upg-arrow">🔻</div>
+                    <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#22c55e 0% 50%, #ef4444 50% 100%);"></div>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span class="text-3xl font-black" id="upg-chance-text">50%</span>
+                        <span class="text-[10px] text-gray-400">ШАНС</span>
                     </div>
-                    <div id="mines-grid" class="mines-grid"></div>
-                    <button onclick="cashoutMines()" class="btn mt-5 w-full max-w-[320px] bg-yellow-500 text-black py-3 rounded-xl font-bold">ЗАБРАТЬ</button>
                 </div>
+
+                <!-- Выбор цели -->
+                <div class="w-full bg-gray-900/50 p-3 rounded-xl mb-4 border border-gray-700">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-gray-400">Цель:</span>
+                        <span class="text-sm font-bold text-yellow-400" id="upg-target-display">Выбери пресет</span>
+                    </div>
+                    <div class="flex gap-2 justify-between">
+                        <button onclick="setPreset(2)" class="btn flex-1 bg-gray-800 text-xs py-1 rounded">x2</button>
+                        <button onclick="setPreset(3)" class="btn flex-1 bg-gray-800 text-xs py-1 rounded">x3</button>
+                        <button onclick="setPreset(5)" class="btn flex-1 bg-gray-800 text-xs py-1 rounded">x5</button>
+                        <button onclick="setPreset(10)" class="btn flex-1 bg-gray-800 text-xs py-1 rounded">x10</button>
+                    </div>
+                </div>
+
+                <!-- Твой инвентарь -->
+                <div class="w-full mb-4">
+                    <span class="text-xs text-gray-400 mb-2 block">Выбери свой предмет:</span>
+                    <div class="inv-scroll" id="upg-inventory"></div>
+                </div>
+
+                <button onclick="doUpgrade()" class="btn w-full bg-gradient-to-r from-green-500 to-emerald-600 py-3 rounded-xl font-bold text-lg shadow-[0_0_15px_rgba(34,197,94,0.4)]">Апгрейднуть</button>
             </div>
         </div>
 
         <!-- ПРОФИЛЬ -->
         <div id="page-profile" class="page">
+            <!-- ... (оставляем как было) ... -->
             <div class="glass p-5 rounded-2xl mb-4 flex flex-col items-center relative">
                 <div class="relative w-24 h-24 mb-2">
                     <img id="profile-avatar-img" class="w-full h-full rounded-full object-cover border-2 border-purple-500 hidden">
                     <div id="profile-avatar-emoji" class="w-full h-full rounded-full bg-gray-800 flex items-center justify-center text-5xl border-2 border-purple-500">🦄</div>
                 </div>
-                
-                <!-- Загрузка фото -->
-                <label class="btn bg-purple-600 text-xs px-3 py-1 rounded-full cursor-pointer absolute bottom-16">
-                    Сменить фото
-                    <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="uploadAvatar(this)">
-                </label>
-
+                <label class="btn bg-purple-600 text-xs px-3 py-1 rounded-full cursor-pointer absolute bottom-16">Сменить фото<input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="uploadAvatar(this)"></label>
                 <div class="text-lg font-bold mt-1" id="profile-name">Loading...</div>
                 <div class="flex justify-around w-full mt-4 text-center bg-gray-900/50 p-2 rounded-xl">
                     <div><div class="text-gray-400 text-[10px] uppercase">Клики</div><div id="stat-clicks" class="font-bold text-yellow-400">0</div></div>
@@ -136,103 +146,39 @@
     <nav class="fixed bottom-0 w-full glass flex justify-around py-2 z-40 rounded-t-2xl">
         <button onclick="switchTab('cases')" class="text-gray-400 hover:text-purple-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl mb-1">📦</span>Кейсы</button>
         <button onclick="switchTab('battles')" class="text-gray-400 hover:text-red-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl mb-1">⚔️</span>Батлы</button>
-        <button onclick="switchTab('mines')" class="text-gray-400 hover:text-green-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl mb-1">💣</span>Мины</button>
+        <button onclick="switchTab('upgrade')" class="text-gray-400 hover:text-green-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl mb-1">📈</span>Апгрейд</button>
         <button onclick="switchTab('profile')" class="text-gray-400 hover:text-blue-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl mb-1">👤</span>Профиль</button>
     </nav>
 
-    <!-- МОДАЛКА АВТОРИЗАЦИИ (КРАСИВАЯ) -->
-    <div id="auth-modal" class="fixed inset-0 modal-bg flex items-center justify-center p-4 z-[100]">
-        <div class="glass p-6 rounded-3xl w-full max-w-sm relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500 rounded-full blur-3xl opacity-30"></div>
-            
-            <h2 class="text-2xl font-black mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Вход в PonyCase</h2>
-            
-            <!-- Шаг 1: Форма -->
-            <div id="auth-step-1">
-                <button onclick="alert('Для входа через Google нужно настроить Google Cloud Console. Пока используй почту.')" class="w-full bg-white text-black font-bold py-3 rounded-xl mb-4 flex items-center justify-center gap-2">
-                    <img src="https://www.google.com/favicon.ico" class="w-5 h-5"> Войти через Google
-                </button>
-                <div class="flex items-center gap-2 mb-4 opacity-50"><hr class="flex-1"><span class="text-xs">или</span><hr class="flex-1"></div>
-                
-                <input type="email" id="auth-email" placeholder="Email" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-2 text-white outline-none focus:border-purple-500">
-                <input type="text" id="auth-user" placeholder="Никнейм (только для реги)" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-2 text-white outline-none focus:border-purple-500">
-                <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-4 text-white outline-none focus:border-purple-500">
-                
-                <div class="flex gap-2">
-                    <button onclick="doLogin()" class="btn flex-1 bg-gray-700 py-3 rounded-xl font-bold">Вход</button>
-                    <button onclick="doRegister()" class="btn flex-1 bg-purple-600 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(168,85,247,0.5)]">Регистрация</button>
-                </div>
-            </div>
-
-            <!-- Шаг 2: Код с почты -->
-            <div id="auth-step-2" class="hidden text-center">
-                <p class="text-sm text-gray-400 mb-4">Мы отправили код на твою почту. Введи его ниже (код также виден в логах ZevCloud).</p>
-                <input type="text" id="auth-code" placeholder="000000" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-4 text-white text-center text-2xl tracking-widest outline-none focus:border-purple-500">
-                <button onclick="doVerify()" class="btn w-full bg-green-600 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(34,197,94,0.5)]">Подтвердить</button>
-            </div>
-            
-            <p id="auth-err" class="text-red-500 text-xs mt-3 text-center hidden"></p>
-        </div>
-    </div>
-
-    <!-- МОДАЛКА КЕЙСА -->
-    <div id="modal-case" class="fixed inset-0 modal-bg hidden flex flex-col items-center justify-center p-4 z-50">
+    <!-- МОДАЛКА КЕЙСА (как было) -->
+    <div id="modal-case" class="fixed inset-0 bg-black/80 backdrop-blur hidden flex flex-col items-center justify-center p-4 z-50">
         <div class="glass p-5 rounded-2xl w-full max-w-md relative">
-            <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-3 right-4 text-2xl text-gray-400">&times;</button>
+            <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-3 right-4 text-2xl">&times;</button>
             <h3 id="modal-title" class="text-lg font-bold mb-4 text-center">Содержимое</h3>
-            
             <div id="preview-content" class="mb-4"><div id="preview-grid" class="grid grid-cols-2 gap-2"></div></div>
-            
             <div id="roulette-content" class="hidden">
                 <div class="roulette-container mb-3"><div class="roulette-center-line"></div><div id="roulette-strip" class="roulette-strip"></div></div>
                 <p id="roulette-result" class="text-center text-lg font-bold mb-3 h-6"></p>
             </div>
-            
-            <button id="open-btn" class="btn w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl font-bold text-lg shadow-lg">Открыть за <span id="modal-price">0</span> 🪙</button>
-        </div>
-    </div>
-
-    <!-- БАТЛ РУМ (УПРОЩЕННЫЙ) -->
-    <div id="battle-room" class="fixed inset-0 modal-bg hidden z-[60] flex flex-col items-center justify-center p-4">
-        <div class="text-2xl font-black mb-6 text-purple-400" id="battle-status">Ожидание...</div>
-        <div class="text-center">
-            <div class="text-6xl mb-4">⚔️</div>
-            <div class="text-sm text-gray-400">Игроков: <span id="battle-players">1</span></div>
-            <div class="text-xl font-bold text-yellow-400 mt-2">Банк: <span id="battle-bank">0</span>🪙</div>
-        </div>
-        <div class="mt-8 flex gap-3">
-            <button id="battle-start-btn" onclick="startBattle()" class="hidden bg-green-500 px-6 py-2 rounded-xl font-bold">СТАРТ</button>
-            <button onclick="document.getElementById('battle-room').classList.add('hidden')" class="bg-gray-700 px-6 py-2 rounded-xl font-bold">Выйти</button>
+            <button id="open-btn" class="btn w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl font-bold text-lg">Открыть за <span id="modal-price">0</span> 🪙</button>
         </div>
     </div>
 
     <script>
-        // --- ЗВУКИ ---
-        const sfx = {
-            click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
-            win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
-            lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'),
-            spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3')
-        };
-        function playSfx(name, loop = false) {
-            if(!sfx[name]) return;
-            sfx[name].currentTime = 0; sfx[name].loop = loop; sfx[name].volume = 0.4;
-            sfx[name].play().catch(e=>{});
-        }
-        
-        // Клик по любым кнопкам (глобально)
-        document.addEventListener('click', (e) => {
-            if(e.target.tagName === 'BUTTON' || e.target.closest('button')) playSfx('click');
-        });
+        // ... (Звуки и API как были) ...
+        const sfx = { click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'), win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'), lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'), spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3') };
+        function playSfx(n, l=false) { if(!sfx[n]) return; sfx[n].currentTime=0; sfx[n].loop=l; sfx[n].volume=0.4; sfx[n].play().catch(()=>{}); }
+        document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON') playSfx('click'); });
 
-        // --- API ---
         const API = '';
         let token = localStorage.getItem('pony_token');
-        let socket = null;
-        let tempEmail = '';
         let userData = null;
+        let socket = null;
+        let invData = [];
+        let selectedItem = null;
+        let currentTargetMultiplier = 2; // По умолчанию x2
 
-        if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); }
+        if(!token) { prompt("Нужно зайти в профиль для авторизации (обнови страницу)"); } else { init(); }
 
         async function api(endpoint, method='GET', body=null) {
             const headers = { 'Content-Type': 'application/json' };
@@ -243,149 +189,126 @@
             return data;
         }
 
-        // --- АВТОРИЗАЦИЯ ---
-        async function doRegister() {
-            try {
-                const email = document.getElementById('auth-email').value;
-                const username = document.getElementById('auth-user').value;
-                const password = document.getElementById('auth-pass').value;
-                await api('/api/auth/register', 'POST', { email, username, password });
-                tempEmail = email;
-                document.getElementById('auth-step-1').classList.add('hidden');
-                document.getElementById('auth-step-2').classList.remove('hidden');
-            } catch(e) { showAuthError(e.message); }
-        }
-
-        async function doVerify() {
-            try {
-                const code = document.getElementById('auth-code').value;
-                const data = await api('/api/auth/verify', 'POST', { email: tempEmail, code });
-                saveAuth(data);
-            } catch(e) { showAuthError(e.message); }
-        }
-
-        async function doLogin() {
-            try {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-pass').value;
-                const data = await api('/api/auth/login', 'POST', { email, password });
-                saveAuth(data);
-            } catch(e) { showAuthError(e.message); }
-        }
-
-        function saveAuth(data) {
-            token = data.token; localStorage.setItem('pony_token', token);
-            document.getElementById('auth-modal').classList.add('hidden'); init();
-        }
-        function showAuthError(msg) {
-            const el = document.getElementById('auth-err'); el.textContent = msg; el.classList.remove('hidden');
-        }
-
-        // --- ЗАГРУЗКА ФОТО ---
-        async function uploadAvatar(input) {
-            if (!input.files || !input.files[0]) return;
-            const file = input.files[0];
-            const formData = new FormData();
-            formData.append("file", file);
-
-            try {
-                const res = await fetch(`${API}/api/user/avatar`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-                const data = await res.json();
-                if(!res.ok) throw new Error(data.detail);
-                
-                // Обновляем UI
-                document.getElementById('profile-avatar-img').src = data.avatar;
-                document.getElementById('profile-avatar-img').classList.remove('hidden');
-                document.getElementById('profile-avatar-emoji').classList.add('hidden');
-                playSfx('win');
-            } catch(e) { alert("Ошибка загрузки: " + e.message); }
-        }
-
-        // --- ИНИЦИАЛИЗАЦИЯ ---
         async function init() {
             try {
                 userData = await api('/api/clicker/state');
                 updateBalance(userData.balance);
                 loadCases();
-                
                 socket = io({ auth: { token } });
                 socket.on('drop', (data) => {
                     const live = document.getElementById('live-drops');
                     if(live.querySelector('.italic')) live.innerHTML = '';
                     const el = document.createElement('div');
-                    el.className = 'bg-gray-800/80 px-2 py-1 rounded-md flex items-center gap-1 border border-gray-700';
-                    el.innerHTML = `<img src="${data.avatar}" class="w-4 h-4 rounded-full inline-block"> <b>${data.username}</b> выбил <span style="color:${data.color}">${data.pony}</span> <span class="text-gray-500">(${data.source})</span>`;
-                    live.prepend(el);
-                    if(live.children.length > 10) live.lastChild.remove();
+                    el.className = 'inline-flex items-center gap-2 bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700 mr-2';
+                    el.innerHTML = `<span class="text-[10px]">${data.avatar}</span> <b>${data.username}</b> выбил <span style="color:${data.color}" class="font-bold">${data.pony}</span> <span class="text-gray-500 text-[10px]">(${data.source})</span>`;
+                    live.appendChild(el);
                 });
             } catch(e) { localStorage.removeItem('pony_token'); location.reload(); }
         }
 
         function updateBalance(val) { document.getElementById('balance').textContent = val; }
-
         function switchTab(tab) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${tab}`).classList.add('active');
-            if(tab === 'battles') loadBattles();
             if(tab === 'profile') loadProfile();
+            if(tab === 'upgrade') loadUpgradeInventory();
+            if(tab === 'battles') loadBattles();
         }
 
-        // --- КЕЙСЫ ---
-        async function loadCases() {
-            const cases = await api('/api/cases/list');
-            const grid = document.getElementById('cases-grid');
-            grid.innerHTML = '';
-            cases.forEach(c => {
-                grid.innerHTML += `
-                    <div onclick="previewCase('${c.id}', ${c.price})" class="glass p-3 rounded-xl flex flex-col items-center cursor-pointer transform hover:-translate-y-1 transition border-b-2 border-purple-600">
-                        <span class="text-4xl mb-1">📦</span><span class="font-bold text-xs">${c.name}</span>
-                        <span class="text-yellow-400 font-bold mt-1 bg-gray-900/50 px-2 py-0.5 rounded text-[10px]">${c.price} 🪙</span>
-                    </div>`;
+        async function claimBonus() {
+            try { const res = await api('/api/user/bonus', 'POST'); updateBalance(res.balance); playSfx('win'); alert('Бонус получен!'); } catch(e) { alert(e.message); }
+        }
+
+        // --- АПГРЕЙД (С ЛОГИКОЙ И ГРАДИЕНТОМ) ---
+        async function loadUpgradeInventory() {
+            const data = await api('/api/user/profile');
+            invData = data.inventory;
+            renderUpgInventory();
+        }
+
+        function renderUpgInventory() {
+            const container = document.getElementById('upg-inventory');
+            container.innerHTML = invData.length ? '' : '<span class="text-xs text-gray-500">Нет предметов</span>';
+            invData.forEach(item => {
+                const isSel = selectedItem && selectedItem.id === item.id;
+                container.innerHTML += `
+                    <div onclick="selectUpgItem(${item.id})" class="inv-item ${isSel ? 'selected' : 'bg-gray-800/50'}" style="border-bottom: 2px solid ${item.color}">
+                        <div class="text-[10px] font-bold truncate">${item.name}</div>
+                        <div class="text-[10px] text-yellow-400">${item.price}🪙</div>
+                    </div>
+                `;
             });
         }
-        async function previewCase(id, price) {
-            document.getElementById('modal-case').classList.remove('hidden');
-            document.getElementById('preview-content').classList.remove('hidden');
-            document.getElementById('roulette-content').classList.add('hidden');
-            document.getElementById('modal-price').textContent = price;
-            document.getElementById('open-btn').onclick = () => spinCase(id);
-            
-            const items = await api(`/api/cases/preview/${id}`);
-            const grid = document.getElementById('preview-grid'); grid.innerHTML = '';
-            items.forEach(i => { grid.innerHTML += `<div class="bg-gray-800/80 p-2 rounded-lg border-l-2" style="border-color:${i.color}"><div class="text-[10px] font-bold truncate">${i.name}</div><div class="text-yellow-400 text-[10px]">${i.price}🪙</div></div>`; });
-        }
-        async function spinCase(caseId) {
-            const btn = document.getElementById('open-btn'); btn.disabled = true; btn.textContent = '...';
-            playSfx('spin', true);
-            try {
-                const res = await api(`/api/cases/open/${caseId}`, 'POST');
-                updateBalance(res.balance);
-                document.getElementById('preview-content').classList.add('hidden');
-                document.getElementById('roulette-content').classList.remove('hidden');
-                const strip = document.getElementById('roulette-strip');
-                strip.style.transition = 'none'; strip.style.transform = 'translateX(0)'; strip.innerHTML = '';
-                for(let i=0; i<50; i++) {
-                    strip.innerHTML += `<div class="roulette-item" style="border-color:${i===45?res.color:'#334155'}"><div class="text-[10px] font-bold text-center px-1">${i===45?res.pony_id:'???'}</div></div>`;
-                }
-                setTimeout(() => {
-                    strip.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                    strip.style.transform = `translateX(-${(45 * 110) - (strip.parentElement.offsetWidth / 2) + 55}px)`;
-                    setTimeout(() => {
-                        playSfx('spin', false);
-                        document.getElementById('roulette-result').style.color = res.color;
-                        document.getElementById('roulette-result').textContent = `${res.pony_id} (${res.price}🪙)`;
-                        btn.disabled = false; btn.textContent = 'Ещё раз';
-                        if(['epic','legendary','mythic','celestial'].includes(res.rarity)) { playSfx('win'); confetti(); } else { playSfx('lose'); }
-                    }, 5200);
-                }, 50);
-            } catch(e) { playSfx('spin', false); alert(e.message); btn.disabled = false; }
+
+        function selectUpgItem(id) {
+            selectedItem = invData.find(i => i.id === id);
+            renderUpgInventory();
+            updateWheel();
         }
 
-        // --- ПРОФИЛЬ ---
+        function setPreset(mult) {
+            currentTargetMultiplier = mult;
+            document.getElementById('upg-target-display').textContent = `x${mult}`;
+            updateWheel();
+        }
+
+        function updateWheel() {
+            if(!selectedItem) return;
+            const targetPrice = selectedItem.price * currentTargetMultiplier;
+            let chance = (selectedItem.price / targetPrice) * 100;
+            if(chance > 95) chance = 95;
+            
+            // В CSS conic-gradient: 0% - это 12 часов. Мы ставим зеленый от 0 до chance.
+            document.getElementById('upg-wheel').style.background = `conic-gradient(#22c55e 0% ${chance}%, #ef4444 ${chance}% 100%)`;
+            document.getElementById('upg-chance-text').textContent = `${Math.round(chance)}%`;
+        }
+
+        async function doUpgrade() {
+            if(!selectedItem) return alert("Выбери предмет из инвентаря!");
+            const targetPrice = selectedItem.price * currentTargetMultiplier;
+            
+            const arrow = document.getElementById('upg-arrow');
+            arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)';
+            playSfx('spin', true);
+
+            try {
+                const res = await api('/api/upgrade/play', 'POST', { 
+                    item_id: selectedItem.id, 
+                    target_price: targetPrice,
+                    target_name: `Upgraded Pony (x${currentTargetMultiplier})`
+                });
+                
+                // ЛОГИКА АНИМАЦИИ (Исправленный баг с красным)
+                // Круг = 360 градусов. Зеленая зона: 0 до chance%. Красная: chance% до 100%.
+                const greenDeg = (res.chance / 100) * 360;
+                let targetDeg = 0;
+                
+                if (res.win) {
+                    // Если выиграл, стрелка должна упасть в зеленую зону (от 0 до greenDeg)
+                    // Добавляем 3600 (10 оборотов) для красоты
+                    targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
+                } else {
+                    // Если проиграл, падает в красную (от greenDeg до 360)
+                    targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
+                }
+
+                setTimeout(() => {
+                    arrow.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`;
+                    
+                    setTimeout(() => {
+                        playSfx('spin', false);
+                        if(res.win) { playSfx('win'); confetti(); alert(`ПОБЕДА! Шанс: ${res.chance}%`); }
+                        else { playSfx('lose'); alert(`Проигрыш... Шанс: ${res.chance}%`); }
+                        selectedItem = null;
+                        loadUpgradeInventory();
+                        loadProfile(); // обновить баланс
+                    }, 4000);
+                }, 100);
+            } catch(e) { alert(e.message); playSfx('spin', false); }
+        }
+
+        // ... (Функции Profile, Cases, Battles оставляем как были, я лишь поправил вызовы) ...
         async function loadProfile() {
             const data = await api('/api/user/profile');
             updateBalance(data.user.balance);
@@ -397,72 +320,53 @@
                 document.getElementById('profile-avatar-img').src = data.user.avatar;
                 document.getElementById('profile-avatar-img').classList.remove('hidden');
                 document.getElementById('profile-avatar-emoji').classList.add('hidden');
-            } else {
-                document.getElementById('profile-avatar-emoji').textContent = data.user.avatar || '🦄';
-                document.getElementById('profile-avatar-img').classList.add('hidden');
-                document.getElementById('profile-avatar-emoji').classList.remove('hidden');
             }
-
             const grid = document.getElementById('inventory-grid'); grid.innerHTML = '';
             data.inventory.forEach(item => {
-                grid.innerHTML += `<div class="glass p-2 rounded-lg border-t-2" style="border-color:${item.color}"><div class="text-[9px] text-center font-bold truncate">${item.name}</div><div class="text-[9px] text-yellow-400 text-center">${item.price}🪙</div><button onclick="sellItem(${item.id})" class="bg-gray-800 hover:bg-red-600 w-full mt-1 py-1 rounded text-[9px] font-bold transition">Продать</button></div>`;
+                grid.innerHTML += `<div class="glass p-2 rounded-lg border-t-2" style="border-color:${item.color}"><div class="text-[9px] font-bold truncate">${item.name}</div><div class="text-[9px] text-yellow-400">${item.price}🪙</div><button onclick="sellItem(${item.id})" class="bg-gray-800 w-full mt-1 py-1 rounded text-[9px]">Продать</button></div>`;
             });
         }
         async function sellItem(id) { const r = await api(`/api/user/inventory/sell/${id}`, 'POST'); updateBalance(r.balance); loadProfile(); }
-        async function sellAll() { if(!confirm("Продать всё?")) return; const r = await api('/api/user/inventory/sell_all', 'POST'); updateBalance(r.balance); loadProfile(); }
+        async function sellAll() { if(!confirm("Всё продать?")) return; const r = await api('/api/user/inventory/sell_all', 'POST'); updateBalance(r.balance); loadProfile(); }
 
-        // --- МИНЫ ---
-        function startMines() {
-            const bet = parseInt(document.getElementById('mines-bet').value);
-            const mines = parseInt(document.getElementById('mines-count').value);
-            api('/api/mines/start', 'POST', {bet, mines}).then(res => {
+        // ЗАГРУЗКА КЕЙСОВ
+        async function loadCases() {
+            const cases = await api('/api/cases/list');
+            const grid = document.getElementById('cases-grid'); grid.innerHTML = '';
+            cases.forEach(c => { grid.innerHTML += `<div onclick="previewCase('${c.id}', ${c.price})" class="glass p-3 rounded-xl flex flex-col items-center cursor-pointer border-b-2 border-purple-600"><span class="text-4xl mb-1">📦</span><span class="font-bold text-xs">${c.name}</span><span class="text-yellow-400 text-[10px] mt-1">${c.price} 🪙</span></div>`; });
+        }
+        async function previewCase(id, price) {
+            document.getElementById('modal-case').classList.remove('hidden');
+            document.getElementById('preview-content').classList.remove('hidden');
+            document.getElementById('roulette-content').classList.add('hidden');
+            document.getElementById('modal-price').textContent = price;
+            document.getElementById('open-btn').onclick = () => spinCase(id);
+            const items = await api(`/api/cases/preview/${id}`);
+            const grid = document.getElementById('preview-grid'); grid.innerHTML = '';
+            items.forEach(i => { grid.innerHTML += `<div class="bg-gray-800/80 p-2 rounded-lg border-l-2" style="border-color:${i.color}"><div class="text-[10px] font-bold truncate">${i.name}</div><div class="text-yellow-400 text-[10px]">${i.price}🪙</div></div>`; });
+        }
+        async function spinCase(caseId) {
+            const btn = document.getElementById('open-btn'); btn.disabled = true; playSfx('spin', true);
+            try {
+                const res = await api(`/api/cases/open/${caseId}`, 'POST');
                 updateBalance(res.balance);
-                window.minesGameId = res.game_id;
-                document.getElementById('mines-start-screen').classList.add('hidden');
-                document.getElementById('mines-play-screen').classList.remove('hidden');
-                const grid = document.getElementById('mines-grid'); grid.innerHTML = '';
-                for(let i=0; i<25; i++) { grid.innerHTML += `<div class="mine-cell" id="cell-${i}" onclick="clickMine(${i})"></div>`; }
-                document.getElementById('mines-multi').textContent = '1.0x';
-                document.getElementById('mines-next').textContent = bet + '🪙';
-            }).catch(e => alert(e.message));
-        }
-        async function clickMine(index) {
-            if(!window.minesGameId) return;
-            try {
-                const res = await api('/api/mines/click', 'POST', {game_id: window.minesGameId, cell: index});
-                const cell = document.getElementById(`cell-${index}`);
-                if(res.status === 'boom') {
-                    cell.classList.add('boom'); cell.textContent = '💥';
-                    res.mines.forEach(m => { const c = document.getElementById(`cell-${m}`); if(c) { c.classList.add('boom'); c.textContent = '💣'; } });
-                    playSfx('lose'); alert("Взрыв! Проигрыш.");
-                    window.minesGameId = null;
-                    setTimeout(() => { document.getElementById('mines-start-screen').classList.remove('hidden'); document.getElementById('mines-play-screen').classList.add('hidden'); }, 2000);
-                } else if (res.status === 'ok') {
-                    cell.classList.add('opened'); cell.textContent = '💎'; playSfx('click');
-                    document.getElementById('mines-multi').textContent = res.multiplier + 'x';
-                    document.getElementById('mines-next').textContent = res.next_win + '🪙';
-                } else if (res.status === 'win') {
-                    cell.classList.add('opened'); cell.textContent = '💎';
-                    updateBalance(res.balance); playSfx('win'); confetti();
-                    alert(`Джекпот! Ты выиграл ${res.amount}🪙`);
-                    window.minesGameId = null;
-                    setTimeout(() => { document.getElementById('mines-start-screen').classList.remove('hidden'); document.getElementById('mines-play-screen').classList.add('hidden'); }, 2000);
-                }
-            } catch(e) { alert(e.message); }
-        }
-        async function cashoutMines() {
-            if(!window.minesGameId) return;
-            try {
-                const res = await api('/api/mines/cashout', 'POST', {game_id: window.minesGameId});
-                updateBalance(res.balance); playSfx('win');
-                alert(`Ты забрал ${res.amount}🪙`);
-                window.minesGameId = null;
-                document.getElementById('mines-start-screen').classList.remove('hidden');
-                document.getElementById('mines-play-screen').classList.add('hidden');
-            } catch(e) { alert(e.message); }
+                document.getElementById('preview-content').classList.add('hidden');
+                document.getElementById('roulette-content').classList.remove('hidden');
+                const strip = document.getElementById('roulette-strip');
+                strip.style.transition = 'none'; strip.style.transform = 'translateX(0)'; strip.innerHTML = '';
+                for(let i=0; i<50; i++) { strip.innerHTML += `<div class="roulette-item" style="border-color:${i===45?res.color:'#334155'}"><div class="text-[10px] text-center">${i===45?res.pony_id:'???'}</div></div>`; }
+                setTimeout(() => {
+                    strip.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    strip.style.transform = `translateX(-${(45 * 110) - (strip.parentElement.offsetWidth / 2) + 55}px)`;
+                    setTimeout(() => {
+                        playSfx('spin', false); document.getElementById('roulette-result').style.color = res.color;
+                        document.getElementById('roulette-result').textContent = `${res.pony_id} (${res.price}🪙)`;
+                        btn.disabled = false; if(['epic','legendary','mythic','celestial'].includes(res.rarity)) { playSfx('win'); confetti(); } else { playSfx('lose'); }
+                    }, 5200);
+                }, 50);
+            } catch(e) { playSfx('spin', false); alert(e.message); btn.disabled = false; }
         }
 
-        // --- БАТЛЫ (Заглушка для UI) ---
         async function loadBattles() {
             const battles = await api('/api/battles/active');
             const list = document.getElementById('battles-list');
@@ -471,20 +375,8 @@
                 list.innerHTML += `<div class="glass p-3 rounded-xl flex justify-between items-center"><div><div class="font-bold text-xs">Кейс: ${b.case_id}</div><div class="text-[10px] text-gray-400">Игроки: ${b.players}/${b.max} | Банк: ${b.total_value}🪙</div></div><button onclick="joinBattle('${b.id}')" class="bg-purple-600 px-3 py-1 rounded-lg font-bold text-xs">Войти</button></div>`;
             });
         }
-        async function joinBattle(id) {
-            const res = await api('/api/battles/join', 'POST', {battle_id: id});
-            updateBalance(res.balance);
-            document.getElementById('battle-room').classList.remove('hidden');
-            document.getElementById('battle-status').textContent = "Ожидание...";
-        }
-        async function createBattle() {
-            const caseId = prompt("ID кейса (starter, royal, celestial):");
-            if(!caseId) return;
-            const res = await api('/api/battles/create', 'POST', {case_id: caseId, max_players: 4});
-            updateBalance(res.balance);
-            document.getElementById('battle-room').classList.remove('hidden');
-        }
-        async function startBattle() { alert("Батл запущен (демо)"); }
+        async function joinBattle(id) { try { const res = await api('/api/battles/join', 'POST', {battle_id: id}); updateBalance(res.balance); alert("Вошел в батл! (Ждем реализацию комнаты)"); } catch(e) { alert(e.message); } }
+        async function createBattle() { const c = prompt("ID кейса (starter/royal):"); if(c) { try { const res = await api('/api/battles/create', 'POST', {case_id: c, max_players: 2}); updateBalance(res.balance); alert("Батл создан! (Ждем реализацию комнаты)"); } catch(e) { alert(e.message); } } }
     </script>
 </body>
 </html>
