@@ -1,5 +1,4 @@
-import os, random, smtplib
-from email.mime.text import MIMEText
+import os, random
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -44,14 +43,13 @@ def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer), db: Sessi
     return user
 
 def send_email(to_email, code):
+    # В реальном проекте тут SMTP, а пока смотрим код в логах ZevCloud
     print(f"=== EMAIL SENT to {to_email}: Code = {code} ===")
 
 @router.post("/register")
 def register(data: RegisterIn, db: Session = Depends(get_db)):
-    # Проверка почты
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(400, "Эта почта уже зарегистрирована!")
-    # Проверка ника
     if db.query(User).filter(User.username == data.username).first():
         raise HTTPException(400, "Этот никнейм уже занят!")
     
@@ -78,5 +76,6 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
     if not user or not user.password_hash or not pwd.verify(data.password, user.password_hash):
         raise HTTPException(401, "Неверная почта или пароль")
     if not user.is_verified:
-        raise HTTPException(403, "Пожалуйста, подтвердите почту (код в логах сервера)")
+        raise HTTPException(403, "Пожалуйста, подтвердите почту")
+        
     return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
