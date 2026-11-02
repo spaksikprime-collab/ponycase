@@ -22,18 +22,15 @@ Base.metadata.create_all(bind=engine)
 def run_migrations():
     with engine.connect() as conn:
         try:
-            # Добавляем новые колонки для лучшего дропа
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS best_drop_price BIGINT DEFAULT 0;"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS best_drop_name VARCHAR(64);"))
             conn.commit()
-            print("=== БАЗА ДАННЫХ ОБНОВЛЕНА ===")
         except Exception as e:
-            print(f"=== ОШИБКА МИГРАЦИИ: {e} ===")
+            pass
 
 run_migrations()
 
 api = FastAPI(title="PonyCase API")
-
 if not os.path.exists("static"): os.makedirs("static")
 api.mount("/static", StaticFiles(directory="static"), name="static")
 
