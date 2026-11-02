@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import socketio
 from sqlalchemy import text
 
@@ -18,20 +19,10 @@ from .ws import sio
 
 Base.metadata.create_all(bind=engine)
 
-def run_migrations():
-    with engine.connect() as conn:
-        try:
-            # Расширяем колонку аватарки до TEXT
-            conn.execute(text("ALTER TABLE users ALTER COLUMN avatar TYPE TEXT;"))
-            conn.execute(text("ALTER TABLE inventory ALTER COLUMN color TYPE VARCHAR(32);"))
-            conn.commit()
-            print("=== БАЗА ДАННЫХ ОБНОВЛЕНА ===")
-        except Exception as e:
-            print(f"=== ОШИБКА МИГРАЦИИ: {e} ===")
-
-run_migrations()
-
 api = FastAPI(title="PonyCase API")
+
+if not os.path.exists("static"): os.makedirs("static")
+api.mount("/static", StaticFiles(directory="static"), name="static")
 
 @api.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
