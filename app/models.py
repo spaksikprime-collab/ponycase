@@ -44,13 +44,12 @@ class CaseOpen(Base):
     ticket = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-# НОВАЯ ТАБЛИЦА ДЛЯ ИСТОРИИ
 class GameHistory(Base):
     __tablename__ = "game_history"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    game_type = Column(String(32), nullable=False) # 'case' или 'upgrade'
+    game_type = Column(String(32), nullable=False) 
     item_name = Column(String(64), nullable=False)
     price = Column(BigInteger, default=0)
-    result_text = Column(String(128), nullable=True) # Например "Проигрыш" или "Кейс: Стартовый"
+    result_text = Column(String(128), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
