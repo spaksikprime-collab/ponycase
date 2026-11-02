@@ -9,37 +9,48 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0B0E14; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #0B0E14 50%); background-attachment: fixed; padding-bottom: 75px; }
+        body { background-color: #0B0E14; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #0B0E14 50%); background-attachment: fixed; }
+        
+        /* Отступ для мобильного меню (на ПК убирается) */
+        @media (max-width: 768px) { body { padding-bottom: 75px; } }
+
         .glass { background: rgba(21, 26, 37, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3); }
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
         /* Кликер */
         .click-pony { transition: transform 0.1s; user-select: none; cursor: pointer; }
         .click-pony:active { transform: scale(0.9); }
 
-        /* Рулетка (Аппаратное ускорение) */
+        /* Рулетка */
         .roulette-box { overflow: hidden; position: relative; background: #0B0E14; border-radius: 12px; border: 1px solid #2d3748; padding: 15px 0; }
         .roulette-strip { display: flex; gap: 10px; will-change: transform; transform: translate3d(0, 0, 0); }
         .roulette-item { min-width: 85px; height: 95px; background: #1A202C; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; }
+        @media (min-width: 768px) { .roulette-item { min-width: 100px; height: 110px; } }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; }
 
-        /* Апгрейд (Аппаратное ускорение) */
+        /* Апгрейд */
         .upg-wheel-container { position: relative; width: 200px; height: 200px; margin: 0 auto; }
+        @media (min-width: 768px) { .upg-wheel-container { width: 260px; height: 260px; } }
         .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
         .upg-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 28px; z-index: 20; will-change: transform; transform-origin: 50% 112px; }
+        @media (min-width: 768px) { .upg-arrow { font-size: 36px; transform-origin: 50% 145px; top: -18px; } }
 
         /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-width: 300px; margin: 0 auto; }
+        @media (min-width: 768px) { .mines-grid { max-width: 380px; gap: 10px; } }
         .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; border: 1px solid #2d3748; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.4); }
+        @media (min-width: 768px) { .mine-cell { font-size: 28px; } }
         .mine-cell:active { transform: scale(0.95); box-shadow: none; }
         .mine-cell.opened { background: #064e3b; border-color: #10b981; }
         .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; }
 
         /* Джекпот */
-        .jackpot-wheel-container { position: relative; width: 220px; height: 220px; margin: 0 auto; }
+        .jackpot-wheel-container { position: relative; width: 200px; height: 200px; margin: 0 auto; }
+        @media (min-width: 768px) { .jackpot-wheel-container { width: 280px; height: 280px; } }
         .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; background: #0B0E14; overflow: hidden; position: relative; box-shadow: 0 0 40px rgba(234, 179, 8, 0.15); will-change: transform; }
         .jackpot-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #1A202C; border-radius: 50%; border: 3px solid #eab308; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; }
+        @media (min-width: 768px) { .jackpot-center { width: 90px; height: 90px; } }
 
         /* Уведомления */
         #toast-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
@@ -48,272 +59,327 @@
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         /* Чат */
-        .chat-msg { font-size: 12px; margin-bottom: 6px; line-height: 1.4; word-wrap: break-word; display: flex; gap: 6px; align-items: flex-start; }
-        .chat-img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; cursor: pointer; }
+        .chat-msg { font-size: 12px; margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; display: flex; gap: 8px; align-items: flex-start; }
+        .chat-img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; cursor: pointer; }
         .chat-user { color: #a855f7; font-weight: bold; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: 0.2s; }
 
-        /* Нижнее меню */
+        /* Навигация (Мобильная) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: rgba(15, 17, 26, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #1f2937; display: flex; justify-content: space-around; align-items: center; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #9ca3af; width: 20%; height: 100%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
         .nav-btn span.icon { font-size: 20px; margin-bottom: 2px; }
         .nav-btn span.text { font-size: 9px; font-weight: bold; }
+
+        /* Навигация (ПК) */
+        @media (min-width: 768px) {
+            .bottom-nav { display: none; }
+            .desktop-nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: bold; color: #9ca3af; transition: 0.2s; cursor: pointer; }
+            .desktop-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+            .desktop-nav-btn.active { color: #fff; background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col" id="main-body">
 
     <div id="toast-container"></div>
 
-    <header class="glass sticky top-0 z-40 px-3 py-2 flex justify-between items-center">
-        <h1 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">PONYCASE 🦄</h1>
-        <div class="flex gap-1.5 items-center">
-            <div class="text-[10px] text-green-400 bg-green-400/10 px-1.5 py-1 rounded border border-green-500/20 font-bold">🟢 <span id="online-count">0</span></div>
-            <button onclick="toggleChat()" class="bg-purple-600/20 text-purple-400 border border-purple-500/50 px-2 py-1 rounded text-xs font-bold">💬</button>
-            <button onclick="claimBonus()" class="bg-green-600 px-2 py-1 rounded text-xs font-bold shadow-[0_0_10px_rgba(34,197,94,0.4)]">Бонус</button>
-            <div class="bg-gray-900 px-2 py-1 rounded border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold text-sm">0</span> 🪙</div>
+    <!-- HEADER (Единый для всех) -->
+    <header class="glass sticky top-0 z-40 px-4 py-3 border-b border-gray-800">
+        <div class="max-w-[1400px] mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <h1 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
+                
+                <!-- ПК Меню -->
+                <div class="hidden md:flex gap-1">
+                    <button onclick="switchTab('cases')" id="nav-cases" class="desktop-nav-btn active">Кейсы</button>
+                    <button onclick="switchTab('clicker')" id="nav-clicker" class="desktop-nav-btn">Кликер</button>
+                    <button onclick="switchTab('battles')" id="nav-battles" class="desktop-nav-btn">Батлы</button>
+                    <button onclick="switchTab('upgrade')" id="nav-upgrade" class="desktop-nav-btn">Апгрейд</button>
+                    <button onclick="switchTab('mines')" id="nav-mines" class="desktop-nav-btn">Мины</button>
+                </div>
+            </div>
+
+            <div class="flex gap-2 items-center">
+                <div class="text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-500/20 font-bold">🟢 <span id="online-count">0</span></div>
+                <button onclick="toggleChat()" class="md:hidden bg-purple-600/20 text-purple-400 border border-purple-500/50 px-3 py-1.5 rounded-lg text-xs font-bold">💬</button>
+                <button onclick="claimBonus()" class="bg-green-600 px-3 py-1.5 rounded-lg text-xs font-bold shadow-[0_0_10px_rgba(34,197,94,0.4)]">Бонус</button>
+                <div class="bg-gray-900 px-3 py-1.5 rounded-lg border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold text-sm md:text-base">0</span> 🪙</div>
+                <button onclick="switchTab('profile')" id="nav-profile" class="desktop-nav-btn hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 border border-purple-500 text-lg ml-2">👤</button>
+            </div>
         </div>
     </header>
 
-    <div class="bg-[#0B0E14]/90 border-b border-gray-800 py-1.5 overflow-hidden relative">
-        <div id="live-drops" class="flex gap-2 whitespace-nowrap px-3 items-center text-[10px]">
-            <span class="text-gray-500 italic">Ожидание дропов...</span>
+    <!-- LIVE ДРОПЫ -->
+    <div class="bg-[#0B0E14]/90 border-b border-gray-800 py-2 overflow-hidden relative">
+        <div class="max-w-[1400px] mx-auto px-4">
+            <div id="live-drops" class="flex gap-2 whitespace-nowrap items-center text-xs">
+                <span class="text-gray-500 italic">Ожидание дропов...</span>
+            </div>
         </div>
     </div>
 
-    <main class="flex-1 p-3 max-w-xl mx-auto w-full">
-        <!-- КЕЙСЫ -->
-        <div id="page-cases" class="page active">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-xl font-black">Кейсы</h2>
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
-                        <input type="checkbox" id="fast-open" class="accent-purple-500"> Быстро
-                    </label>
-                    <select id="multi-count" class="bg-gray-900 text-xs text-white border border-gray-700 rounded p-1 outline-none">
-                        <option value="1">x1</option>
-                        <option value="2">x2</option>
-                        <option value="5">x5</option>
-                        <option value="10">x10</option>
-                    </select>
+    <!-- ОСНОВНОЙ КОНТЕНТ (Сетка для ПК) -->
+    <main class="flex-1 w-full max-w-[1400px] mx-auto p-3 md:p-6 flex flex-col md:flex-row gap-6">
+        
+        <!-- ЛЕВАЯ КОЛОНКА (ИГРЫ) -->
+        <div class="flex-1 min-w-0">
+            <!-- КЕЙСЫ -->
+            <div id="page-cases" class="page active">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl md:text-2xl font-black">Кейсы</h2>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                            <input type="checkbox" id="fast-open" class="accent-purple-500 w-4 h-4"> Быстро
+                        </label>
+                        <select id="multi-count" class="bg-gray-900 text-xs text-white border border-gray-700 rounded p-1.5 outline-none">
+                            <option value="1">x1</option>
+                            <option value="2">x2</option>
+                            <option value="5">x5</option>
+                            <option value="10">x10</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 2 колонки на мобилке, 3 на планшете, 4 на ПК -->
+                <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
+            </div>
+
+            <!-- КЛИКЕР -->
+            <div id="page-clicker" class="page">
+                <h2 class="text-xl md:text-2xl font-black mb-6">Кликер</h2>
+                <div class="glass p-6 md:p-8 rounded-2xl flex flex-col items-center max-w-2xl">
+                    <div class="text-8xl md:text-9xl mb-6 click-pony" id="pony-btn" onclick="doClick()">🦄</div>
+                    <p class="text-sm md:text-lg text-gray-400 mb-6">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
+                    
+                    <div class="w-full bg-gray-900/50 p-4 rounded-xl border border-gray-700">
+                        <h3 class="font-bold text-sm md:text-base mb-3 text-center">Апгрейды</h3>
+                        <div id="upgrades-list" class="flex flex-col gap-2"></div>
+                    </div>
                 </div>
             </div>
-            <div id="cases-grid" class="grid grid-cols-2 gap-2"></div>
-        </div>
 
-        <!-- КЛИКЕР -->
-        <div id="page-clicker" class="page">
-            <h2 class="text-xl font-black mb-3 text-center">Кликер</h2>
-            <div class="glass p-6 rounded-xl flex flex-col items-center">
-                <div class="text-7xl mb-6 click-pony" id="pony-btn" onclick="doClick()">🦄</div>
-                <p class="text-sm text-gray-400 mb-4">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
+            <!-- БАТЛЫ -->
+            <div id="page-battles" class="page">
+                <div class="flex gap-2 mb-4 max-w-md">
+                    <button onclick="switchBattleTab('jackpot')" class="flex-1 bg-yellow-600 text-black py-2 rounded-lg font-bold text-sm">ДЖЕКПОТ</button>
+                    <button onclick="switchBattleTab('1v1')" class="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold border border-gray-700 text-sm">1 НА 1</button>
+                </div>
                 
-                <div class="w-full bg-gray-900/50 p-3 rounded-xl border border-gray-700">
-                    <h3 class="font-bold text-xs mb-2 text-center">Апгрейды</h3>
-                    <div id="upgrades-list" class="flex flex-col gap-2"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- БАТЛЫ -->
-        <div id="page-battles" class="page">
-            <div class="flex gap-2 mb-3">
-                <button onclick="switchBattleTab('jackpot')" class="flex-1 bg-yellow-600 text-black py-1.5 rounded-lg font-bold text-xs">ДЖЕКПОТ</button>
-                <button onclick="switchBattleTab('1v1')" class="flex-1 bg-gray-800 text-white py-1.5 rounded-lg font-bold border border-gray-700 text-xs">1 НА 1</button>
-            </div>
-            <div id="battle-jackpot">
-                <div class="glass p-4 rounded-xl text-center mb-3 relative overflow-hidden">
-                    <p class="text-[10px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Общий банк</p>
-                    <div class="text-3xl font-black text-yellow-400 mb-1" id="jp-total">0 🪙</div>
-                    <div id="jp-timer" class="hidden text-lg font-black text-red-500 mb-2 animate-pulse">15s</div>
-                    <div class="jackpot-wheel-container mb-3">
-                        <div class="jackpot-wheel" id="jp-wheel">
-                            <div class="jackpot-center">
-                                <span class="text-[8px] text-gray-400 mb-0.5">ВЫИГРЫШ</span>
-                                <span class="font-bold text-xs text-white" id="jp-winner">???</span>
+                <div id="battle-jackpot" class="max-w-2xl">
+                    <div class="glass p-6 rounded-2xl text-center mb-6">
+                        <p class="text-xs text-gray-400 mb-1 uppercase tracking-widest font-bold">Общий банк</p>
+                        <div class="text-4xl font-black text-yellow-400 mb-2" id="jp-total">0 🪙</div>
+                        <div id="jp-timer" class="hidden text-lg font-black text-red-500 mb-2 animate-pulse">15s</div>
+                        
+                        <div class="jackpot-wheel-container mb-6">
+                            <div class="jackpot-wheel" id="jp-wheel">
+                                <div class="jackpot-center">
+                                    <span class="text-[8px] md:text-[10px] text-gray-400 mb-1">ВЫИГРЫШ</span>
+                                    <span class="font-bold text-xs md:text-sm text-white" id="jp-winner">???</span>
+                                </div>
                             </div>
                         </div>
+                        
+                        <div class="flex gap-2 mb-2 max-w-xs mx-auto">
+                            <input type="number" id="jp-bet" placeholder="Сумма" class="flex-1 bg-gray-900/80 p-3 rounded-lg text-center border border-gray-700 text-white font-bold text-sm outline-none focus:border-yellow-500">
+                            <button onclick="betJackpot()" class="bg-yellow-600 px-6 py-3 rounded-lg font-black text-sm hover:bg-yellow-500 transition">СТАВКА</button>
+                        </div>
                     </div>
-                    <div class="flex gap-2 mb-2">
-                        <input type="number" id="jp-bet" placeholder="Сумма" class="flex-1 bg-gray-900/80 p-2 rounded-lg text-center border border-gray-700 text-white font-bold text-sm outline-none focus:border-yellow-500">
-                        <button onclick="betJackpot()" class="bg-yellow-600 px-4 py-2 rounded-lg font-black text-xs">СТАВКА</button>
-                    </div>
+                    <div id="jp-players" class="flex flex-col gap-2"></div>
                 </div>
-                <div id="jp-players" class="flex flex-col gap-1"></div>
-            </div>
-            <div id="battle-1v1" class="hidden">
-                <div class="glass p-3 rounded-xl mb-3">
-                    <h3 class="font-bold mb-2 text-xs">Создать Батл 1 на 1</h3>
-                    <select id="b-case" class="w-full bg-gray-900 p-2 rounded-lg mb-2 text-white border border-gray-700 text-xs"></select>
-                    <button onclick="create1v1()" class="w-full bg-purple-600 py-2 rounded-lg font-bold text-xs">СОЗДАТЬ</button>
-                </div>
-                <div id="battles-list" class="flex flex-col gap-2"></div>
-            </div>
-        </div>
 
-        <!-- АПГРЕЙД -->
-        <div id="page-upgrade" class="page">
-            <h2 class="text-xl font-black mb-3">Апгрейд</h2>
-            <div class="glass p-4 rounded-xl flex flex-col items-center">
-                <div class="upg-wheel-container mb-4">
-                    <div class="upg-arrow" id="upg-arrow">🔻</div>
-                    <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#10b981 0% 50%, #f43f5e 50% 100%);"></div>
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <span class="text-3xl font-black text-white" id="upg-chance">50%</span>
+                <div id="battle-1v1" class="hidden max-w-md">
+                    <div class="glass p-4 rounded-xl mb-4">
+                        <h3 class="font-bold mb-3 text-sm">Создать Батл 1 на 1</h3>
+                        <select id="b-case" class="w-full bg-gray-900 p-3 rounded-lg mb-3 text-white border border-gray-700 text-sm"></select>
+                        <button onclick="create1v1()" class="w-full bg-purple-600 py-3 rounded-lg font-bold text-sm">СОЗДАТЬ</button>
+                    </div>
+                    <div id="battles-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+
+            <!-- АПГРЕЙД -->
+            <div id="page-upgrade" class="page">
+                <h2 class="text-xl md:text-2xl font-black mb-4">Апгрейд</h2>
+                <div class="glass p-4 md:p-8 rounded-2xl flex flex-col items-center max-w-2xl">
+                    <div class="upg-wheel-container mb-6">
+                        <div class="upg-arrow" id="upg-arrow">🔻</div>
+                        <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#10b981 0% 50%, #f43f5e 50% 100%);"></div>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span class="text-3xl md:text-4xl font-black text-white" id="upg-chance">50%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-2 w-full mb-4">
+                        <button onclick="setUpgMult(1.5)" class="bg-gray-800 border border-gray-700 py-2 rounded-lg font-bold text-xs md:text-sm">x1.5</button>
+                        <button onclick="setUpgMult(2)" class="bg-green-600 border border-green-500 py-2 rounded-lg font-bold text-xs md:text-sm">x2</button>
+                        <button onclick="setUpgMult(5)" class="bg-gray-800 border border-gray-700 py-2 rounded-lg font-bold text-xs md:text-sm">x5</button>
+                        <button onclick="setUpgMult(10)" class="bg-gray-800 border border-gray-700 py-2 rounded-lg font-bold text-xs md:text-sm">x10</button>
+                    </div>
+
+                    <div class="flex gap-2 w-full mb-4">
+                        <div class="flex-1 bg-gray-900/80 p-3 rounded-xl text-center border border-gray-700">
+                            <div class="text-[10px] text-gray-400 font-bold mb-1">ТВОЙ</div>
+                            <div class="font-bold text-white text-xs md:text-sm truncate" id="upg-my-item">-</div>
+                            <div class="text-yellow-400 text-[10px] md:text-xs font-bold" id="upg-my-price"></div>
+                        </div>
+                        <div class="flex items-center text-green-500 font-black text-lg">➡</div>
+                        <div class="flex-1 bg-gray-900/80 p-3 rounded-xl text-center border border-green-500/30">
+                            <div class="text-[10px] text-green-400 font-bold mb-1">ЦЕЛЬ</div>
+                            <div class="font-bold text-green-400 text-xs md:text-sm truncate" id="upg-target-item">Любой</div>
+                            <div class="text-yellow-400 text-[10px] md:text-xs font-bold" id="upg-target-price"></div>
+                        </div>
+                    </div>
+
+                    <div class="w-full mb-4 bg-gray-900/50 p-3 rounded-xl border border-gray-700">
+                        <div class="flex justify-between text-[10px] md:text-xs text-gray-400 mb-2">
+                            <span>Буст шанса:</span>
+                            <span id="upg-boost-val" class="text-green-400 font-bold">0 🪙</span>
+                        </div>
+                        <input type="range" id="upg-boost" min="0" max="10000" step="100" value="0" class="w-full accent-green-500" oninput="updateUpgradeUI()">
+                    </div>
+
+                    <select id="upg-select" class="w-full bg-gray-900 p-3 rounded-xl mb-4 text-sm text-white border border-gray-700 outline-none"></select>
+                    <button onclick="doUpgrade()" class="w-full bg-green-600 py-3.5 rounded-xl font-black text-sm md:text-base shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
+                </div>
+            </div>
+
+            <!-- МИНЫ -->
+            <div id="page-mines" class="page">
+                <h2 class="text-xl md:text-2xl font-black mb-4">Мины</h2>
+                <div class="glass p-4 md:p-8 rounded-2xl text-center max-w-2xl">
+                    <div id="mines-setup" class="max-w-xs mx-auto">
+                        <input type="number" id="mines-bet" placeholder="Ставка (мин 10)" class="w-full bg-gray-900 p-3 rounded-xl mb-3 text-center text-white text-sm font-bold border border-gray-700 outline-none">
+                        <select id="mines-count" class="w-full bg-gray-900 p-3 rounded-xl mb-4 text-center text-white font-bold border border-gray-700 outline-none text-sm">
+                            <option value="3">3 Мины</option>
+                            <option value="5">5 Мин</option>
+                            <option value="10">10 Мин</option>
+                        </select>
+                        <button onclick="startMines()" class="w-full bg-blue-600 py-3 rounded-xl font-black text-sm">НАЧАТЬ</button>
+                    </div>
+                    <div id="mines-game" class="hidden">
+                        <div class="flex justify-between items-center bg-gray-900/80 p-3 rounded-xl mb-4 text-xs font-bold border border-gray-800 max-w-[380px] mx-auto">
+                            <div class="text-gray-400">Множ: <span class="text-green-400 text-base ml-1" id="mines-multi">1.0x</span></div>
+                            <div class="text-gray-400">Забрать: <span class="text-yellow-400 text-base ml-1" id="mines-profit">0 🪙</span></div>
+                        </div>
+                        <div class="mines-grid mb-4" id="mines-grid"></div>
+                        <button onclick="cashoutMines()" class="w-full max-w-[380px] mx-auto bg-yellow-500 text-black py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПРОФИЛЬ -->
+            <div id="page-profile" class="page">
+                <div class="glass p-6 rounded-2xl text-center mb-6 relative max-w-2xl">
+                    <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
+                        <img id="p-avatar" class="w-full h-full object-cover hidden">
+                        <div id="p-emoji" class="w-full h-full flex items-center justify-center text-5xl">🦄</div>
+                    </div>
+                    <label class="text-xs bg-purple-600 px-4 py-1.5 rounded-full cursor-pointer inline-block mb-3 font-bold">
+                        Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
+                    </label>
+                    <h2 class="text-xl font-black mb-4" id="p-name">Loading...</h2>
+                    
+                    <div class="flex justify-center gap-8 bg-gray-900/50 p-3 rounded-xl max-w-sm mx-auto">
+                        <div><div class="text-gray-400 text-[10px] mb-1">Клики</div><div id="p-clicks" class="font-black text-lg text-yellow-400">0</div></div>
+                        <div><div class="text-gray-400 text-[10px] mb-1">Кейсы</div><div id="p-cases" class="font-black text-lg text-purple-400">0</div></div>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-4 gap-1.5 w-full mb-3">
-                    <button onclick="setUpgMult(1.5)" class="bg-gray-800 border border-gray-700 py-1 rounded font-bold text-xs">x1.5</button>
-                    <button onclick="setUpgMult(2)" class="bg-green-600 border border-green-500 py-1 rounded font-bold text-xs">x2</button>
-                    <button onclick="setUpgMult(5)" class="bg-gray-800 border border-gray-700 py-1 rounded font-bold text-xs">x5</button>
-                    <button onclick="setUpgMult(10)" class="bg-gray-800 border border-gray-700 py-1 rounded font-bold text-xs">x10</button>
+                <div class="flex justify-between items-center mb-3 max-w-4xl">
+                    <h3 class="font-black text-lg">Инвентарь</h3>
+                    <button onclick="sellAll()" class="text-xs bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/30 font-bold hover:bg-red-500 hover:text-white transition">Продать всё</button>
                 </div>
-
-                <div class="flex gap-2 w-full mb-3">
-                    <div class="flex-1 bg-gray-900/80 p-2 rounded-lg text-center border border-gray-700">
-                        <div class="text-[9px] text-gray-400 font-bold">ТВОЙ</div>
-                        <div class="font-bold text-white text-xs truncate" id="upg-my-item">-</div>
-                        <div class="text-yellow-400 text-[10px] font-bold" id="upg-my-price"></div>
-                    </div>
-                    <div class="flex items-center text-green-500 font-black text-lg">➡</div>
-                    <div class="flex-1 bg-gray-900/80 p-2 rounded-lg text-center border border-green-500/30">
-                        <div class="text-[9px] text-green-400 font-bold">ЦЕЛЬ</div>
-                        <div class="font-bold text-green-400 text-xs truncate" id="upg-target-item">Любой</div>
-                        <div class="text-yellow-400 text-[10px] font-bold" id="upg-target-price"></div>
-                    </div>
-                </div>
-
-                <!-- БУСТ -->
-                <div class="w-full mb-3 bg-gray-900/50 p-2 rounded-lg border border-gray-700">
-                    <div class="flex justify-between text-[10px] text-gray-400 mb-1">
-                        <span>Добавить к ставке:</span>
-                        <span id="upg-boost-val" class="text-green-400 font-bold">0 🪙</span>
-                    </div>
-                    <input type="range" id="upg-boost" min="0" max="10000" step="100" value="0" class="w-full accent-green-500" oninput="updateUpgradeUI()">
-                </div>
-
-                <select id="upg-select" class="w-full bg-gray-900 p-2 rounded-lg mb-3 text-xs text-white border border-gray-700 outline-none" onchange="updateUpgradeUI()"></select>
-                <button onclick="doUpgrade()" class="w-full bg-green-600 py-3 rounded-lg font-black text-sm shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
+                <!-- Инвентарь: 2 на мобилке, 4 на ПК -->
+                <div id="inv-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
             </div>
         </div>
 
-        <!-- МИНЫ -->
-        <div id="page-mines" class="page">
-            <h2 class="text-xl font-black mb-3">Мины</h2>
-            <div class="glass p-4 rounded-xl text-center">
-                <div id="mines-setup">
-                    <input type="number" id="mines-bet" placeholder="Ставка (мин 10)" class="w-full bg-gray-900 p-3 rounded-lg mb-2 text-center text-white text-sm font-bold border border-gray-700 outline-none">
-                    <select id="mines-count" class="w-full bg-gray-900 p-3 rounded-lg mb-3 text-center text-white font-bold border border-gray-700 text-sm outline-none">
-                        <option value="3">3 Мины</option>
-                        <option value="5">5 Мин</option>
-                        <option value="10">10 Мин</option>
-                    </select>
-                    <button onclick="startMines()" class="w-full bg-blue-600 py-3 rounded-lg font-black text-sm">НАЧАТЬ</button>
+        <!-- ПРАВАЯ КОЛОНКА (ТОЛЬКО ДЛЯ ПК: ЧАТ) -->
+        <aside class="hidden md:flex flex-col w-80 flex-shrink-0 h-[calc(100vh-140px)] sticky top-[90px]">
+            <div class="glass rounded-2xl flex flex-col h-full overflow-hidden border border-gray-700">
+                <div class="bg-purple-900/40 p-3 text-sm font-bold border-b border-gray-700 flex justify-between items-center">
+                    <span>💬 Общий чат</span>
                 </div>
-                <div id="mines-game" class="hidden">
-                    <div class="flex justify-between items-center bg-gray-900/80 p-2 rounded-lg mb-3 text-xs font-bold border border-gray-800">
-                        <div class="text-gray-400">Множ: <span class="text-green-400 text-base ml-1" id="mines-multi">1.0x</span></div>
-                        <div class="text-gray-400">Забрать: <span class="text-yellow-400 text-base ml-1" id="mines-profit">0 🪙</span></div>
-                    </div>
-                    <div class="mines-grid mb-3" id="mines-grid"></div>
-                    <button onclick="cashoutMines()" class="w-full bg-yellow-500 text-black py-3 rounded-lg font-black text-sm">ЗАБРАТЬ</button>
+                <div id="chat-messages-pc" class="flex-1 p-3 overflow-y-auto bg-black/30"></div>
+                <div class="flex border-t border-gray-700 bg-gray-900/90 p-2">
+                    <input type="text" id="chat-input-pc" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('pc')">
+                    <button onclick="sendChat('pc')" class="bg-purple-600 px-4 rounded text-sm font-bold">></button>
                 </div>
             </div>
-        </div>
-
-        <!-- ПРОФИЛЬ -->
-        <div id="page-profile" class="page">
-            <div class="glass p-4 rounded-xl text-center mb-4 relative">
-                <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-purple-500 mb-2 bg-gray-800">
-                    <img id="p-avatar" class="w-full h-full object-cover hidden">
-                    <div id="p-emoji" class="w-full h-full flex items-center justify-center text-4xl">🦄</div>
-                </div>
-                <label class="text-[10px] bg-purple-600 px-3 py-1 rounded-full cursor-pointer inline-block mb-2 font-bold">
-                    Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
-                </label>
-                <h2 class="text-xl font-black mb-2" id="p-name">Loading...</h2>
-                <div class="flex justify-around bg-gray-900/50 p-2 rounded-lg text-xs">
-                    <div><div class="text-gray-400 text-[10px]">Клики</div><div id="p-clicks" class="font-bold text-yellow-400">0</div></div>
-                    <div><div class="text-gray-400 text-[10px]">Кейсы</div><div id="p-cases" class="font-bold text-purple-400">0</div></div>
-                </div>
-            </div>
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="font-black text-sm">Инвентарь</h3>
-                <button onclick="sellAll()" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/30 font-bold">Продать всё</button>
-            </div>
-            <div id="inv-grid" class="grid grid-cols-2 gap-2"></div>
-        </div>
+        </aside>
     </main>
 
-    <!-- НАВИГАЦИЯ -->
+    <!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
     <nav class="bottom-nav">
-        <button onclick="switchTab('cases', this)" class="nav-btn active"><span class="icon">📦</span><span class="text">Кейсы</span></button>
-        <button onclick="switchTab('clicker', this)" class="nav-btn"><span class="icon">🦄</span><span class="text">Кликер</span></button>
-        <button onclick="switchTab('battles', this)" class="nav-btn"><span class="icon">⚔️</span><span class="text">Батлы</span></button>
-        <button onclick="switchTab('upgrade', this)" class="nav-btn"><span class="icon">📈</span><span class="text">Апгрейд</span></button>
-        <button onclick="switchTab('mines', this)" class="nav-btn"><span class="icon">💣</span><span class="text">Мины</span></button>
+        <button onclick="switchTab('cases')" class="nav-btn active" id="m-nav-cases"><span class="icon">📦</span><span class="text">Кейсы</span></button>
+        <button onclick="switchTab('clicker')" class="nav-btn" id="m-nav-clicker"><span class="icon">🦄</span><span class="text">Кликер</span></button>
+        <button onclick="switchTab('battles')" class="nav-btn" id="m-nav-battles"><span class="icon">⚔️</span><span class="text">Батлы</span></button>
+        <button onclick="switchTab('upgrade')" class="nav-btn" id="m-nav-upgrade"><span class="icon">📈</span><span class="text">Апгрейд</span></button>
+        <button onclick="switchTab('mines')" class="nav-btn" id="m-nav-mines"><span class="icon">💣</span><span class="text">Мины</span></button>
     </nav>
-    <button onclick="switchTab('profile', this)" class="fixed bottom-20 right-4 bg-purple-600 w-10 h-10 rounded-full shadow-lg z-40 flex items-center justify-center text-xl hover:scale-110 transition" title="Мой Профиль">👤</button>
 
-    <!-- МОДАЛКИ -->
-    <div id="chat-box" class="fixed top-[60px] right-2 w-[90%] max-w-[300px] h-[400px] glass rounded-xl flex-col z-[60] hidden shadow-2xl">
-        <div class="bg-purple-900/50 p-2 text-xs font-bold flex justify-between items-center rounded-t-xl border-b border-gray-700">
-            <span>💬 Чат</span>
-            <button onclick="toggleChat()" class="text-xl leading-none">&times;</button>
-        </div>
-        <div id="chat-messages" class="flex-1 p-2 overflow-y-auto bg-black/20"></div>
-        <div class="flex border-t border-gray-700 bg-gray-900/80 p-1 rounded-b-xl">
-            <input type="text" id="chat-input" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-xs outline-none text-white" onkeypress="if(event.key==='Enter') sendChat()">
-            <button onclick="sendChat()" class="bg-purple-600 px-3 rounded text-xs font-bold">></button>
+    <!-- МОБИЛЬНЫЙ ЧАТ (Модалка) -->
+    <div id="chat-box-mobile" class="fixed inset-0 bg-black/90 z-[90] hidden flex-col md:hidden p-4">
+        <div class="bg-gray-900 rounded-2xl flex flex-col w-full h-full max-w-md mx-auto border border-gray-700 overflow-hidden">
+            <div class="bg-purple-900/50 p-3 text-sm font-bold flex justify-between items-center border-b border-gray-700">
+                <span>💬 Чат</span>
+                <button onclick="toggleChat()" class="text-xl leading-none">&times;</button>
+            </div>
+            <div id="chat-messages-mob" class="flex-1 p-3 overflow-y-auto bg-black/20"></div>
+            <div class="flex border-t border-gray-700 bg-gray-800 p-2">
+                <input type="text" id="chat-input-mob" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('mob')">
+                <button onclick="sendChat('mob')" class="bg-purple-600 px-4 rounded text-sm font-bold">></button>
+            </div>
         </div>
     </div>
 
+    <!-- МОДАЛКИ -->
     <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100] hidden">
-        <div class="glass p-6 rounded-xl w-full max-w-sm relative">
+        <div class="glass p-6 rounded-2xl w-full max-w-sm relative">
             <h2 class="text-xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">ВХОД</h2>
-            <input type="text" id="a-user" placeholder="Логин" class="w-full bg-gray-900/80 p-3 rounded mb-2 text-white border border-gray-700 outline-none text-sm">
-            <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-gray-900/80 p-3 rounded mb-4 text-white border border-gray-700 outline-none text-sm">
+            <input type="text" id="a-user" placeholder="Логин" class="w-full bg-gray-900/80 p-3 rounded-lg mb-2 text-white border border-gray-700 outline-none text-sm">
+            <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-gray-900/80 p-3 rounded-lg mb-4 text-white border border-gray-700 outline-none text-sm">
             <div class="flex gap-2">
-                <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2 rounded font-bold text-xs">ВХОД</button>
-                <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2 rounded font-bold text-xs">РЕГА</button>
+                <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-xs hover:bg-gray-600 transition">ВХОД</button>
+                <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2.5 rounded-lg font-bold text-xs hover:bg-purple-500 transition">РЕГА</button>
             </div>
             <p id="a-err" class="text-red-500 text-[10px] text-center mt-2 hidden"></p>
         </div>
     </div>
 
     <div id="modal-case" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="glass p-4 rounded-xl w-full max-w-md relative">
-            <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-2 right-3 text-xl">&times;</button>
-            <h3 id="m-title" class="text-center text-lg font-black mb-3">Кейс</h3>
-            <div id="m-preview" class="grid grid-cols-2 gap-2 mb-3 max-h-48 overflow-y-auto"></div>
+        <div class="glass p-5 rounded-2xl w-full max-w-md md:max-w-xl relative">
+            <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-3 right-4 text-xl">&times;</button>
+            <h3 id="m-title" class="text-center text-lg md:text-xl font-black mb-4">Кейс</h3>
+            <div id="m-preview" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 max-h-60 overflow-y-auto"></div>
             <div id="m-roulette" class="hidden">
-                <div class="roulette-box mb-2">
+                <div class="roulette-box mb-3">
                     <div class="roulette-line"></div>
                     <div id="m-strip" class="roulette-strip"></div>
                 </div>
                 <p id="m-result" class="text-center text-lg font-black h-6 mb-2"></p>
             </div>
-            <button id="m-open-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-black text-sm shadow-[0_0_20px_rgba(168,85,247,0.4)]">ОТКРЫТЬ ЗА <span id="m-price">0</span> 🪙</button>
+            <button id="m-open-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3.5 rounded-xl font-black text-sm md:text-base shadow-[0_0_20px_rgba(168,85,247,0.4)]">ОТКРЫТЬ ЗА <span id="m-price">0</span> 🪙</button>
         </div>
     </div>
 
     <div id="modal-player" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-[80] backdrop-blur-sm">
-        <div class="glass p-4 rounded-xl w-full max-w-sm relative text-center">
-            <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-2 right-3 text-xl">&times;</button>
-            <div class="w-16 h-16 mx-auto rounded-full overflow-hidden border-2 border-purple-500 mb-2 bg-gray-800">
+        <div class="glass p-5 rounded-2xl w-full max-w-sm relative text-center">
+            <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-3 right-4 text-xl">&times;</button>
+            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
                 <img id="mp-avatar" class="w-full h-full object-cover hidden">
-                <div id="mp-emoji" class="w-full h-full flex items-center justify-center text-3xl">🦄</div>
+                <div id="mp-emoji" class="w-full h-full flex items-center justify-center text-4xl">🦄</div>
             </div>
             <h3 class="text-lg font-black mb-3" id="mp-name">Игрок</h3>
-            <div class="flex justify-between bg-gray-900/50 p-2 rounded text-xs mb-2">
+            <div class="flex justify-between bg-gray-900/50 p-3 rounded-xl text-xs mb-2">
                 <div><div class="text-gray-400 text-[10px]">Клики</div><div id="mp-clicks" class="font-bold text-yellow-400">0</div></div>
                 <div><div class="text-gray-400 text-[10px]">Кейсы</div><div id="mp-cases" class="font-bold text-purple-400">0</div></div>
             </div>
-            <div class="bg-gray-900/50 p-2 rounded text-xs mb-1 text-left">
+            <div class="bg-gray-900/50 p-3 rounded-xl text-xs mb-2 text-left">
                 <div class="text-gray-400 text-[10px]">Лучший дроп:</div>
                 <div id="mp-best" class="font-bold text-green-400 truncate">Нет</div>
             </div>
-            <div class="bg-gray-900/50 p-2 rounded text-xs text-left">
+            <div class="bg-gray-900/50 p-3 rounded-xl text-xs text-left">
                 <div class="text-gray-400 text-[10px]">Любимый кейс:</div>
                 <div id="mp-fav" class="font-bold text-purple-400 truncate">Нет</div>
             </div>
@@ -321,32 +387,19 @@
     </div>
 
     <script>
-        const sfx = {
-            spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
-            win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
-            lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'),
-            click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3')
-        };
+        const sfx = { spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'), win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'), lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'), click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3') };
         function playSfx(n, loop=false) { if(!sfx[n]) return; sfx[n].currentTime=0; sfx[n].loop=loop; sfx[n].volume=0.3; sfx[n].play().catch(()=>{}); }
 
         let lastToastTime = 0;
-        function showToast(msg, type='info') {
-            const now = Date.now(); if(now - lastToastTime < 500) return; lastToastTime = now;
-            const c = document.getElementById('toast-container');
-            const d = document.createElement('div'); d.className = `toast ${type}`; d.textContent = msg;
-            c.appendChild(d); setTimeout(() => d.remove(), 3000);
-        }
+        function showToast(msg, type='info') { const now = Date.now(); if(now - lastToastTime < 500) return; lastToastTime = now; const c = document.getElementById('toast-container'); const d = document.createElement('div'); d.className = `toast ${type}`; d.textContent = msg; c.appendChild(d); setTimeout(() => d.remove(), 3000); }
 
         const API = '';
         let token = localStorage.getItem('pony_token');
         let user = null, socket = null, inv = [], currentCase = null;
-        let upgMult = 2;
-        let casesData = [];
-        let jpTimerInterval = null;
+        let upgMult = 2, casesData = [], jpTimerInterval = null;
         let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
 
-        if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } 
-        else { document.getElementById('auth-modal').classList.remove('hidden'); }
+        if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } else { document.getElementById('auth-modal').classList.remove('hidden'); }
 
         async function req(ep, m='GET', b=null) {
             const h = { 'Content-Type': 'application/json' };
@@ -367,9 +420,7 @@
                 document.getElementById('a-err').classList.add('hidden');
                 document.getElementById('auth-modal').classList.add('hidden'); 
                 init();
-            } catch(e) { 
-                const err = document.getElementById('a-err'); err.textContent = e.message; err.classList.remove('hidden');
-            }
+            } catch(e) { const err = document.getElementById('a-err'); err.textContent = e.message; err.classList.remove('hidden'); }
         }
 
         async function init() {
@@ -385,35 +436,22 @@
                 if(!socket) {
                     socket = io({ auth: { token } });
                     socket.on('online', d => document.getElementById('online-count').textContent = d.count);
-                    
                     socket.on('drop', d => {
                         const live = document.getElementById('live-drops');
                         if(live.querySelector('.italic')) live.innerHTML = '';
-                        
                         const el = document.createElement('div');
-                        el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer';
+                        el.className = 'bg-gray-800/80 px-3 py-1 rounded-lg border border-gray-700 flex items-center gap-2 cursor-pointer hover:bg-gray-700 transition';
                         el.onclick = () => showPlayerProfile(d.username);
-                        
-                        let avHtml = d.avatar && d.avatar.startsWith('data:') 
-                            ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` 
-                            : `<span class="text-[10px]">${d.avatar}</span>`;
-
-                        el.innerHTML = `${avHtml} <b class="text-purple-400 text-[10px]">${d.username}</b> <span class="text-gray-400 text-[10px]">выбил</span> <b style="color:${d.color}" class="text-[10px]">${d.pony}</b>`;
+                        let avHtml = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` : `<span class="text-xs">${d.avatar}</span>`;
+                        el.innerHTML = `${avHtml} <b class="text-purple-400 text-xs">${d.username}</b> <span class="text-gray-400 text-xs">выбил</span> <b style="color:${d.color}" class="text-xs">${d.pony}</b>`;
                         live.prepend(el);
                         if(live.children.length > 10) live.lastChild.remove();
                     });
-                    
                     socket.on('chat', d => {
-                        const box = document.getElementById('chat-messages');
-                        const msg = document.createElement('div');
-                        msg.className = 'chat-msg';
-                        let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="chat-img" onclick="showPlayerProfile('${d.username}')">` : `<span class="text-xs cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.avatar}</span>`;
-                        msg.innerHTML = `${av} <div><span class="chat-user" onclick="showPlayerProfile('${d.username}')">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
-                        box.appendChild(msg);
-                        if(box.children.length > 30) box.firstChild.remove();
-                        box.scrollTop = box.scrollHeight;
+                        // Отправляем в оба чата (ПК и мобильный)
+                        renderChatMsg('chat-messages-pc', d);
+                        renderChatMsg('chat-messages-mob', d);
                     });
-
                     socket.on('jackpot_update', d => updateJackpotUI(d));
                     socket.on('jackpot_finish', d => {
                         document.getElementById('jp-winner').textContent = d.winner.username;
@@ -423,28 +461,40 @@
                             document.getElementById('jp-winner').textContent = '???';
                             document.getElementById('jp-players').innerHTML = '';
                             document.getElementById('jp-total').textContent = '0 🪙';
-                            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-[8px] text-gray-400 mb-0.5">ВЫИГРЫШ</span><span class="font-bold text-xs text-white" id="jp-winner">???</span></div>`;
+                            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-[8px] md:text-[10px] text-gray-400 mb-1">ВЫИГРЫШ</span><span class="font-bold text-xs md:text-sm text-white" id="jp-winner">???</span></div>`;
                         }, 5000);
                     });
                 }
             } catch(e) { console.error(e); }
         }
 
-        function updateBal(v) { 
-            if (v !== undefined && v !== null) {
-                document.getElementById('balance').textContent = v; 
-                if(user) user.balance = v; 
-            }
+        function renderChatMsg(boxId, d) {
+            const box = document.getElementById(boxId);
+            if(!box) return;
+            const msg = document.createElement('div');
+            msg.className = 'chat-msg';
+            let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="chat-img" onclick="showPlayerProfile('${d.username}')">` : `<span class="text-xs cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.avatar}</span>`;
+            msg.innerHTML = `${av} <div><span class="chat-user" onclick="showPlayerProfile('${d.username}')">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
+            box.appendChild(msg);
+            if(box.children.length > 40) box.firstChild.remove();
+            box.scrollTop = box.scrollHeight;
         }
+
+        function updateBal(v) { if (v !== undefined && v !== null) { document.getElementById('balance').textContent = v; if(user) user.balance = v; } }
         
-        function switchTab(t, btn) {
+        function switchTab(t) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
             
-            if(btn && btn.classList.contains('nav-btn')){
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            }
+            // Активная кнопка ПК
+            document.querySelectorAll('.desktop-nav-btn').forEach(b => b.classList.remove('active'));
+            const pcBtn = document.getElementById(`nav-${t}`);
+            if(pcBtn) pcBtn.classList.add('active');
+
+            // Активная кнопка Мобилки
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const mobBtn = document.getElementById(`m-nav-${t}`);
+            if(mobBtn) mobBtn.classList.add('active');
 
             if(t==='profile') loadProfile();
             if(t==='upgrade') loadUpgrade();
@@ -459,16 +509,23 @@
         }
 
         function toggleChat() { 
-            const c = document.getElementById('chat-box');
+            const c = document.getElementById('chat-box-mobile');
             c.classList.toggle('hidden'); c.classList.toggle('flex');
         }
-        function sendChat() {
-            const inp = document.getElementById('chat-input');
-            if(inp.value && socket && user) { socket.emit('chat', {username: user.username, avatar: user.avatar, text: inp.value}); inp.value = ''; }
+
+        function sendChat(platform) {
+            let inp;
+            if(platform === 'pc') inp = document.getElementById('chat-input-pc');
+            else inp = document.getElementById('chat-input-mob');
+            
+            if(inp.value && socket && user) { 
+                socket.emit('chat', {username: user.username, avatar: user.avatar, text: inp.value}); 
+                inp.value = ''; 
+            }
         }
+
         async function claimBonus() { try { const r = await req('/api/user/bonus','POST'); updateBal(r.balance); playSfx('win'); showToast('Бонус! +500 🪙', 'win'); } catch(e) { showToast(e.message, 'lose'); } }
 
-        // --- КЛИКЕР ---
         async function doClick() {
             playSfx('click');
             try {
@@ -482,18 +539,9 @@
         function renderUpgrades() {
             const list = document.getElementById('upgrades-list');
             list.innerHTML = `
-                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
-                    <div><div class="font-bold text-sm">Сила клика</div><div class="text-xs text-gray-400">Ур. ${upgLevels.click_power}</div></div>
-                    <button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
-                </div>
-                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
-                    <div><div class="font-bold text-sm">Автоклик</div><div class="text-xs text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div>
-                    <button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
-                </div>
-                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
-                    <div><div class="font-bold text-sm">Множитель</div><div class="text-xs text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div>
-                    <button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
-                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 md:p-3 rounded-lg"><div><div class="font-bold text-sm">Сила клика</div><div class="text-xs text-gray-400">Ур. ${upgLevels.click_power}</div></div><button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 md:px-4 md:py-2 rounded text-xs font-bold shadow-md">Купить</button></div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 md:p-3 rounded-lg"><div><div class="font-bold text-sm">Автоклик</div><div class="text-xs text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div><button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 md:px-4 md:py-2 rounded text-xs font-bold shadow-md">Купить</button></div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 md:p-3 rounded-lg"><div><div class="font-bold text-sm">Множитель</div><div class="text-xs text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div><button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 md:px-4 md:py-2 rounded text-xs font-bold shadow-md">Купить</button></div>
             `;
         }
 
@@ -515,7 +563,6 @@
                 document.getElementById('mp-cases').textContent = u.cases_opened;
                 document.getElementById('mp-best').textContent = u.best_drop ? `${u.best_drop.name} (${u.best_drop.price}🪙)` : 'Нет';
                 document.getElementById('mp-fav').textContent = u.fav_case;
-                
                 if(u.avatar && u.avatar.startsWith('data:')) {
                     document.getElementById('mp-avatar').src = u.avatar;
                     document.getElementById('mp-avatar').classList.remove('hidden');
@@ -529,14 +576,13 @@
             } catch(e) { showToast("Ошибка профиля", 'lose'); }
         }
 
-        // --- КЕЙСЫ ---
         async function loadCases() {
             casesData = await req('/api/cases/list');
             document.getElementById('cases-grid').innerHTML = casesData.map(c => `
-                <div onclick="previewCase('${c.id}', ${c.price})" class="glass p-3 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition">
-                    <span class="text-4xl mb-1">📦</span>
-                    <span class="font-black text-[11px] text-center">${c.name}</span>
-                    <span class="text-yellow-400 text-[10px] mt-1 bg-[#0B0E14] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span>
+                <div onclick="previewCase('${c.id}', ${c.price})" class="glass p-3 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300">
+                    <span class="text-4xl md:text-5xl mb-2 drop-shadow-lg">📦</span>
+                    <span class="font-black text-[11px] md:text-sm text-center mb-1">${c.name}</span>
+                    <span class="text-yellow-400 text-[10px] md:text-xs bg-[#0B0E14] px-2 md:px-3 py-0.5 md:py-1 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span>
                 </div>`).join('');
             document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join('');
         }
@@ -549,7 +595,7 @@
             document.getElementById('m-price').textContent = price;
             document.getElementById('m-open-btn').onclick = () => openCase(id);
             const drops = await req(`/api/cases/preview/${id}`);
-            document.getElementById('m-preview').innerHTML = drops.map(d => `<div class="bg-[#0B0E14] p-2 rounded border-l-2 text-[10px] flex flex-col justify-between" style="border-color:${d.color}"><span class="font-bold">${d.name}</span><span class="text-yellow-400 font-bold">${d.price}🪙</span></div>`).join('');
+            document.getElementById('m-preview').innerHTML = drops.map(d => `<div class="bg-[#0B0E14] p-2 md:p-3 rounded border-l-2 md:border-l-4 text-[10px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}"><span class="font-bold">${d.name}</span><span class="text-yellow-400 font-bold">${d.price}🪙</span></div>`).join('');
         }
 
         async function openCase(id) {
@@ -572,25 +618,26 @@
                     btn.disabled = false;
                 } else {
                     const strip = document.getElementById('m-strip');
-                    
-                    // ПРИНУДИТЕЛЬНЫЙ СБРОС И ОТРИСОВКА (ФИКС ЛАГОВ)
                     strip.style.transition = 'none';
                     strip.style.transform = 'translate3d(0, 0, 0)';
-                    strip.innerHTML = ''; // Очищаем старое
+                    strip.innerHTML = ''; 
                     
                     const pool = await req(`/api/cases/preview/${id}`);
                     let html = '';
                     for(let i=0; i<50; i++) {
                         const item = i === 45 ? res.results[0] : pool[Math.floor(Math.random()*pool.length)];
                         const shadow = i === 45 ? `box-shadow: inset 0 0 20px ${item.color};` : '';
-                        html += `<div class="roulette-item" style="border-color:${item.color}; ${shadow}"><div class="text-[9px] text-center font-bold px-1">${item.pony_id || item.name}</div></div>`;
+                        html += `<div class="roulette-item" style="border-color:${item.color}; ${shadow}"><div class="text-[10px] text-center font-bold px-1">${item.pony_id || item.name}</div></div>`;
                     }
                     strip.innerHTML = html;
 
-                    // Ждем 50мс, чтобы браузер отрисовал стартовую позицию, затем даем команду
                     setTimeout(() => {
+                        const containerWidth = strip.parentElement.offsetWidth;
+                        const itemWidth = 95; 
+                        const offset = (45 * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
+
                         strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                        strip.style.transform = `translate3d(-${(45 * 95) - (strip.parentElement.offsetWidth / 2) + 42}px, 0, 0)`;
+                        strip.style.transform = `translate3d(-${offset}px, 0, 0)`;
                         
                         setTimeout(() => {
                             playSfx('spin', false);
@@ -606,7 +653,6 @@
             } catch(e) { playSfx('spin', false); showToast(e.message, 'lose'); btn.disabled = false; }
         }
 
-        // --- ПРОФИЛЬ ---
         async function loadProfile() {
             const d = await req('/api/user/profile');
             updateBal(d.user.balance);
@@ -623,14 +669,15 @@
                 document.getElementById('p-emoji').textContent = d.user.avatar || '🦄';
             }
             document.getElementById('inv-grid').innerHTML = inv.map(i => `
-                <div class="glass p-2 rounded-lg border-t-2 text-[10px] flex flex-col justify-between" style="border-color:${i.color}">
-                    <div class="truncate font-bold">${i.name}</div>
-                    <div class="text-yellow-400 font-bold">${i.price}🪙</div>
-                    <button onclick="sell(${i.id})" class="w-full bg-[#0B0E14] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700 mt-1">Продать</button>
+                <div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[10px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}">
+                    <div class="truncate font-bold mb-1">${i.name}</div>
+                    <div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div>
+                    <button onclick="sell(${i.id})" class="w-full bg-[#0B0E14] hover:bg-red-600 rounded py-1 md:py-1.5 font-bold transition border border-gray-700">Продать</button>
                 </div>`).join('');
         }
         async function sell(id) { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); }
-        async function sellAll() { if(!confirm("Всё?")) return; await req('/api/user/inventory/sell_all','POST'); loadProfile(); }
+        async function sellAll() { if(!confirm("Продать весь инвентарь?")) return; await req('/api/user/inventory/sell_all','POST'); loadProfile(); }
+        
         async function uploadAvatar(input) {
             const file = input.files[0]; if(!file) return;
             const fd = new FormData(); fd.append("file", file);
@@ -645,17 +692,18 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- АПГРЕЙД ---
         async function loadUpgrade() {
             await loadProfile();
             const sel = document.getElementById('upg-select');
             sel.innerHTML = '<option value="">Выбери предмет...</option>' + inv.map(i => `<option value="${i.id}" data-price="${i.price}" data-name="${i.name}">${i.name} (${i.price}🪙)</option>`).join('');
         }
+        
         function setUpgMult(m) {
             upgMult = m; updateUpgradeUI();
             document.querySelectorAll('#page-upgrade button').forEach(b => b.classList.remove('bg-green-600', 'border-green-500'));
             event.target.classList.add('bg-green-600', 'border-green-500');
         }
+
         function updateUpgradeUI() {
             const sel = document.getElementById('upg-select');
             const opt = sel.options[sel.selectedIndex];
@@ -677,6 +725,7 @@
             document.getElementById('upg-chance').textContent = chance.toFixed(1) + '%';
             document.getElementById('upg-wheel').style.background = `conic-gradient(#10b981 0% ${chance}%, #f43f5e ${chance}% 100%)`;
         }
+
         async function doUpgrade() {
             const id = document.getElementById('upg-select').value;
             if(!id) return showToast("Выбери предмет", 'lose');
@@ -686,8 +735,6 @@
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
             
             const arrow = document.getElementById('upg-arrow');
-            
-            // СБРОС СТРЕЛКИ (БЕЗ АНИМАЦИИ)
             arrow.style.transition = 'none';
             arrow.style.transform = 'translateX(-50%) rotate(0deg)';
             
@@ -702,7 +749,6 @@
                 if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
                 else targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
 
-                // ЖДЕМ 50МС, ЧТОБЫ БРАУЗЕР ОТРИСОВАЛ СБРОС, И ВКЛЮЧАЕМ ПЛАВНЫЙ ПОВОРОТ
                 setTimeout(() => {
                     arrow.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
                     arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`;
@@ -717,7 +763,6 @@
             } catch(e) { playSfx('spin', false); showToast(e.message, 'lose'); }
         }
 
-        // --- МИНЫ ---
         let mId = null;
         async function startMines() {
             const bet = parseInt(document.getElementById('mines-bet').value);
@@ -730,6 +775,7 @@
                 document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join('');
             } catch(e) { showToast(e.message, 'lose'); }
         }
+        
         async function clickMine(i) {
             try {
                 const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i});
@@ -748,6 +794,7 @@
                 }
             } catch(e) { showToast(e.message, 'lose'); }
         }
+        
         async function cashoutMines() {
             try {
                 const r = await req('/api/mines/cashout', 'POST', {game_id: mId});
@@ -757,11 +804,11 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- ДЖЕКПОТ ---
         async function loadJackpot() {
             const list = await req('/api/battles/active');
             if(list.length > 0) updateJackpotUI(list[0]);
         }
+        
         function updateJackpotUI(j) {
             document.getElementById('jp-total').textContent = j.total + ' 🪙';
             const timerEl = document.getElementById('jp-timer');
@@ -785,32 +832,33 @@
                 let percent = ((p.amount / total) * 100).toFixed(1);
                 let color = colors[idx % colors.length];
                 html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, ${color} ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`;
-                playersHtml += `<div class="flex justify-between bg-gray-800/80 p-1.5 rounded text-[10px] border border-gray-700"><span class="font-bold text-white flex items-center gap-1"><span style="color:${color}">●</span> ${p.avatar} ${p.username}</span><span class="text-right"><span class="text-yellow-400 font-bold">${p.amount}🪙</span> (${percent}%)</span></div>`;
+                playersHtml += `<div class="flex justify-between bg-gray-800/80 p-2 rounded text-[10px] md:text-xs border border-gray-700 mb-1"><span class="font-bold text-white flex items-center gap-2"><span style="color:${color}">●</span> ${p.avatar} ${p.username}</span><span class="text-right"><span class="text-yellow-400 font-bold">${p.amount}🪙</span> (${percent}%)</span></div>`;
                 deg += slice;
             });
-            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-[8px] text-gray-400 mb-0.5">ВЫИГРЫШ</span><span class="font-bold text-xs text-white" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div>` + html;
+            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-[8px] md:text-[10px] text-gray-400 mb-1">ВЫИГРЫШ</span><span class="font-bold text-xs md:text-sm text-white" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div>` + html;
             document.getElementById('jp-players').innerHTML = playersHtml;
         }
+        
         async function betJackpot() {
             const amt = parseInt(document.getElementById('jp-bet').value);
             if(!amt || amt < 100) return showToast("Мин. 100", 'lose');
             try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- БАТЛ 1v1 ---
         async function create1v1() {
             const caseId = document.getElementById('b-case').value;
             try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); }
         }
+        
         async function load1v1List() {
             try {
                 const list = await req('/api/battles/1v1/active');
                 const c = document.getElementById('battles-list');
-                if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-[10px] py-2">Нет лобби</div>'; return; }
+                if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-xs py-4">Нет лобби</div>'; return; }
                 c.innerHTML = list.map(b => `
-                    <div class="glass p-2 rounded-lg flex justify-between items-center border-l-2 border-purple-500">
-                        <div><div class="font-bold text-xs">Кейс: ${b.case_id}</div><div class="text-[9px] text-gray-400">От: ${b.creator}</div></div>
-                        <button onclick="join1v1('${b.id}')" class="bg-purple-600 px-3 py-1 rounded text-[10px] font-bold">ВОЙТИ</button>
+                    <div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 md:border-l-4 border-purple-500 mb-2">
+                        <div><div class="font-bold text-xs md:text-sm">Кейс: ${b.case_id}</div><div class="text-[10px] text-gray-400">От: ${b.creator}</div></div>
+                        <button onclick="join1v1('${b.id}')" class="bg-purple-600 px-3 md:px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-500 transition shadow-lg">ВОЙТИ</button>
                     </div>`).join('');
             } catch(e) {}
         }
