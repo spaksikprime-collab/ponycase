@@ -20,12 +20,14 @@ def preview_case(case_id: str):
     return get_case_preview(case_id)
 
 @router.post("/open/{case_id}")
-async def open_case(case_id: str, user: User = Depends(current_user),
-                    db: Session = Depends(get_db)):
+async def open_case(case_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if case_id not in CASES:
         raise HTTPException(404, "Нет такого кейса")
     case = CASES[case_id]
-    apply_passive(user)
+    
+    # ИСПРАВЛЕНО: передаем db
+    apply_passive(user, db)
+    
     if user.balance < case["price"]:
         raise HTTPException(400, "Недостаточно копыт")
 
@@ -45,7 +47,6 @@ async def open_case(case_id: str, user: User = Depends(current_user),
                     client_seed=client_seed, nonce=nonce, ticket=ticket))
     db.commit()
 
-    # ИСПРАВЛЕНО: передаем все 6 аргументов
     await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
 
     return {
