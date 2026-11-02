@@ -4,8 +4,9 @@ from pydantic import BaseModel
 from .db import get_db
 from .models import User, InventoryItem
 from .auth import current_user
-from .games import gen_seed, roll_ticket, pick_pony
+from .games import gen_seed, roll_ticket
 from .clicker import apply_passive
+from .ws import broadcast_drop
 
 router = APIRouter()
 
@@ -14,14 +15,15 @@ class UpgradeRequest(BaseModel):
     target_price: int
     target_name: str
 
+# ВАЖНО: сделали функцию async
 @router.post("/play")
-def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
+async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
     item = db.get(InventoryItem, data.item_id)
     if not item or item.user_id != user.id:
         raise HTTPException(404, "Предмет не найден")
     
     if data.target_price <= item.price:
-        raise HTTPException(400, "Цель должна быть дороже вашего предмета!")
+        raise HTTPException(400, "Цель должна быть дороже!")
 
     chance = (item.price / data.target_price) * 100
     if chance > 95: chance = 95.0
@@ -36,17 +38,13 @@ def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: S
     
     if win:
         db.delete(item)
-        # Выдаем предмет с новой ценой
-        new_item = InventoryItem(
-            user_id=user.id, 
-            pony_id=data.target_name, 
-            rarity="upgraded", 
-            price=data.target_price, 
-            color="#facc15" # Золотой цвет за апгрейд
-        )
+        new_item = InventoryItem(user_id=user.id, pony_id=data.target_name, rarity="upgraded", price=data.target_price, color="#facc15")
         db.add(new_item)
+        db.commit()
+        # Отправляем в Live-ленту
+        await broadcast_drop(user.username, user.avatar, data.target_name, data.target_price, "#facc15", "Апгрейд")
     else:
         db.delete(item)
+        db.commit()
         
-    db.commit()
     return {"win": win, "chance": round(chance, 2), "roll_pct": roll_pct}
