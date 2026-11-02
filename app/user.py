@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .db import get_db
-from .models import User, InventoryItem
+from .models import User, InventoryItem, CaseOpen
 from .auth import current_user
 from .clicker import apply_passive, public_user
 from .games import RARITY_BY_ID
@@ -12,8 +12,14 @@ router = APIRouter()
 def get_profile(user: User = Depends(current_user), db: Session = Depends(get_db)):
     apply_passive(user); db.commit()
     inventory = db.query(InventoryItem).filter(InventoryItem.user_id == user.id).all()
+    opened_cases = db.query(CaseOpen).filter(CaseOpen.user_id == user.id).count()
+    
     return {
         "user": public_user(user),
+        "stats": {
+            "total_clicks": user.total_clicks,
+            "cases_opened": opened_cases
+        },
         "inventory": [{"id": i.id, "name": i.pony_id, "rarity": i.rarity, "price": i.price, "color": RARITY_BY_ID.get(i.rarity, ("","","","","#fff"))[4]} for i in inventory]
     }
 
