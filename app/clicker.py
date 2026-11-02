@@ -35,14 +35,15 @@ def apply_passive(user: User):
     elapsed = (now - user.last_passive_tick).total_seconds()
     user.last_passive_tick = now
     if elapsed > 0 and user.auto_rate > 0:
-        user.balance += int(elapsed * user.auto_rate * user.multiplier * (1 + user.prestige * 0.05))
+        # Убрали prestige из формулы
+        user.balance += int(elapsed * user.auto_rate * user.multiplier)
 
 def public_user(user: User) -> dict:
     return {
         "id": user.id, "username": user.username, "avatar": user.avatar,
         "balance": user.balance, "total_clicks": user.total_clicks,
         "click_power": user.click_power, "auto_rate": user.auto_rate,
-        "multiplier": user.multiplier, "prestige": user.prestige,
+        "multiplier": user.multiplier
     }
 
 @router.get("/state")
@@ -60,7 +61,7 @@ def click(user: User = Depends(current_user), db: Session = Depends(get_db)):
     bucket.append(now)
 
     apply_passive(user)
-    gain = int(user.click_power * user.multiplier * (1 + user.prestige * 0.05))
+    gain = int(user.click_power * user.multiplier)
     user.balance += gain
     user.total_clicks += 1
     db.commit()
@@ -83,16 +84,3 @@ def buy(key: str, user: User = Depends(current_user), db: Session = Depends(get_
         user.multiplier += UPGRADES[key]["step"]
     db.commit()
     return {"user": public_user(user), "next_cost": upgrade_cost(user, key)}
-
-@router.post("/prestige")
-def prestige(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if user.total_clicks < 10_000:
-        raise HTTPException(400, "Нужно 10 000 кликов для престижа")
-    user.prestige += 1
-    user.balance = 100
-    user.click_power = 1
-    user.auto_rate = 0.0
-    user.multiplier = 1.0
-    user.total_clicks = 0
-    db.commit()
-    return {"user": public_user(user)}
