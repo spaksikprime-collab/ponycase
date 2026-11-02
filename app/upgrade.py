@@ -20,31 +20,32 @@ def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: S
     if not item or item.user_id != user.id:
         raise HTTPException(404, "Предмет не найден")
     
-    # ЗАЩИТА: Нельзя апгрейдить на меньшую сумму
     if data.target_price <= item.price:
         raise HTTPException(400, "Цель должна быть дороже вашего предмета!")
 
-    # Шанс: (цена предмета / цена цели) * 100
     chance = (item.price / data.target_price) * 100
-    if chance > 95: chance = 95.0 # Максимум 95%
+    if chance > 95: chance = 95.0
 
     apply_passive(user)
     user.nonce += 1
     
     ticket = roll_ticket(gen_seed(), gen_seed(), user.nonce)
-    # Генерируем ролл от 0.00 до 100.00
     roll_pct = round((ticket % 10000) / 100.0, 2) 
     
-    # ВЫИГРЫШ: Если ролл меньше или равен шансу
     win = roll_pct <= chance
     
     if win:
         db.delete(item)
-        # Выдаем предмет, на который апгрейдили
-        new_item = InventoryItem(user_id=user.id, pony_id=data.target_name, rarity="upgraded", price=data.target_price)
+        # Выдаем предмет с новой ценой
+        new_item = InventoryItem(
+            user_id=user.id, 
+            pony_id=data.target_name, 
+            rarity="upgraded", 
+            price=data.target_price, 
+            color="#facc15" # Золотой цвет за апгрейд
+        )
         db.add(new_item)
     else:
-        # Сгорает
         db.delete(item)
         
     db.commit()
