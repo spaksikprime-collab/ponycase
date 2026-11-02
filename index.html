@@ -26,10 +26,27 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 9px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
 
-        /* Рулетка кейсов */
+        /* РУЛЕТКА (ЖЕСТКИЙ ФИКС СЛИПАНИЯ) */
         .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; }
-        .roulette-strip { display: flex; gap: 8px; will-change: transform; min-width: max-content; }
-        .roulette-item { flex: 0 0 80px; width: 80px; height: 90px; background: #12161f; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .roulette-strip { display: flex; will-change: transform; padding: 0; margin: 0; }
+        .roulette-item { 
+            flex: 0 0 80px; 
+            width: 80px; 
+            min-width: 80px;
+            height: 90px; 
+            background: #12161f; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            border: 2px solid transparent; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            text-overflow: ellipsis;
+            margin-right: 8px; /* Используем margin вместо gap */
+        }
+        .roulette-item:last-child { margin-right: 0; }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
 
         /* Колесо Фортуны */
@@ -289,7 +306,6 @@
                     </div>
 
                     <div class="max-w-lg mx-auto mt-6">
-                        <!-- Мини-инвентарь для апгрейда -->
                         <p class="text-xs text-gray-400 mb-2">Выбери предметы для апгрейда (можно несколько):</p>
                         <div id="upg-mini-inv" class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 bg-[#12161f] rounded-lg border border-gray-700 mb-4"></div>
                         
@@ -442,6 +458,7 @@
                 </div>
                 <div id="results-grid" class="flex flex-wrap justify-center gap-3 w-full"></div>
                 <div class="flex gap-3 mt-6 w-full max-w-md">
+                    <!-- Кнопка теперь всегда на месте, просто будет неактивной -->
                     <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 px-4 py-3 rounded-xl font-black text-sm">ПРОДАТЬ ВСЁ</button>
                     <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 px-4 py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
                 </div>
@@ -521,7 +538,6 @@
         let selectedWheelColor = 'red';
         let lastWheelStatus = null;
 
-        // Переменные для пагинации и апгрейда
         let invPage = 1;
         let histPage = 1;
         let selectedUpgradeItems = [];
@@ -569,7 +585,6 @@
                 renderUpgrades();
                 fetchWheelState();
                 
-                // Обновление топа каждые 30 сек
                 loadLeaderboard();
                 setInterval(loadLeaderboard, 30000);
 
@@ -610,8 +625,8 @@
         }
         
         function switchTab(t) {
-            currentTab = t; // Запоминаем вкладку
-            if(t !== 'wheel') stopSpinSfx(); // Глушим звук, если ушли с колеса
+            currentTab = t; 
+            if(t !== 'wheel') stopSpinSfx(); 
 
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
@@ -686,14 +701,12 @@
                 }).join('');
             }
 
-            // Анимация
             if(state.status === 'spinning' && lastWheelStatus !== 'spinning') {
                 lastWheelStatus = 'spinning';
                 winnerText.textContent = '???';
-                if(currentTab === 'wheel') startSpinSfx(); // Звук только тут
+                if(currentTab === 'wheel') startSpinSfx();
                 
-                // Крутим ровно на выигрышный индекс (20 секторов)
-                const segmentAngle = 360 / 20; // 18 градусов
+                const segmentAngle = 360 / 20; 
                 const targetDeg = (360 * 5) - (state.winning_index * segmentAngle); 
                 
                 wheelVisual.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
@@ -782,9 +795,20 @@
                     let promises = [];
                     for(let i=0; i<count; i++) {
                         const strip = document.getElementById(`row-${i}-strip`); let html = '';
-                        for(let j=0; j<50; j++) { const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; html += `<div class="roulette-item" style="border-color:${item.color}"><div style="color:white; font-size:10px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; }
+                        for(let j=0; j<50; j++) { 
+                            const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
+                            // ЖЕСТКО ФИКСИРУЕМ ШИРИНУ И ОТСТУП В HTML
+                            html += `<div class="roulette-item" style="flex: 0 0 80px; width: 80px; min-width: 80px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:10px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
+                        }
                         strip.innerHTML = html; strip.style.transition = 'none'; strip.style.transform = 'translate3d(0, 0, 0)';
-                        promises.push(new Promise(resolve => { requestAnimationFrame(() => { requestAnimationFrame(() => { const containerWidth = strip.parentElement.clientWidth; const itemWidth = 80, gap = 8; const offset = (45 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; strip.style.transform = `translate3d(-${offset}px, 0, 0)`; setTimeout(resolve, 6200); }); }); }));
+                        promises.push(new Promise(resolve => { requestAnimationFrame(() => { requestAnimationFrame(() => { 
+                            const containerWidth = strip.parentElement.clientWidth; 
+                            const itemWidth = 80, gap = 8; 
+                            const offset = (45 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
+                            strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
+                            strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
+                            setTimeout(resolve, 6200); 
+                        }); }); }));
                     }
                     Promise.all(promises).then(() => { stopSpinSfx(); playSfx('win'); confetti(); document.getElementById('spin-container').classList.add('hidden'); showSpinResults(res.results); });
                 }
@@ -794,13 +818,59 @@
         function showSpinResults(results) {
             let total = 0;
             document.getElementById('results-grid').innerHTML = results.map((item, index) => { total += item.price; return `<div class="glass p-3 rounded-xl flex flex-col items-center min-w-[120px] border-t-2" style="border-color:${item.color}"><div class="text-xs font-bold mb-1 text-center text-white truncate w-full">${item.pony_id}</div><div class="text-yellow-400 font-bold mb-3">${item.price} 🪙</div><div class="flex gap-1 w-full" id="drop-actions-${index}"><button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 transition">Продать</button><button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 transition">Забрать</button></div></div>`; }).join('');
-            document.getElementById('total-drops-value').textContent = total + ' 🪙'; document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${total} 🪙`;
-            document.getElementById('spin-results').classList.remove('hidden'); document.getElementById('spin-results').classList.add('flex');
+            
+            document.getElementById('total-drops-value').textContent = total + ' 🪙'; 
+            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${total} 🪙`;
+            
+            // Кнопка "Продать всё" всегда видна
+            const btnSellAll = document.getElementById('btn-sell-all-drops');
+            btnSellAll.style.display = 'block';
+            btnSellAll.disabled = false;
+
+            document.getElementById('spin-results').classList.remove('hidden'); 
+            document.getElementById('spin-results').classList.add('flex');
         }
         async function sellDropItem(id, price, index) { try { await req(`/api/user/inventory/sell/${id}`, 'POST'); updateBal(user.balance + price); document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`; playSfx('win'); const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); } catch(e) { showToast(e.message, 'lose'); } }
         function keepDropItem(index) { document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; playSfx('click'); recalcTotalDrops(); }
-        function recalcTotalDrops() { let newTotal = 0; currentDrops.forEach((item, idx) => { const actions = document.getElementById(`drop-actions-${idx}`); if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) newTotal += item.price; }); document.getElementById('total-drops-value').textContent = newTotal + ' 🪙'; if(newTotal > 0) document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`; else document.getElementById('btn-sell-all-drops').style.display = 'none'; }
-        function sellAllDrops() { let totalValue = 0; currentDrops.forEach((item, idx) => { const actions = document.getElementById(`drop-actions-${idx}`); if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) totalValue += item.price; }); if(totalValue === 0) return; showConfirm("Продать все дропы?", `Вы получите ${totalValue} 🪙.`, "Продать", async () => { for (let i = 0; i < currentDrops.length; i++) { const actions = document.getElementById(`drop-actions-${i}`); if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) { try { await req(`/api/user/inventory/sell/${currentDrops[i].id}`, 'POST'); actions.innerHTML = `<div class="text-xs text-gray-400 text-center">Продано</div>`; } catch(e) {} } } const state = await req('/api/clicker/state'); updateBal(state.balance); closeSpinModal(); recalcTotalDrops(); }); }
+        
+        function recalcTotalDrops() { 
+            let newTotal = 0; 
+            currentDrops.forEach((item, idx) => { 
+                const actions = document.getElementById(`drop-actions-${idx}`); 
+                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) newTotal += item.price; 
+            }); 
+            
+            const btnSellAll = document.getElementById('btn-sell-all-drops');
+            document.getElementById('total-drops-value').textContent = newTotal + ' 🪙'; 
+            
+            if(newTotal > 0) {
+                btnSellAll.textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`; 
+                btnSellAll.disabled = false;
+            } else {
+                btnSellAll.textContent = `ВСЁ ПРОДАНО`; 
+                btnSellAll.disabled = true;
+            }
+        }
+        
+        function sellAllDrops() { 
+            let totalValue = 0; 
+            currentDrops.forEach((item, idx) => { 
+                const actions = document.getElementById(`drop-actions-${idx}`); 
+                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) totalValue += item.price; 
+            }); 
+            
+            if(totalValue === 0) return; 
+            
+            showConfirm("Продать все дропы?", `Вы получите ${totalValue} 🪙.`, "Продать", async () => { 
+                for (let i = 0; i < currentDrops.length; i++) { 
+                    const actions = document.getElementById(`drop-actions-${i}`); 
+                    if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) { 
+                        try { await req(`/api/user/inventory/sell/${currentDrops[i].id}`, 'POST'); actions.innerHTML = `<div class="text-xs text-gray-400 text-center">Продано</div>`; } catch(e) {} 
+                    } 
+                } 
+                const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); 
+            }); 
+        }
         function closeSpinModal() { document.getElementById('modal-spin').classList.add('hidden'); }
 
         // ==========================================
@@ -819,30 +889,22 @@
                 if(d.user.avatar && d.user.avatar.startsWith('data:')) { document.getElementById('p-avatar').src = d.user.avatar; document.getElementById('p-avatar').classList.remove('hidden'); document.getElementById('p-emoji').classList.add('hidden'); } 
                 
                 renderInventory(); 
-                
                 document.getElementById('inv-page-info').textContent = `Стр. ${d.pagination.page} из ${d.pagination.pages || 1}`;
             } catch(e) { showToast("Ошибка профиля", 'lose'); } 
         }
 
-        function changeInvPage(dir) {
-            if(invPage + dir < 1) return;
-            invPage += dir;
-            loadProfile();
-        }
+        function changeInvPage(dir) { if(invPage + dir < 1) return; invPage += dir; loadProfile(); }
 
         function renderInventory() {
             const grid = document.getElementById('inv-grid');
-            if (inv.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Инвентарь пуст</div>';
-                return;
-            }
+            if (inv.length === 0) { grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Инвентарь пуст</div>'; return; }
             grid.innerHTML = inv.map(i => `<div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[10px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}"><div class="truncate font-bold mb-1">${i.name}</div><div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div><button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button></div>`).join('');
         }
 
         async function sell(id) { 
             try { 
                 await req(`/api/user/inventory/sell/${id}`,'POST'); 
-                loadProfile(); // Перезагружаем страницу, чтобы обновить пагинацию
+                loadProfile(); 
                 playSfx('win'); 
             } catch(e) { showToast(e.message, 'lose'); } 
         }
@@ -864,29 +926,15 @@
                 const d = await req(`/api/user/history?page=${histPage}&limit=10`);
                 document.getElementById('hist-page-info').textContent = `Стр. ${d.pagination.page} из ${d.pagination.pages || 1}`;
                 
-                if(d.history.length === 0) {
-                    document.getElementById('history-list').innerHTML = '<div class="text-center text-gray-500 py-4">История пуста</div>';
-                    return;
-                }
+                if(d.history.length === 0) { document.getElementById('history-list').innerHTML = '<div class="text-center text-gray-500 py-4">История пуста</div>'; return; }
                 
                 document.getElementById('history-list').innerHTML = d.history.map(h => `<div class="flex justify-between items-center bg-[#1A202C] p-3 rounded-lg text-sm border-l-4 ${h.game === 'Кейс' ? 'border-purple-500' : h.game === 'Апгрейд' ? 'border-green-500' : 'border-yellow-500'}"><div><div class="font-bold text-white">${h.item}</div><div class="text-xs text-gray-400">${h.result} • ${h.date}</div></div><div class="font-black ${h.game === 'Кейс' ? 'text-purple-400' : h.game === 'Апгрейд' ? 'text-green-400' : 'text-yellow-400'}">${h.price > 0 ? `+${h.price} 🪙` : 'Сгорел'}</div></div>`).join('');
             } catch(e) { showToast("Ошибка истории", 'lose'); }
         }
 
-        function changeHistPage(dir) {
-            if(histPage + dir < 1) return;
-            histPage += dir;
-            loadHistory();
-        }
+        function changeHistPage(dir) { if(histPage + dir < 1) return; histPage += dir; loadHistory(); }
 
-        async function uploadAvatar(input) { 
-            const file = input.files[0]; if(!file) return; const fd = new FormData(); fd.append("file", file); 
-            try { 
-                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); 
-                const d = await res.json(); if(!res.ok) throw new Error(d.detail); 
-                document.getElementById('p-avatar').src = d.avatar; document.getElementById('p-avatar').classList.remove('hidden'); document.getElementById('p-emoji').classList.add('hidden'); document.getElementById('header-avatar').src = d.avatar; document.getElementById('header-avatar').classList.remove('hidden'); document.getElementById('header-emoji').classList.add('hidden'); showToast('Аватарка обновлена!', 'win'); 
-            } catch(e) { showToast(e.message, 'lose'); } 
-        }
+        async function uploadAvatar(input) { const file = input.files[0]; if(!file) return; const fd = new FormData(); fd.append("file", file); try { const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); const d = await res.json(); if(!res.ok) throw new Error(d.detail); document.getElementById('p-avatar').src = d.avatar; document.getElementById('p-avatar').classList.remove('hidden'); document.getElementById('p-emoji').classList.add('hidden'); document.getElementById('header-avatar').src = d.avatar; document.getElementById('header-avatar').classList.remove('hidden'); document.getElementById('header-emoji').classList.add('hidden'); showToast('Аватарка обновлена!', 'win'); } catch(e) { showToast(e.message, 'lose'); } }
         async function showPlayerProfile(username) { try { const u = await req(`/api/user/public/by_name/${username}`); document.getElementById('mp-name').textContent = u.username; document.getElementById('mp-clicks').textContent = u.total_clicks; document.getElementById('mp-cases').textContent = u.cases_opened; document.getElementById('mp-best').textContent = u.best_drop ? `${u.best_drop.name} (${u.best_drop.price}🪙)` : 'Нет'; if(u.avatar && u.avatar.startsWith('data:')) { document.getElementById('mp-avatar').src = u.avatar; document.getElementById('mp-avatar').classList.remove('hidden'); document.getElementById('mp-emoji').classList.add('hidden'); } else { document.getElementById('mp-emoji').textContent = u.avatar || '🦄'; document.getElementById('mp-avatar').classList.add('hidden'); document.getElementById('mp-emoji').classList.remove('hidden'); } document.getElementById('modal-player').classList.remove('hidden'); } catch(e) { showToast("Ошибка профиля", 'lose'); } }
 
         // ==========================================
@@ -897,16 +945,16 @@
         async function buyUpgrade(key) { playSfx('click'); try { const res = await req(`/api/clicker/buy`, 'POST', {key: key}); updateBal(res.user.balance); upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier }; renderUpgrades(); } catch(e) { showToast(e.message, 'lose'); } }
 
         // ==========================================
-        // АПГРЕЙД
+        // АПГРЕЙД (МУЛЬТИ)
         // ==========================================
         async function loadUpgrade() { 
-            selectedUpgradeItems = []; // Сбрасываем выбор
+            selectedUpgradeItems = []; 
             await loadProfileForUpgrade(); 
         }
 
         async function loadProfileForUpgrade() {
             try {
-                const d = await req('/api/user/profile?page=1&limit=50'); // Грузим первые 50 предметов
+                const d = await req('/api/user/profile?page=1&limit=50'); 
                 inv = d.inventory;
                 renderUpgradeMiniInv();
             } catch(e) {}
@@ -914,10 +962,8 @@
 
         function renderUpgradeMiniInv() {
             const container = document.getElementById('upg-mini-inv');
-            if(inv.length === 0) {
-                container.innerHTML = '<span class="text-xs text-gray-500 col-span-full text-center">Инвентарь пуст</span>';
-                return;
-            }
+            if(inv.length === 0) { container.innerHTML = '<span class="text-xs text-gray-500 col-span-full text-center">Инвентарь пуст</span>'; return; }
+            
             container.innerHTML = inv.map(i => {
                 const isSelected = selectedUpgradeItems.includes(i.id);
                 return `
@@ -992,7 +1038,6 @@
             arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)'; 
             startSpinSfx();
             
-            // Блокируем кнопку, чтобы не спамили
             const btn = event.target;
             btn.disabled = true;
 
@@ -1027,32 +1072,9 @@
         // МИНЫ
         // ==========================================
         let mId = null;
-        async function startMines() { 
-            const bet = parseInt(document.getElementById('mines-bet').value); const mines = parseInt(document.getElementById('mines-count').value); 
-            try { 
-                const r = await req('/api/mines/start', 'POST', {bet, mines}); updateBal(r.balance); mId = r.game_id; 
-                document.getElementById('mines-setup').classList.add('hidden'); document.getElementById('mines-game').classList.remove('hidden'); document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join(''); 
-            } catch(e) { showToast(e.message, 'lose'); } 
-        }
-        async function clickMine(i) { 
-            try { 
-                const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i}); const c = document.getElementById(`mc-${i}`); 
-                if(r.status === 'boom') { 
-                    c.classList.add('boom'); c.textContent = '💥'; r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣'); playSfx('lose'); 
-                    document.getElementById('main-body').classList.add('shake'); if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
-                    setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500); 
-                    setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000); 
-                } else if (r.status === 'ok') { 
-                    c.classList.add('opened'); c.textContent = '💎'; playSfx('safe'); document.getElementById('mines-multi').textContent = r.multiplier + 'x'; document.getElementById('mines-profit').textContent = r.next_win + ' 🪙'; 
-                } 
-            } catch(e) { showToast(e.message, 'lose'); } 
-        }
-        async function cashoutMines() { 
-            try { 
-                const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); updateBal(r.balance); playSfx('win'); showToast(`Забрано ${r.amount}🪙!`, 'win'); 
-                document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); 
-            } catch(e) { showToast(e.message, 'lose'); } 
-        }
+        async function startMines() { const bet = parseInt(document.getElementById('mines-bet').value); const mines = parseInt(document.getElementById('mines-count').value); try { const r = await req('/api/mines/start', 'POST', {bet, mines}); updateBal(r.balance); mId = r.game_id; document.getElementById('mines-setup').classList.add('hidden'); document.getElementById('mines-game').classList.remove('hidden'); document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join(''); } catch(e) { showToast(e.message, 'lose'); } }
+        async function clickMine(i) { try { const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i}); const c = document.getElementById(`mc-${i}`); if(r.status === 'boom') { c.classList.add('boom'); c.textContent = '💥'; r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣'); playSfx('lose'); document.getElementById('main-body').classList.add('shake'); if (navigator.vibrate) navigator.vibrate([100, 50, 100]); setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500); setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000); } else if (r.status === 'ok') { c.classList.add('opened'); c.textContent = '💎'; playSfx('safe'); document.getElementById('mines-multi').textContent = r.multiplier + 'x'; document.getElementById('mines-profit').textContent = r.next_win + ' 🪙'; } } catch(e) { showToast(e.message, 'lose'); } }
+        async function cashoutMines() { try { const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); updateBal(r.balance); playSfx('win'); showToast(`Забрано ${r.amount}🪙!`, 'win'); document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); } catch(e) { showToast(e.message, 'lose'); } }
 
         // ==========================================
         // ДЖЕКПОТ И БАТЛЫ
