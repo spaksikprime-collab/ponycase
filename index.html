@@ -14,29 +14,24 @@
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Рулетка кейсов */
         .roulette-box { overflow: hidden; position: relative; background: #0f111a; border-radius: 12px; border: 1px solid #1e293b; padding: 15px 0; }
         .roulette-strip { display: flex; gap: 10px; will-change: transform; }
         .roulette-item { min-width: 90px; height: 100px; background: #1e293b; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #ef4444; }
 
-        /* Апгрейд */
         .upg-wheel { width: 200px; height: 200px; border-radius: 50%; border: 4px solid #1e293b; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin: 0 auto; }
         .upg-arrow { font-size: 30px; text-align: center; margin-bottom: -15px; position: relative; z-index: 10; transition: transform 3s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: center 115px; }
 
-        /* Чат (Перенесен наверх) */
         #chat-box { position: fixed; top: 60px; right: 10px; width: 320px; height: 400px; z-index: 60; display: none; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         #chat-box.open { display: flex; }
         .chat-msg { font-size: 12px; margin-bottom: 4px; word-wrap: break-word; }
         .chat-user { color: #a855f7; font-weight: bold; }
 
-        /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 300px; margin: 0 auto; }
         .mine-cell { aspect-ratio: 1; background: #1e293b; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; transition: 0.2s; border: 1px solid #334155; }
         .mine-cell.opened { background: #064e3b; border-color: #10b981; }
         .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; }
 
-        /* Джекпот Колесо */
         .jackpot-wheel-container { position: relative; width: 250px; height: 250px; margin: 0 auto; }
         .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 4px solid #1e293b; background: #0f111a; overflow: hidden; position: relative; }
         .jackpot-sector { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
@@ -48,14 +43,13 @@
     <header class="glass sticky top-0 z-50 px-4 py-2 flex justify-between items-center">
         <h1 class="text-xl font-black text-purple-400">PONYCASE 🦄</h1>
         <div class="flex gap-2 items-center">
+            <div class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">🟢 <span id="online-count">0</span></div>
             <button onclick="toggleChat()" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold shadow-[0_0_10px_rgba(168,85,247,0.5)]">💬 Чат</button>
-            <div class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded hidden sm:block">🟢 <span id="online-count">0</span></div>
             <button onclick="claimBonus()" class="bg-green-600 px-3 py-1 rounded text-xs font-bold">Бонус</button>
             <div class="bg-gray-900 px-3 py-1 rounded border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold">0</span> 🪙</div>
         </div>
     </header>
 
-    <!-- Выпадающий ЧАТ -->
     <div id="chat-box" class="glass rounded-bl-xl rounded-br-xl">
         <div class="bg-purple-900/80 p-2 text-xs font-bold border-b border-gray-700 flex justify-between items-center">
             <span>💬 Общий чат</span>
@@ -74,7 +68,7 @@
         </div>
     </div>
 
-    <main class="flex-1 p-4 max-w-lg mx-auto w-full">
+    <main class="flex-1 p-4 max-w-2xl mx-auto w-full">
         <!-- КЕЙСЫ -->
         <div id="page-cases" class="page active">
             <h2 class="text-xl font-bold mb-4">Кейсы</h2>
@@ -157,20 +151,20 @@
         <!-- ПРОФИЛЬ -->
         <div id="page-profile" class="page">
             <div class="glass p-4 rounded-xl text-center mb-4 relative">
-                <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-purple-500 mb-2 bg-gray-800">
+                <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-purple-500 mb-2 bg-gray-800">
                     <img id="p-avatar" class="w-full h-full object-cover hidden">
-                    <div id="p-emoji" class="w-full h-full flex items-center justify-center text-4xl">🦄</div>
+                    <div id="p-emoji" class="w-full h-full flex items-center justify-center text-5xl">🦄</div>
                 </div>
                 <label class="text-xs bg-purple-600 px-3 py-1 rounded-full cursor-pointer inline-block mb-2">
                     Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
                 </label>
-                <h2 class="text-lg font-bold" id="p-name">Loading...</h2>
+                <h2 class="text-xl font-bold" id="p-name">Loading...</h2>
             </div>
             <div class="flex justify-between items-center mb-2">
                 <h3 class="font-bold">Инвентарь</h3>
                 <button onclick="sellAll()" class="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded border border-red-500/30">Продать всё</button>
             </div>
-            <div id="inv-grid" class="grid grid-cols-3 gap-2"></div>
+            <div id="inv-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
         </div>
     </main>
 
@@ -203,7 +197,7 @@
             <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-2 right-3 text-xl">&times;</button>
             <h3 id="m-title" class="text-center font-bold mb-4">Кейс</h3>
             
-            <div id="m-preview" class="grid grid-cols-2 gap-2 mb-4"></div>
+            <div id="m-preview" class="grid grid-cols-2 gap-2 mb-4 max-h-60 overflow-y-auto"></div>
             
             <div id="m-roulette" class="hidden">
                 <div class="roulette-box mb-2">
@@ -230,7 +224,6 @@
         let user = null, socket = null, inv = [], currentCase = null;
         let jpId = null, jpPlayers = [];
 
-        // Проверка при загрузке
         if(token) { 
             document.getElementById('auth-modal').classList.add('hidden'); 
             init(); 
@@ -259,8 +252,7 @@
                 
                 document.getElementById('a-err').classList.add('hidden');
                 document.getElementById('auth-modal').classList.add('hidden'); 
-                
-                init(); // Запускаем игру
+                init();
             } catch(e) { 
                 const err = document.getElementById('a-err'); 
                 err.textContent = e.message; 
@@ -270,53 +262,33 @@
 
         async function init() {
             try {
-                // Если тут ошибка, мы не выходим из аккаунта, а просто показываем в консоли
                 user = await req('/api/clicker/state');
                 updateBal(user.balance);
                 loadCases();
-                
                 if(!socket) {
                     socket = io({ auth: { token } });
-                    
                     socket.on('online', d => document.getElementById('online-count').textContent = d.count);
-                    
                     socket.on('drop', d => {
                         const live = document.getElementById('live-drops');
                         if(live.querySelector('.italic')) live.innerHTML = '';
                         live.innerHTML = `<div class="bg-gray-800 px-3 py-1 rounded-full border border-gray-700 flex items-center gap-1"><span>${d.avatar}</span> <b>${d.username}</b> выбил <b style="color:${d.color}">${d.pony}</b> <span class="text-gray-500">(${d.source})</span></div>` + live.innerHTML;
                     });
-
                     socket.on('chat', d => {
                         const box = document.getElementById('chat-messages');
                         box.innerHTML += `<div class="chat-msg"><span class="chat-user">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
                         box.scrollTop = box.scrollHeight;
                     });
-
                     socket.on('jackpot_update', d => { 
                         jpId = d.id; document.getElementById('jp-total').textContent = d.total + ' 🪙';
                         jpPlayers = d.players;
                         renderJpWheel();
                         document.getElementById('jp-players').innerHTML = d.players.map(p => `<div class="flex justify-between bg-gray-800 p-2 rounded text-xs"><span>${p.avatar} ${p.username}</span><span class="text-yellow-400">${p.amount}🪙</span></div>`).join('');
                     });
-
-                    socket.on('jackpot_finish', d => {
-                        document.getElementById('jp-winner').textContent = d.winner.username;
-                        playSfx('win'); confetti();
-                        setTimeout(() => { document.getElementById('jp-winner').textContent = '???'; }, 5000);
-                    });
                 }
-            } catch(e) { 
-                console.error("Ошибка init:", e); 
-                // Если токен протух, выкидываем
-                if(e.message.includes('токен') || e.message.includes('Юзер')) {
-                    localStorage.removeItem('pony_token'); 
-                    location.reload();
-                }
-            }
+            } catch(e) { console.error("Init error:", e); }
         }
 
         function updateBal(v) { document.getElementById('balance').textContent = v; if(user) user.balance = v; }
-        
         function switchTab(t) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
@@ -324,13 +296,11 @@
             if(t==='upgrade') loadUpgrade();
             if(t==='battles') loadJackpot();
         }
-
         function toggleChat() { document.getElementById('chat-box').classList.toggle('open'); }
         function sendChat() {
             const inp = document.getElementById('chat-input');
-            if(inp.value && socket) { socket.emit('chat', {username: user.username, text: inp.value}); inp.value = ''; }
+            if(inp.value && socket && user) { socket.emit('chat', {username: user.username, text: inp.value}); inp.value = ''; }
         }
-
         async function claimBonus() { try { const r = await req('/api/user/bonus','POST'); updateBal(r.balance); playSfx('win'); } catch(e) { alert(e.message); } }
 
         // --- КЕЙСЫ ---
@@ -338,11 +308,10 @@
             const cs = await req('/api/cases/list');
             document.getElementById('cases-grid').innerHTML = cs.map(c => `
                 <div onclick="previewCase('${c.id}', ${c.price})" class="glass p-3 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer">
-                    <span class="text-4xl mb-1">📦</span><span class="font-bold text-xs">${c.name}</span>
+                    <span class="text-4xl mb-1">📦</span><span class="font-bold text-xs text-center">${c.name}</span>
                     <span class="text-yellow-400 text-xs mt-1">${c.price}🪙</span>
                 </div>`).join('');
         }
-
         async function previewCase(id, price) {
             currentCase = id;
             document.getElementById('modal-case').classList.remove('hidden');
@@ -353,7 +322,6 @@
             const drops = await req(`/api/cases/preview/${id}`);
             document.getElementById('m-preview').innerHTML = drops.map(d => `<div class="bg-gray-900 p-2 rounded text-xs border-l-2" style="border-color:${d.color}">${d.name} <br><span class="text-yellow-400">${d.price}🪙</span></div>`).join('');
         }
-
         async function openCase(id) {
             const btn = document.getElementById('m-open-btn'); btn.disabled = true;
             playSfx('spin', true);
@@ -362,10 +330,8 @@
                 updateBal(res.balance);
                 document.getElementById('m-preview').classList.add('hidden');
                 document.getElementById('m-roulette').classList.remove('hidden');
-                
                 const strip = document.getElementById('m-strip');
                 strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
-                
                 const pool = await req(`/api/cases/preview/${id}`);
                 let html = '';
                 for(let i=0; i<50; i++) {
@@ -373,11 +339,9 @@
                     html += `<div class="roulette-item" style="border-color:${item.color}"><div class="text-[9px] text-center font-bold">${item.pony_id || item.name}</div></div>`;
                 }
                 strip.innerHTML = html;
-
                 setTimeout(() => {
                     strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
                     strip.style.transform = `translateX(-${(45 * 100) - (strip.parentElement.offsetWidth / 2) + 45}px)`;
-                    
                     setTimeout(() => {
                         playSfx('spin', false);
                         const r = document.getElementById('m-result'); r.style.color = res.color; r.textContent = `${res.pony_id} (${res.price}🪙)`;
@@ -394,7 +358,6 @@
             updateBal(d.user.balance);
             document.getElementById('p-name').textContent = d.user.username;
             inv = d.inventory;
-            
             if(d.user.avatar && d.user.avatar.startsWith('data:')) {
                 document.getElementById('p-avatar').src = d.user.avatar;
                 document.getElementById('p-avatar').classList.remove('hidden');
@@ -402,7 +365,6 @@
             } else {
                 document.getElementById('p-emoji').textContent = d.user.avatar || '🦄';
             }
-
             document.getElementById('inv-grid').innerHTML = inv.map(i => `
                 <div class="glass p-2 rounded border-t-2 text-xs" style="border-color:${i.color}">
                     <div class="truncate font-bold">${i.name}</div>
@@ -410,10 +372,8 @@
                     <button onclick="sell(${i.id})" class="w-full bg-gray-900 mt-1 rounded py-1 hover:bg-red-600">Продать</button>
                 </div>`).join('');
         }
-
         async function sell(id) { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); }
         async function sellAll() { if(!confirm("Всё?")) return; await req('/api/user/inventory/sell_all','POST'); loadProfile(); }
-
         async function uploadAvatar(input) {
             const file = input.files[0]; if(!file) return;
             const fd = new FormData(); fd.append("file", file);
@@ -433,37 +393,27 @@
             const sel = document.getElementById('upg-select');
             sel.innerHTML = '<option value="">Выбери предмет...</option>' + inv.map(i => `<option value="${i.id}" data-price="${i.price}" data-name="${i.name}">${i.name} (${i.price}🪙)</option>`).join('');
         }
-
         function updateUpgradeUI() {
             const sel = document.getElementById('upg-select');
             const opt = sel.options[sel.selectedIndex];
             if(!opt.value) return;
-            
             const price = parseInt(opt.getAttribute('data-price'));
             const targetPrice = price * 2;
             document.getElementById('upg-my-item').textContent = opt.getAttribute('data-name');
             document.getElementById('upg-target-item').textContent = `Предмет за ${targetPrice}🪙`;
-            
             const chance = (price / targetPrice) * 100;
             document.getElementById('upg-chance').textContent = chance + '%';
             document.getElementById('upg-wheel').style.background = `conic-gradient(#22c55e 0% ${chance}%, #ef4444 ${chance}% 100%)`;
         }
-
         async function doUpgrade() {
             const id = document.getElementById('upg-select').value;
             if(!id) return alert("Выбери предмет");
-            
             const arrow = document.getElementById('upg-arrow');
             arrow.style.transform = 'rotate(0deg)';
             playSfx('spin', true);
-            
             setTimeout(() => {
                 arrow.style.transform = 'rotate(1440deg)';
-                setTimeout(() => {
-                    playSfx('spin', false);
-                    alert("Апгрейд работает (демо).");
-                    arrow.style.transform = 'rotate(0deg)';
-                }, 3000);
+                setTimeout(() => { playSfx('spin', false); alert("Апгрейд работает (демо)."); arrow.style.transform = 'rotate(0deg)'; }, 3000);
             }, 50);
         }
 
@@ -480,7 +430,6 @@
                 document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join('');
             } catch(e) { alert(e.message); }
         }
-
         async function clickMine(i) {
             try {
                 const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i});
@@ -494,6 +443,14 @@
                     document.getElementById('mines-multi').textContent = r.multiplier + 'x';
                     document.getElementById('mines-profit').textContent = r.next_win + ' 🪙';
                 }
+            } catch(e) { alert(e.message); }
+        }
+        async function cashoutMines() {
+            try {
+                const r = await req('/api/mines/cashout', 'POST', {game_id: mId});
+                updateBal(r.balance); playSfx('win');
+                document.getElementById('mines-setup').classList.remove('hidden');
+                document.getElementById('mines-game').classList.add('hidden');
             } catch(e) { alert(e.message); }
         }
 
@@ -510,11 +467,9 @@
                 jpId = r.id;
             }
         }
-
         function renderJpWheel() {
             let total = jpPlayers.reduce((s,p) => s+p.amount, 0) || 1;
-            let deg = 0;
-            let html = '';
+            let deg = 0; let html = '';
             jpPlayers.forEach(p => {
                 let slice = (p.amount / total) * 360;
                 html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, #8b5cf6 ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`;
@@ -522,12 +477,10 @@
             });
             document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-xs text-gray-400">Победитель</span><span class="font-bold text-sm" id="jp-winner">???</span></div>` + html;
         }
-
         async function betJackpot() {
             const amt = parseInt(document.getElementById('jp-bet').value);
             try { const r = await req(`/api/battles/bet/${jpId}`, 'POST', {amount: amt}); updateBal(r.balance); loadJackpot(); } catch(e) { alert(e.message); }
         }
-
         async function startJackpot() {
             try { await req(`/api/battles/start/${jpId}`, 'POST'); } catch(e) { alert(e.message); }
         }
