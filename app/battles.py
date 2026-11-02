@@ -2,71 +2,116 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import random
-from .db import get_db
+import asyncio
+import time
+
+from .db import get_db, SessionLocal
 from .models import User, InventoryItem
 from .auth import current_user
-from .games import CASES, pick_pony, gen_seed, roll_ticket
+from .games import CASES, pick_pony, gen_seed
 from .clicker import apply_passive
 from .ws import sio, broadcast_drop
 
 router = APIRouter()
 
-# --- ДЖЕКПОТ (Общий банк) ---
-JACKPOTS = {}
+# --- ДЖЕКПОТ (Общий банк с таймером) ---
+JACKPOTS = {
+    "global_jp": {"id": "global_jp", "status": "waiting", "total": 0, "players": [], "end_time": 0}
+}
+
 class BetIn(BaseModel):
     amount: int
 
 @router.get("/active")
 def get_active():
-    return [{"id": k, "status": v["status"], "total": v["total"], "players": v["players"]} for k, v in JACKPOTS.items() if v["status"] == "waiting"]
+    return [JACKPOTS["global_jp"]]
 
-@router.post("/create")
-async def create_jackpot(user: User = Depends(current_user)):
-    j_id = gen_seed()[:6]
-    JACKPOTS[j_id] = {"id": j_id, "status": "waiting", "total": 0, "players": []}
-    await sio.emit("jackpot_update", JACKPOTS[j_id])
-    return {"id": j_id}
-
-@router.post("/bet/{j_id}")
-async def place_bet(j_id: str, data: BetIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    j = JACKPOTS.get(j_id)
-    if not j or j["status"] != "waiting": raise HTTPException(400, "Джекпот недоступен")
-    if data.amount < 100: raise HTTPException(400, "Мин. ставка 100")
+@router.post("/bet")
+async def place_bet(data: BetIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    j = JACKPOTS["global_jp"]
     
+    if j["status"] not in ["waiting", "countdown"]:
+        raise HTTPException(400, "Джекпот уже крутится, подождите!")
+        
+    if data.amount < 100:
+        raise HTTPException(400, "Минимальная ставка 100 🪙")
+        
     apply_passive(user)
-    if user.balance < data.amount: raise HTTPException(400, "Мало денег")
-    user.balance -= data.amount; db.commit()
+    if user.balance < data.amount:
+        raise HTTPException(400, "Недостаточно средств")
+        
+    user.balance -= data.amount
+    db.commit()
     
+    # Обновляем или добавляем игрока
     player = next((p for p in j["players"] if p["id"] == user.id), None)
-    if player: player["amount"] += data.amount
-    else: j["players"].append({"id": user.id, "username": user.username, "avatar": user.avatar, "amount": data.amount})
-    
+    if player:
+        player["amount"] += data.amount
+    else:
+        j["players"].append({"id": user.id, "username": user.username, "avatar": user.avatar, "amount": data.amount})
+        
     j["total"] += data.amount
+    
+    # Если это второй игрок - запускаем таймер
+    if j["status"] == "waiting" and len(j["players"]) >= 2:
+        j["status"] = "countdown"
+        j["end_time"] = time.time() + 15
+        asyncio.create_task(run_jackpot_timer())
+        
     await sio.emit("jackpot_update", j)
-    return {"balance": user.balance}
+    return {"balance": user.balance, "jackpot": j}
 
-@router.post("/start/{j_id}")
-async def start_jackpot(j_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    j = JACKPOTS.get(j_id)
-    if not j or len(j["players"]) < 2: raise HTTPException(400, "Нужно 2+ игрока")
-    
-    j["status"] = "playing"
+async def run_jackpot_timer():
+    j = JACKPOTS["global_jp"]
+    while time.time() < j["end_time"]:
+        await asyncio.sleep(1)
+        
+    # Таймер вышел - крутим!
+    j["status"] = "spinning"
     await sio.emit("jackpot_update", j)
     
+    # Задержка на анимацию прокрутки
+    await asyncio.sleep(5) 
+    
+    # Выбираем победителя
     total = j["total"]
     weights = [p["amount"] / total for p in j["players"]]
     winner_idx = random.choices(range(len(j["players"])), weights=weights, k=1)[0]
     winner = j["players"][winner_idx]
     
-    w_user = db.get(User, winner["id"])
-    w_user.balance += int(total * 0.95)
-    db.commit()
-    
     j["status"] = "finished"
     j["winner"] = winner
+    
+    # Начисляем бабки победителю
+    db = SessionLocal()
+    try:
+        w_user = db.get(User, winner["id"])
+        if w_user:
+            # Оставляем 5% комиссии казино
+            win_amount = int(total * 0.95)
+            w_user.balance += win_amount
+            
+            # Записываем предмет в инвентарь
+            new_item = InventoryItem(
+                user_id=w_user.id, 
+                pony_id=f"Jackpot Win ({winner['username']})", 
+                rarity="legendary", 
+                price=win_amount, 
+                color="#facc15"
+            )
+            db.add(new_item)
+            db.commit()
+    finally:
+        db.close()
+    
     await sio.emit("jackpot_finish", j)
     await broadcast_drop(winner["username"], winner["avatar"], "ДЖЕКПОТ!", int(total*0.95), "#facc15", "Джекпот")
-    return {"status": "ok"}
+    
+    # Ждем 5 секунд и сбрасываем
+    await asyncio.sleep(5)
+    JACKPOTS["global_jp"] = {"id": "global_jp", "status": "waiting", "total": 0, "players": [], "end_time": 0}
+    await sio.emit("jackpot_update", JACKPOTS["global_jp"])
+
 
 # --- КЕЙС-БАТЛ 1 на 1 ---
 CASE_BATTLES = {}
@@ -94,6 +139,8 @@ async def create_1v1(data: Create1v1, user: User = Depends(current_user), db: Se
 async def join_1v1(b_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     b = CASE_BATTLES.get(b_id)
     if not b or b["status"] != "waiting": raise HTTPException(400, "Недоступно")
+    if b["players"][0]["id"] == user.id: raise HTTPException(400, "Вы создатель лобби")
+    
     price = CASES[b["case_id"]]["price"]
     apply_passive(user)
     if user.balance < price: raise HTTPException(400, "Мало денег")
@@ -112,7 +159,7 @@ async def join_1v1(b_id: str, user: User = Depends(current_user), db: Session = 
         results.append({"player": p, "item": name, "price": price_drop, "color": color})
         total_val += price_drop
     
-    # Определяем победителя
+    # Победитель
     winner_res = max(results, key=lambda x: x["price"])
     winner = winner_res["player"]
     
