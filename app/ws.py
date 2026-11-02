@@ -20,7 +20,12 @@ async def disconnect(sid):
 
 @sio.on("chat")
 async def on_chat(sid, data):
-    await sio.emit("chat", {"username": data.get("username", "Anon"), "text": data.get("text", "")[:100]})
+    # Передаем аватарку
+    await sio.emit("chat", {
+        "username": data.get("username", "Anon"), 
+        "avatar": data.get("avatar", "🦄"),
+        "text": data.get("text", "")[:100]
+    })
 
 async def broadcast_drop(username: str, avatar: str, pony_id: str, price: int, color: str, source: str):
     await sio.emit("drop", {"username": username, "avatar": avatar, "pony": pony_id, "price": price, "color": color, "source": source})
