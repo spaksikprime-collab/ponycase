@@ -2,13 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import random
+import math
 from .db import get_db
-from .models import User
+from .models import User, GameHistory
 from .auth import current_user
 from .clicker import apply_passive
 from .games import gen_seed
 
 router = APIRouter()
+
+# Храним активные игры в памяти (сбрасывается при перезагрузке сервера)
 MINES_GAMES = {}
 
 class StartMines(BaseModel):
@@ -19,57 +22,148 @@ class ClickCell(BaseModel):
     game_id: str
     cell: int
 
+class Cashout(BaseModel):
+    game_id: str
+
 @router.post("/start")
 def start_mines(data: StartMines, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if data.bet < 10: raise HTTPException(400, "Мин. ставка 10")
-    if data.mines not in [3, 5, 10]: raise HTTPException(400, "Неверное кол-во мин")
+    if data.bet < 10: 
+        raise HTTPException(400, "Минимальная ставка 10 🪙")
+        
+    if data.mines not in [3, 5, 10]: 
+        raise HTTPException(400, "Неверное количество мин (доступно 3, 5 или 10)")
     
-    apply_passive(user, db) # ИСПРАВЛЕНО
+    apply_passive(user, db)
     
-    if user.balance < data.bet: raise HTTPException(400, "Мало денег")
-    user.balance -= data.bet; db.commit()
+    if user.balance < data.bet: 
+        raise HTTPException(400, "Недостаточно средств")
+        
+    user.balance -= data.bet
+    db.commit()
     
     game_id = gen_seed()[:8]
-    mines_pos = set(random.sample(range(25), data.mines))
+    # Генерируем случайные позиции для мин (от 0 до 24)
+    mines_positions = set(random.sample(range(25), data.mines))
     
-    MINES_GAMES[game_id] = {"id": game_id, "user_id": user.id, "bet": data.bet, "mines_pos": mines_pos, "opened": set(), "active": True}
+    MINES_GAMES[game_id] = {
+        "id": game_id, 
+        "user_id": user.id, 
+        "bet": data.bet, 
+        "mines_pos": mines_positions, 
+        "opened": set(), 
+        "active": True,
+        "mines_count": data.mines
+    }
+    
     return {"game_id": game_id, "balance": user.balance}
 
 @router.post("/click")
 def click_cell(data: ClickCell, user: User = Depends(current_user), db: Session = Depends(get_db)):
     game = MINES_GAMES.get(data.game_id)
-    if not game or not game["active"] or game["user_id"] != user.id: raise HTTPException(400, "Игра не найдена")
-    if data.cell in game["opened"]: raise HTTPException(400, "Уже открыто")
     
+    if not game or not game["active"] or game["user_id"] != user.id: 
+        raise HTTPException(400, "Игра не найдена или уже завершена")
+        
+    if data.cell in game["opened"]: 
+        raise HTTPException(400, "Эта ячейка уже открыта")
+    
+    # Попал на мину?
     if data.cell in game["mines_pos"]:
         game["active"] = False
-        return {"status": "boom", "mines": list(game["mines_pos"])}
+        
+        # Запись в историю (Проигрыш)
+        db.add(GameHistory(
+            user_id=user.id, 
+            game_type="Мины", 
+            item_name="Бомба 💥", 
+            price=0, 
+            result_text=f"Проигрыш (Ставка: {game['bet']})"
+        ))
+        db.commit()
+        
+        return {
+            "status": "boom", 
+            "mines": list(game["mines_pos"])
+        }
     else:
+        # Безопасная ячейка
         game["opened"].add(data.cell)
         opened_count = len(game["opened"])
-        total_safe = 25 - len(game["mines_pos"])
-        multiplier = 1 + (opened_count / total_safe) * (25 / total_safe)
+        total_safe = 25 - game["mines_count"]
+        
+        # Точная математика множителя (с 5% комиссией казино)
+        # Шанс выжить = C(safe, opened) / C(25, opened)
+        # Множитель = (1 / Шанс) * 0.95
+        try:
+            prob = math.comb(total_safe, opened_count) / math.comb(25, opened_count)
+            multiplier = round((1 / prob) * 0.95, 2)
+        except Exception:
+            multiplier = 1.0
+            
         win_amount = int(game["bet"] * multiplier)
         
+        # Если открыл все безопасные ячейки - автоматический выигрыш
         if opened_count == total_safe:
             game["active"] = False
-            user.balance += win_amount; db.commit()
-            return {"status": "win", "amount": win_amount, "balance": user.balance}
+            user.balance += win_amount
             
-        return {"status": "ok", "multiplier": round(multiplier, 2), "next_win": win_amount}
+            db.add(GameHistory(
+                user_id=user.id, 
+                game_type="Мины", 
+                item_name="Джекпот 💎", 
+                price=win_amount, 
+                result_text=f"Выигрыш x{multiplier}"
+            ))
+            db.commit()
+            
+            return {
+                "status": "win", 
+                "amount": win_amount, 
+                "balance": user.balance
+            }
+            
+        return {
+            "status": "ok", 
+            "multiplier": multiplier, 
+            "next_win": win_amount
+        }
 
 @router.post("/cashout")
-def cashout(data: dict, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    game_id = data.get("game_id")
-    game = MINES_GAMES.get(game_id)
-    if not game or not game["active"] or game["user_id"] != user.id: raise HTTPException(400, "Игра не найдена")
-    if len(game["opened"]) == 0: raise HTTPException(400, "Открой клетку")
+def cashout(data: Cashout, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    game = MINES_GAMES.get(data.game_id)
     
-    total_safe = 25 - len(game["mines_pos"])
-    multiplier = 1 + (len(game["opened"]) / total_safe) * (25 / total_safe)
+    if not game or not game["active"] or game["user_id"] != user.id: 
+        raise HTTPException(400, "Игра не найдена или уже завершена")
+        
+    opened_count = len(game["opened"])
+    if opened_count == 0: 
+        raise HTTPException(400, "Вы должны открыть хотя бы одну ячейку")
+    
+    total_safe = 25 - game["mines_count"]
+    
+    try:
+        prob = math.comb(total_safe, opened_count) / math.comb(25, opened_count)
+        multiplier = round((1 / prob) * 0.95, 2)
+    except Exception:
+        multiplier = 1.0
+        
     win_amount = int(game["bet"] * multiplier)
     
     game["active"] = False
     user.balance += win_amount
+    
+    # Запись в историю
+    db.add(GameHistory(
+        user_id=user.id, 
+        game_type="Мины", 
+        item_name="Забрал 💰", 
+        price=win_amount, 
+        result_text=f"Выигрыш x{multiplier}"
+    ))
     db.commit()
-    return {"status": "cashout", "amount": win_amount, "balance": user.balance}
+    
+    return {
+        "status": "cashout", 
+        "amount": win_amount, 
+        "balance": user.balance
+    }
