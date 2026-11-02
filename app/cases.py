@@ -27,13 +27,15 @@ def preview_case(case_id: str):
 async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if case_id not in CASES: 
         raise HTTPException(404, "Кейс не найден")
+    
     if data.count < 1 or data.count > 10: 
-        raise HTTPException(400, "От 1 до 10")
+        raise HTTPException(400, "Можно открывать от 1 до 10 кейсов за раз")
     
     case = CASES[case_id]
     total_price = case["price"] * data.count
     
     apply_passive(user, db)
+    
     if user.balance < total_price: 
         raise HTTPException(400, "Недостаточно копыт")
 
@@ -49,30 +51,62 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
             rarity = pick_rarity(case_id, ticket)
             pony_id, price, color = pick_pony(rarity)
 
-            item = InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color)
+            # Добавляем предмет в инвентарь
+            item = InventoryItem(
+                user_id=user.id, 
+                pony_id=pony_id, 
+                rarity=rarity, 
+                price=price, 
+                color=color
+            )
             db.add(item)
-            db.flush()
+            db.flush() # Получаем ID
             
+            # Записываем открытие кейса
             db.add(CaseOpen(
-                user_id=user.id, case_id=case_id, pony_id=pony_id, rarity=rarity, 
-                price=case["price"], server_seed=server_seed, client_seed=client_seed, 
-                nonce=user.nonce, ticket=ticket
+                user_id=user.id, 
+                case_id=case_id, 
+                pony_id=pony_id, 
+                rarity=rarity, 
+                price=case["price"], 
+                server_seed=server_seed, 
+                client_seed=client_seed, 
+                nonce=user.nonce, 
+                ticket=ticket
             ))
 
             # Запись в историю
             db.add(GameHistory(
-                user_id=user.id, game_type="Кейс", item_name=pony_id, 
-                price=price, result_text=f"Открыл {case['name']}"
+                user_id=user.id, 
+                game_type="Кейс", 
+                item_name=pony_id, 
+                price=price, 
+                result_text=f"Открыл {case['name']}"
             ))
             
+            # Обновляем лучший дроп
             if price > user.best_drop_price:
                 user.best_drop_price = price
                 user.best_drop_name = pony_id
             
-            results.append({"id": item.id, "pony_id": pony_id, "rarity": rarity, "price": price, "color": color})
+            results.append({
+                "id": item.id, 
+                "pony_id": pony_id, 
+                "rarity": rarity, 
+                "price": price, 
+                "color": color
+            })
             
+            # Отправляем в Live-ленту только дорогие дропы
             if price > 5000:
-                await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
+                await broadcast_drop(
+                    user.username, 
+                    user.avatar, 
+                    pony_id, 
+                    price, 
+                    color, 
+                    f"Кейс: {case['name']}"
+                )
 
         db.commit()
         return {"results": results, "balance": user.balance}
