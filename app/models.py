@@ -7,8 +7,8 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(32), unique=True, index=True, nullable=False)
     email = Column(String(128), unique=True, index=True, nullable=False)
-    password_hash = Column(String(256), nullable=True) # Может быть пустым, если вход через Google
-    avatar = Column(Text, default="🦄") # Тут будет ссылка или эмодзи
+    password_hash = Column(String(256), nullable=True)
+    avatar = Column(Text, default="🦄")
     balance = Column(BigInteger, default=100, nullable=False)
     total_clicks = Column(BigInteger, default=0)
     click_power = Column(Integer, default=1)
@@ -17,8 +17,9 @@ class User(Base):
     prestige = Column(Integer, default=0)
     nonce = Column(BigInteger, default=0)
     is_admin = Column(Boolean, default=False)
-    is_verified = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=True) # <--- Всегда True
     verification_code = Column(String(10), nullable=True)
+    last_bonus = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_passive_tick = Column(DateTime, default=datetime.datetime.utcnow)
 
