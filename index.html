@@ -377,6 +377,21 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ (КРАСИВАЯ) -->
+    <div id="modal-confirm" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-[110] backdrop-blur-md">
+        <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center border border-red-500/30">
+            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">⚠️</span>
+            </div>
+            <h3 class="text-xl font-black mb-2 text-white" id="confirm-title">Вы уверены?</h3>
+            <p class="text-sm text-gray-300 mb-6" id="confirm-text">Действие нельзя отменить.</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirm()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold text-sm transition">Отмена</button>
+                <button id="confirm-btn" onclick="executeConfirm()" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(239,68,68,0.4)] transition">Да</button>
+            </div>
+        </div>
+    </div>
+
     <!-- МОДАЛКА РУЛЕТКИ (Мульти + Продажа) -->
     <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md overflow-y-auto">
         <div class="w-full max-w-4xl my-auto">
@@ -386,12 +401,19 @@
             <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto mb-4"></div>
             
             <!-- Результаты (Забрать/Продать) -->
-            <div id="spin-results" class="hidden flex-col items-center mb-6">
-                <h4 class="text-lg font-bold text-white mb-3">Твои дропы:</h4>
-                <div id="results-grid" class="flex flex-wrap justify-center gap-3"></div>
-                <div class="flex gap-3 mt-6">
-                    <button onclick="sellAllDrops()" class="bg-red-600 hover:bg-red-500 px-6 py-2 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(239,68,68,0.3)] transition">ПРОДАТЬ ВСЁ</button>
-                    <button onclick="closeSpinModal()" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-xl font-bold text-sm border border-gray-500 transition">ЗАБРАТЬ В ИНВЕНТАРЬ</button>
+            <div id="spin-results" class="hidden flex-col items-center mb-6 w-full max-w-2xl mx-auto">
+                
+                <!-- Общая стоимость -->
+                <div class="bg-[#1A202C] px-6 py-2 rounded-full border border-purple-500/50 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)] flex items-center gap-2">
+                    <span class="text-gray-400 text-sm">Общая стоимость:</span>
+                    <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
+                </div>
+
+                <div id="results-grid" class="flex flex-wrap justify-center gap-3 w-full"></div>
+                
+                <div class="flex gap-3 mt-6 w-full max-w-md">
+                    <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 hover:bg-red-500 px-4 py-3 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(239,68,68,0.3)] transition">ПРОДАТЬ ВСЁ</button>
+                    <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl font-black text-sm border border-gray-500 transition">ЗАБРАТЬ</button>
                 </div>
             </div>
 
@@ -459,6 +481,24 @@
             c.appendChild(d); setTimeout(() => d.remove(), 3000); 
         }
 
+        // --- КАСТОМНЫЙ CONFIRM ---
+        let confirmCallback = null;
+        function showConfirm(title, text, btnText, callback) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-text').textContent = text;
+            document.getElementById('confirm-btn').textContent = btnText;
+            confirmCallback = callback;
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+        function closeConfirm() {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            confirmCallback = null;
+        }
+        function executeConfirm() {
+            if(confirmCallback) confirmCallback();
+            closeConfirm();
+        }
+
         const API = '';
         let token = localStorage.getItem('pony_token');
         let user = null, socket = null, inv = [];
@@ -466,7 +506,7 @@
         let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
         let currentCase = null;
         let currentCaseData = [];
-        let currentDrops = []; // Храним дропы для продажи
+        let currentDrops = [];
 
         if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } else { document.getElementById('auth-modal').classList.remove('hidden'); }
 
@@ -708,12 +748,14 @@
             const btn = document.getElementById('spin-close-btn');
             btn.classList.add('hidden');
             document.getElementById('spin-results').classList.add('hidden');
+            document.getElementById('spin-results').classList.remove('flex');
             
             const isFast = document.getElementById('cd-fast').checked;
             const count = parseInt(document.getElementById('cd-count').value);
             
             const container = document.getElementById('spin-container');
             container.innerHTML = '';
+            container.classList.remove('hidden');
             
             const pool = currentCaseData.length > 0 ? currentCaseData : [{name: 'Pony', color: '#fff'}];
 
@@ -723,7 +765,7 @@
             try {
                 const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count});
                 updateBal(res.balance);
-                currentDrops = res.results; // Сохраняем для продажи
+                currentDrops = res.results;
                 
                 if(!res.results || res.results.length === 0) throw new Error("Пустой результат");
 
@@ -734,26 +776,28 @@
                     showSpinResults(res.results);
                 } else {
                     startSpinSfx();
-                    let promises = [];
                     
+                    let fullHtml = '';
                     for(let i=0; i<count; i++) {
-                        const rowId = `row-${i}`;
-                        container.innerHTML += `<div class="roulette-wrapper" id="${rowId}"><div class="roulette-line"></div><div class="roulette-strip" id="${rowId}-strip"></div></div>`;
-                        
-                        const strip = document.getElementById(`${rowId}-strip`);
-                        strip.style.transition = 'none'; strip.style.transform = 'translate3d(0, 0, 0)';
+                        fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
+                    }
+                    container.innerHTML = fullHtml;
+
+                    let promises = [];
+                    for(let i=0; i<count; i++) {
+                        const strip = document.getElementById(`row-${i}-strip`);
                         
                         let html = '';
                         for(let j=0; j<50; j++) {
                             const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)];
                             const name = item ? (item.pony_id || item.name) : '???';
                             const color = item ? item.color : '#333';
-                            html += `<div class="roulette-item" style="border-color:${color}"><div class="text-[10px] text-center font-bold px-1">${name}</div></div>`;
+                            html += `<div class="roulette-item" style="border-color:${color}"><div class="text-[10px] text-center font-bold px-1 text-white">${name}</div></div>`;
                         }
                         strip.innerHTML = html;
                         
-                        // Форсируем рефлоу для каждого ряда
-                        void strip.offsetWidth;
+                        strip.style.transition = 'none'; 
+                        strip.style.transform = 'translate3d(0, 0, 0)';
 
                         promises.push(new Promise(resolve => {
                             setTimeout(() => {
@@ -764,14 +808,14 @@
                                 strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
                                 strip.style.transform = `translate3d(-${offset}px, 0, 0)`;
                                 setTimeout(resolve, 6200);
-                            }, 50);
+                            }, 100);
                         }));
                     }
                     
                     Promise.all(promises).then(() => {
                         stopSpinSfx(); playSfx('win'); confetti();
                         document.getElementById('spin-title').textContent = "Твои дропы!";
-                        document.getElementById('spin-container').classList.add('hidden'); // Прячем рулетки
+                        document.getElementById('spin-container').classList.add('hidden');
                         showSpinResults(res.results);
                     });
                 }
@@ -784,16 +828,24 @@
 
         function showSpinResults(results) {
             const grid = document.getElementById('results-grid');
-            grid.innerHTML = results.map((item, index) => `
+            let totalValue = 0;
+
+            grid.innerHTML = results.map((item, index) => {
+                totalValue += item.price;
+                return `
                 <div class="glass p-3 rounded-xl flex flex-col items-center min-w-[120px] border-t-2" style="border-color:${item.color}">
-                    <div class="text-xs font-bold mb-1 text-center">${item.pony_id}</div>
+                    <div class="text-xs font-bold mb-1 text-center text-white">${item.pony_id}</div>
                     <div class="text-yellow-400 font-bold mb-3">${item.price} 🪙</div>
                     <div class="flex gap-1 w-full" id="drop-actions-${index}">
                         <button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 hover:text-white transition">Продать</button>
                         <button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 hover:text-white transition">Забрать</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
+
+            // Обновляем общую сумму и кнопку
+            document.getElementById('total-drops-value').textContent = totalValue + ' 🪙';
+            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${totalValue} 🪙`;
             
             document.getElementById('spin-results').classList.remove('hidden');
             document.getElementById('spin-results').classList.add('flex');
@@ -802,13 +854,16 @@
         async function sellDropItem(id, price, index) {
             try {
                 await req(`/api/user/inventory/sell/${id}`, 'POST');
-                updateBal(user.balance + price); // Оптимистичное обновление
+                updateBal(user.balance + price);
                 const actions = document.getElementById(`drop-actions-${index}`);
                 actions.innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`;
                 playSfx('win');
-                // Обновляем реальный баланс с сервера
+                
                 const state = await req('/api/clicker/state');
                 updateBal(state.balance);
+                
+                // Пересчитываем сумму оставшихся предметов
+                recalcTotalDrops();
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
@@ -816,21 +871,54 @@
             const actions = document.getElementById(`drop-actions-${index}`);
             actions.innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`;
             playSfx('click');
+            // Пересчитываем сумму
+            recalcTotalDrops();
         }
 
-        async function sellAllDrops() {
-            if(!confirm("Продать все выпавшие предметы?")) return;
-            let totalGained = 0;
-            for (const item of currentDrops) {
-                try {
-                    await req(`/api/user/inventory/sell/${item.id}`, 'POST');
-                    totalGained += item.price;
-                } catch(e) {}
-            }
-            const state = await req('/api/clicker/state');
-            updateBal(state.balance);
-            showToast(`Продано на ${totalGained} 🪙!`, 'win');
-            closeSpinModal();
+        function recalcTotalDrops() {
+            let newTotal = 0;
+            currentDrops.forEach((item, idx) => {
+                const actions = document.getElementById(`drop-actions-${idx}`);
+                // Если есть кнопка "Продать" или "Забрать", значит предмет еще не тронут (или "В инвентаре")
+                if(actions && !actions.innerHTML.includes('Продано')) {
+                    newTotal += item.price;
+                }
+            });
+            document.getElementById('total-drops-value').textContent = newTotal + ' 🪙';
+            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`;
+            if(newTotal === 0) document.getElementById('btn-sell-all-drops').classList.add('opacity-50');
+            else document.getElementById('btn-sell-all-drops').classList.remove('opacity-50');
+        }
+
+        function sellAllDrops() {
+            let totalValue = 0;
+            currentDrops.forEach((item, idx) => {
+                const actions = document.getElementById(`drop-actions-${idx}`);
+                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) {
+                    totalValue += item.price;
+                }
+            });
+
+            if(totalValue === 0) return showToast("Нечего продавать", 'lose');
+
+            showConfirm("Продать все дропы?", `Вы получите ${totalValue} 🪙 за все выпавшие предметы.`, "Продать", async () => {
+                let totalGained = 0;
+                for (let i = 0; i < currentDrops.length; i++) {
+                    const item = currentDrops[i];
+                    const actions = document.getElementById(`drop-actions-${i}`);
+                    if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) {
+                        try {
+                            await req(`/api/user/inventory/sell/${item.id}`, 'POST');
+                            totalGained += item.price;
+                            actions.innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`;
+                        } catch(e) {}
+                    }
+                }
+                const state = await req('/api/clicker/state');
+                updateBal(state.balance);
+                showToast(`Продано на ${totalGained} 🪙!`, 'win');
+                recalcTotalDrops();
+            });
         }
 
         function closeSpinModal() {
@@ -871,7 +959,16 @@
             } catch(e) { showToast("Ошибка профиля", 'lose'); }
         }
         async function sell(id) { try { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); } catch(e) { showToast(e.message, 'lose'); } }
-        async function sellAll() { if(!confirm("Продать весь инвентарь?")) return; try { await req('/api/user/inventory/sell_all','POST'); loadProfile(); } catch(e) { showToast(e.message, 'lose'); } }
+        
+        function sellAll() {
+            showConfirm("Продать инвентарь?", "Вы продадите ВСЕ предметы из инвентаря. Это действие нельзя отменить.", "Продать всё", async () => {
+                try { 
+                    await req('/api/user/inventory/sell_all','POST'); 
+                    loadProfile(); 
+                    showToast("Инвентарь продан", 'win'); 
+                } catch(e) { showToast(e.message, 'lose'); }
+            });
+        }
         
         async function uploadAvatar(input) {
             const file = input.files[0]; if(!file) return;
