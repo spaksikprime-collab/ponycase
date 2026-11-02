@@ -1,13 +1,19 @@
 import hmac, hashlib, secrets, random
 
+PONY_NAMES = [
+    "Twilight Sparkle", "Rainbow Dash", "Pinkie Pie", "Rarity",
+    "Fluttershy", "Applejack", "Princess Celestia", "Princess Luna",
+    "Cadance", "Queen Chrysalis", "King Sombra", "Starlight Glimmer"
+]
+
 RARITIES = [
-    ("common",    500_000, "Обычная",     1),
-    ("uncommon",  250_000, "Необычная",   3),
-    ("rare",      150_000, "Редкая",      10),
-    ("epic",       70_000, "Эпическая",   50),
-    ("legendary",  25_000, "Легендарная", 250),
-    ("mythic",      4_500, "Мифическая",  2000),
-    ("celestial",     500, "Божественная", 50_000),
+    ("common",    500_000, "Обычная",     1, "#9ca3af"), # Серый
+    ("uncommon",  250_000, "Необычная",   3, "#4ade80"), # Зеленый
+    ("rare",      150_000, "Редкая",      10, "#60a5fa"), # Синий
+    ("epic",       70_000, "Эпическая",   50, "#c084fc"), # Фиолетовый
+    ("legendary",  25_000, "Легендарная", 250, "#facc15"), # Золотой
+    ("mythic",      4_500, "Мифическая",  2000, "#f87171"), # Красный
+    ("celestial",     500, "Божественная", 50000, "#f43f5e"), # Розовый неон
 ]
 RARITY_BY_ID = {r[0]: r for r in RARITIES}
 
@@ -16,7 +22,7 @@ CASES = {
                   "weights": {"common": 650, "uncommon": 250, "rare": 80, "epic": 18, "legendary": 2}},
     "royal":     {"name": "Королевский", "price": 1000,
                   "weights": {"common": 300, "uncommon": 350, "rare": 250, "epic": 80, "legendary": 18, "mythic": 2}},
-    "celestial": {"name": "Небесный",    "price": 25_000,
+    "celestial": {"name": "Небесный",    "price": 25000,
                   "weights": {"rare": 200, "epic": 400, "legendary": 300, "mythic": 95, "celestial": 5}},
 }
 
@@ -39,8 +45,10 @@ def pick_rarity(case_id: str, ticket: int) -> str:
             return rarity
     return next(iter(weights))
 
-def pick_pony(rarity: str) -> tuple[str, int]:
+def pick_pony(rarity: str) -> tuple[str, int, str]:
     base_mult = RARITY_BY_ID[rarity][3]
-    idx = random.randint(1, 999)
+    pony_name = random.choice(PONY_NAMES)
+    full_name = f"{pony_name}"
     price = int(100 * base_mult * random.uniform(0.8, 1.2))
-    return f"{rarity}_{idx}", price
+    color = RARITY_BY_ID[rarity][4]
+    return full_name, price, color
