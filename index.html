@@ -22,10 +22,15 @@
         .desktop-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
         .desktop-nav-btn.active { color: #fff; background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
 
-        /* Рулетка */
+        /* ФИКС РУЛЕТКИ (Жесткая ширина и высота) */
         .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; }
         .roulette-strip { display: flex; gap: 8px; will-change: transform; }
-        .roulette-item { min-width: 80px; height: 90px; background: #12161f; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; }
+        .roulette-item { 
+            width: 80px; min-width: 80px; max-width: 80px; flex-shrink: 0;
+            height: 90px; background: #12161f; border-radius: 6px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            border: 2px solid transparent; overflow: hidden; 
+        }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
 
         /* Апгрейд */
@@ -377,7 +382,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ (КРАСИВАЯ) -->
+    <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ -->
     <div id="modal-confirm" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-[110] backdrop-blur-md">
         <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center border border-red-500/30">
             <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -392,18 +397,15 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА РУЛЕТКИ (Мульти + Продажа) -->
+    <!-- МОДАЛКА РУЛЕТКИ -->
     <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md overflow-y-auto">
         <div class="w-full max-w-4xl my-auto">
             <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
             
-            <!-- Рулетки -->
             <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto mb-4"></div>
             
-            <!-- Результаты (Забрать/Продать) -->
             <div id="spin-results" class="hidden flex-col items-center mb-6 w-full max-w-2xl mx-auto">
                 
-                <!-- Общая стоимость -->
                 <div class="bg-[#1A202C] px-6 py-2 rounded-full border border-purple-500/50 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)] flex items-center gap-2">
                     <span class="text-gray-400 text-sm">Общая стоимость:</span>
                     <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
@@ -448,7 +450,6 @@
     </div>
 
     <script>
-        // --- ЗВУКИ ---
         const sfx = {
             spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
             win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
@@ -481,7 +482,6 @@
             c.appendChild(d); setTimeout(() => d.remove(), 3000); 
         }
 
-        // --- КАСТОМНЫЙ CONFIRM ---
         let confirmCallback = null;
         function showConfirm(title, text, btnText, callback) {
             document.getElementById('confirm-title').textContent = title;
@@ -792,7 +792,11 @@
                             const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)];
                             const name = item ? (item.pony_id || item.name) : '???';
                             const color = item ? item.color : '#333';
-                            html += `<div class="roulette-item" style="border-color:${color}"><div class="text-[10px] text-center font-bold px-1 text-white">${name}</div></div>`;
+                            
+                            // Жестко фиксируем размеры, чтобы текст не растягивал
+                            html += `<div class="roulette-item" style="border-color:${color}">
+                                        <span style="color: white; font-size: 10px; font-weight: bold; text-align: center; word-break: break-word; padding: 0 2px;">${name}</span>
+                                     </div>`;
                         }
                         strip.innerHTML = html;
                         
@@ -801,9 +805,12 @@
 
                         promises.push(new Promise(resolve => {
                             setTimeout(() => {
-                                const containerWidth = strip.parentElement.offsetWidth;
-                                const itemWidth = 88; 
-                                const offset = (45 * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
+                                // ИСПРАВЛЕНО: clientWidth вместо offsetWidth (исключает скроллбар)
+                                const containerWidth = strip.parentElement.clientWidth;
+                                const itemWidth = 80;
+                                const gap = 8;
+                                // Центрируем ровно 45-й элемент (индекс 45)
+                                const offset = (45 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2);
                                 
                                 strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
                                 strip.style.transform = `translate3d(-${offset}px, 0, 0)`;
@@ -843,7 +850,6 @@
                 </div>`;
             }).join('');
 
-            // Обновляем общую сумму и кнопку
             document.getElementById('total-drops-value').textContent = totalValue + ' 🪙';
             document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${totalValue} 🪙`;
             
@@ -862,7 +868,6 @@
                 const state = await req('/api/clicker/state');
                 updateBal(state.balance);
                 
-                // Пересчитываем сумму оставшихся предметов
                 recalcTotalDrops();
             } catch(e) { showToast(e.message, 'lose'); }
         }
@@ -871,7 +876,6 @@
             const actions = document.getElementById(`drop-actions-${index}`);
             actions.innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`;
             playSfx('click');
-            // Пересчитываем сумму
             recalcTotalDrops();
         }
 
@@ -879,15 +883,18 @@
             let newTotal = 0;
             currentDrops.forEach((item, idx) => {
                 const actions = document.getElementById(`drop-actions-${idx}`);
-                // Если есть кнопка "Продать" или "Забрать", значит предмет еще не тронут (или "В инвентаре")
-                if(actions && !actions.innerHTML.includes('Продано')) {
+                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) {
                     newTotal += item.price;
                 }
             });
             document.getElementById('total-drops-value').textContent = newTotal + ' 🪙';
-            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`;
-            if(newTotal === 0) document.getElementById('btn-sell-all-drops').classList.add('opacity-50');
-            else document.getElementById('btn-sell-all-drops').classList.remove('opacity-50');
+            
+            if(newTotal > 0) {
+                document.getElementById('btn-sell-all-drops').style.display = 'block';
+                document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`;
+            } else {
+                document.getElementById('btn-sell-all-drops').style.display = 'none';
+            }
         }
 
         function sellAllDrops() {
@@ -1037,7 +1044,7 @@
             startSpinSfx();
             
             try {
-                const res = await req('/api/upgrade/play', 'POST', { item_id: parseInt(id), target_price: targetPrice, target_name: `Upgraded (${targetPrice}🪙)`, boost: boost });
+                const res = await req('/api/upgrade/play', 'POST', { item_id: parseInt(id), target_price: targetPrice, target_name: `Upgraded Pony`, boost: boost });
                 updateBal(res.balance);
                 
                 const greenDeg = (res.chance / 100) * 360;
