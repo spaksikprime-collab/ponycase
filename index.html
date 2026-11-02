@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #12161f; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); background-attachment: fixed; }
-        
         @media (max-width: 768px) { body { padding-bottom: 70px; } }
 
         .glass { background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
@@ -23,7 +22,7 @@
         .roulette-item { min-width: 80px; height: 90px; background: #12161f; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
 
-        /* Апгрейд (Дизайн как на скрине) */
+        /* Апгрейд */
         .upg-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
         @media (min-width: 768px) { .upg-container { flex-direction: row; justify-content: center; } }
         .upg-box { background: #1A202C; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; text-align: center; width: 100%; max-width: 250px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
@@ -41,8 +40,8 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* Прочее */
-        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 10px; font-weight: bold; width: 20%; }
+        /* Навигация */
+        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 10px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
         
         /* Тосты */
@@ -63,10 +62,9 @@
             
             <div class="flex gap-2 md:gap-4 items-center">
                 <div class="text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-500/20 font-bold hidden sm:block">🟢 <span id="online-count">0</span></div>
-                <button onclick="claimBonus()" class="bg-green-600/20 text-green-400 border border-green-500/50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition shadow-[0_0_10px_rgba(34,197,94,0.2)]">Бонус</button>
+                <button onclick="claimBonus()" class="bg-green-600/20 text-green-400 border border-green-500/50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition">Бонус</button>
                 <div class="bg-gray-900 px-3 py-1.5 rounded-lg border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold">0</span> 🪙</div>
                 
-                <!-- Аватарка в шапке -->
                 <div class="w-8 h-8 rounded-full overflow-hidden border border-purple-500 cursor-pointer hover:scale-110 transition" onclick="switchTab('profile')">
                     <img id="header-avatar" class="w-full h-full object-cover hidden">
                     <div id="header-emoji" class="w-full h-full flex items-center justify-center text-lg bg-gray-800">👤</div>
@@ -87,7 +85,7 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 w-full max-w-[1400px] mx-auto p-3 md:p-6 flex flex-col md:flex-row gap-6">
         
-        <!-- ЛЕВАЯ КОЛОНКА (ИГРЫ) -->
+        <!-- ЛЕВАЯ КОЛОНКА -->
         <div class="flex-1 min-w-0">
             
             <!-- СПИСОК КЕЙСОВ -->
@@ -103,7 +101,6 @@
                 </button>
                 
                 <div class="flex flex-col md:flex-row gap-6">
-                    <!-- Инфо о кейсе и кнопка -->
                     <div class="w-full md:w-1/3 flex flex-col items-center">
                         <div class="glass p-6 rounded-2xl w-full text-center relative overflow-hidden">
                             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
@@ -115,7 +112,6 @@
                                 <select id="cd-count" class="w-full bg-[#12161f] p-2 rounded-lg text-white border border-gray-700 font-bold text-sm text-center outline-none">
                                     <option value="1">Открыть x1</option>
                                     <option value="2">Открыть x2</option>
-                                    <option value="3">Открыть x3</option>
                                     <option value="5">Открыть x5</option>
                                     <option value="10">Открыть x10</option>
                                 </select>
@@ -128,7 +124,6 @@
                         </div>
                     </div>
 
-                    <!-- Содержимое -->
                     <div class="w-full md:w-2/3">
                         <div class="flex justify-between items-center mb-3">
                             <h4 class="font-bold text-lg">Содержимое</h4>
@@ -175,7 +170,6 @@
                         
                         <div class="w-48 h-48 mx-auto relative mb-4">
                             <div class="w-full h-full rounded-full border-4 border-gray-800 bg-[#12161f] overflow-hidden" id="jp-wheel">
-                                <!-- Wheel -->
                                 <div class="absolute inset-0 flex items-center justify-center z-10">
                                     <div class="w-16 h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center">
                                         <span class="text-[8px] text-gray-400">ВЫИГРЫШ</span>
@@ -207,14 +201,12 @@
             <div id="page-upgrade" class="page">
                 <div class="glass p-4 md:p-8 rounded-2xl max-w-4xl mx-auto">
                     <div class="upg-container">
-                        <!-- Твой предмет -->
                         <div class="upg-box">
                             <div class="text-[10px] text-gray-400 font-bold mb-2 uppercase">Твой предмет</div>
                             <div id="upg-my-item" class="text-sm font-bold text-white mb-1">-</div>
                             <div id="upg-my-price" class="text-xs text-yellow-400 font-bold">0 🪙</div>
                         </div>
 
-                        <!-- Колесо -->
                         <div class="flex flex-col items-center">
                             <div class="upg-wheel-container mb-4">
                                 <div class="upg-arrow" id="upg-arrow">🔻</div>
@@ -231,7 +223,6 @@
                             </div>
                         </div>
 
-                        <!-- Цель -->
                         <div class="upg-box border-green-500/50">
                             <div class="text-[10px] text-green-400 font-bold mb-2 uppercase">Цель</div>
                             <div id="upg-target-item" class="text-sm font-bold text-green-400 mb-1">Любой</div>
@@ -372,7 +363,6 @@
     <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md">
         <div class="w-full max-w-4xl">
             <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Открываем кейс...</h3>
-            <!-- Контейнер для рядов рулетки -->
             <div id="spin-container" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto mb-6"></div>
             <div class="text-center">
                 <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold border border-gray-600 hidden hover:bg-gray-700 transition">ЗАБРАТЬ</button>
@@ -405,7 +395,7 @@
     </div>
 
     <script>
-        // --- ЗВУКИ (Исправлено зацикливание) ---
+        // --- ЗВУКИ ---
         const sfx = {
             spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
             win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
@@ -417,10 +407,7 @@
 
         function playSfx(n) { 
             if(!sfx[n]) return; 
-            try {
-                sfx[n].currentTime = 0; 
-                sfx[n].play().catch(()=>{}); 
-            } catch(e) {}
+            try { sfx[n].currentTime = 0; sfx[n].play().catch(()=>{}); } catch(e) {}
         }
         function startSpinSfx() {
             if(spinAudioInstance) { spinAudioInstance.pause(); }
@@ -447,6 +434,7 @@
         let upgMult = 2, casesData = [], jpTimerInterval = null;
         let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
         let currentCase = null;
+        let currentCaseData = []; // Храним данные кейса здесь, чтобы не делать лишние запросы
 
         if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } else { document.getElementById('auth-modal').classList.remove('hidden'); }
 
@@ -479,7 +467,6 @@
                 document.getElementById('click-count').textContent = user.total_clicks;
                 upgLevels = { click_power: user.click_power, auto_rate: user.auto_rate, multiplier: user.multiplier };
                 
-                // Аватарка в шапке
                 if(user.avatar && user.avatar.startsWith('data:')) {
                     document.getElementById('header-avatar').src = user.avatar;
                     document.getElementById('header-avatar').classList.remove('hidden');
@@ -626,40 +613,56 @@
 
         // --- КЕЙСЫ ---
         async function loadCases() {
-            casesData = await req('/api/cases/list');
-            document.getElementById('cases-grid').innerHTML = casesData.map(c => `
-                <div onclick="openCaseDetail('${c.id}')" class="glass p-3 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300">
-                    <span class="text-5xl mb-2 drop-shadow-lg">📦</span>
-                    <span class="font-black text-xs md:text-sm text-center mb-1">${c.name}</span>
-                    <span class="text-yellow-400 text-[10px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span>
-                </div>`).join('');
-            document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join('');
+            try {
+                casesData = await req('/api/cases/list');
+                document.getElementById('cases-grid').innerHTML = casesData.map(c => `
+                    <div onclick="openCaseDetail('${c.id}')" class="glass p-3 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300">
+                        <span class="text-5xl mb-2 drop-shadow-lg">📦</span>
+                        <span class="font-black text-xs md:text-sm text-center mb-1">${c.name}</span>
+                        <span class="text-yellow-400 text-[10px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span>
+                    </div>`).join('');
+                document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join('');
+            } catch(e) { showToast("Ошибка загрузки кейсов", 'lose'); }
         }
-
-        let currentCaseData = [];
 
         async function openCaseDetail(id) {
             const c = casesData.find(x => x.id === id);
             if(!c) return;
             currentCase = id;
             
-            document.getElementById('cd-name').textContent = c.name;
-            document.getElementById('cd-price').textContent = c.price + ' 🪙';
-            document.getElementById('cd-filter').value = 'all';
-            
+            // Переключаем страницы ДО запроса, чтобы юзер видел, что клик сработал
             document.getElementById('page-cases').classList.remove('active');
             document.getElementById('page-case-detail').classList.add('active');
             
-            currentCaseData = await req(`/api/cases/preview/${id}`);
-            filterCaseItems();
+            document.getElementById('cd-name').textContent = c.name;
+            document.getElementById('cd-price').textContent = c.price + ' 🪙';
+            document.getElementById('cd-filter').value = 'all';
+            document.getElementById('cd-items-grid').innerHTML = '<div class="text-gray-400 text-sm">Загрузка...</div>';
+            
+            try {
+                currentCaseData = await req(`/api/cases/preview/${id}`);
+                if(!Array.isArray(currentCaseData)) currentCaseData = [];
+                filterCaseItems();
+            } catch(e) {
+                document.getElementById('cd-items-grid').innerHTML = '<div class="text-red-400 text-sm">Ошибка загрузки содержимого</div>';
+            }
         }
 
         function filterCaseItems() {
             const filter = document.getElementById('cd-filter').value;
             const grid = document.getElementById('cd-items-grid');
-            grid.innerHTML = currentCaseData
-                .filter(item => filter === 'all' || item.rarity === filter)
-                .map(d => `
+            if(!currentCaseData || currentCaseData.length === 0) {
+                grid.innerHTML = '<div class="text-gray-400 text-sm">Нет предметов</div>';
+                return;
+            }
+            const filtered = currentCaseData.filter(item => filter === 'all' || item.rarity === filter);
+            
+            if(filtered.length === 0) {
+                grid.innerHTML = '<div class="text-gray-400 text-sm">Нет предметов с такой редкостью</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(d => `
                 <div class="bg-[#1A202C] p-2 md:p-3 rounded-lg border-l-2 md:border-l-4 text-[10px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}">
                     <span class="font-bold mb-1">${d.name}</span>
                     <span class="text-yellow-400 font-bold">${d.price}🪙</span>
@@ -675,24 +678,29 @@
             const container = document.getElementById('spin-container');
             container.innerHTML = '';
             
+            // Защита от пустого пула
+            const pool = currentCaseData.length > 0 ? currentCaseData : [{name: 'Pony', color: '#fff'}];
+
             document.getElementById('modal-spin').classList.remove('hidden');
-            startSpinSfx();
             
             try {
                 const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count});
                 updateBal(res.balance);
                 
+                if(!res.results || res.results.length === 0) {
+                    throw new Error("Сервер вернул пустой результат");
+                }
+
                 if (isFast) {
-                    stopSpinSfx(); playSfx('win'); confetti();
+                    playSfx('win'); confetti();
                     res.results.forEach(item => {
                         container.innerHTML += `<div class="text-center py-2"><span class="text-lg font-bold" style="color:${item.color}">${item.pony_id}</span> <span class="text-yellow-400 text-sm ml-2">${item.price}🪙</span></div>`;
                     });
                     btn.classList.remove('hidden');
                     btn.onclick = closeSpinModal;
                 } else {
-                    // Мульти-рулетка
+                    startSpinSfx();
                     let promises = [];
-                    const pool = await req(`/api/cases/preview/${currentCase}`);
                     
                     for(let i=0; i<count; i++) {
                         const rowId = `row-${i}`;
@@ -704,15 +712,16 @@
                         let html = '';
                         for(let j=0; j<50; j++) {
                             const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)];
-                            html += `<div class="roulette-item" style="border-color:${item.color}"><div class="text-[10px] text-center font-bold px-1">${item.pony_id || item.name}</div></div>`;
+                            const name = item ? (item.pony_id || item.name) : '???';
+                            const color = item ? item.color : '#333';
+                            html += `<div class="roulette-item" style="border-color:${color}"><div class="text-[10px] text-center font-bold px-1">${name}</div></div>`;
                         }
                         strip.innerHTML = html;
                         
-                        // Запускаем анимацию с задержкой 50мс для отрисовки
                         promises.push(new Promise(resolve => {
                             setTimeout(() => {
                                 const containerWidth = strip.parentElement.offsetWidth;
-                                const itemWidth = 88; // 80px + 8px gap
+                                const itemWidth = 88; 
                                 const offset = (45 * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
                                 
                                 strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
@@ -722,7 +731,6 @@
                         }));
                     }
                     
-                    // Ждем окончания всех анимаций
                     Promise.all(promises).then(() => {
                         stopSpinSfx(); playSfx('win'); confetti();
                         btn.classList.remove('hidden');
@@ -730,46 +738,48 @@
                     });
                 }
             } catch(e) { 
-                stopSpinSfx(); showToast(e.message, 'lose'); 
+                stopSpinSfx(); 
+                showToast(e.message, 'lose'); 
                 document.getElementById('modal-spin').classList.add('hidden'); 
             }
         }
 
         function closeSpinModal() {
             document.getElementById('modal-spin').classList.add('hidden');
-            // Очищаем контейнер, чтобы не тормозило
             document.getElementById('spin-container').innerHTML = '';
         }
 
         // --- ПРОФИЛЬ ---
         async function loadProfile() {
-            const d = await req('/api/user/profile');
-            updateBal(d.user.balance);
-            document.getElementById('p-name').textContent = d.user.username;
-            document.getElementById('p-clicks').textContent = d.stats.total_clicks;
-            document.getElementById('p-cases').textContent = d.stats.cases_opened;
-            
-            document.getElementById('p-best-drop').textContent = d.best_drop ? `${d.best_drop.name} (${d.best_drop.price}🪙)` : 'Нет';
-            document.getElementById('p-fav-case').textContent = d.fav_case;
+            try {
+                const d = await req('/api/user/profile');
+                updateBal(d.user.balance);
+                document.getElementById('p-name').textContent = d.user.username;
+                document.getElementById('p-clicks').textContent = d.stats.total_clicks;
+                document.getElementById('p-cases').textContent = d.stats.cases_opened;
+                
+                document.getElementById('p-best-drop').textContent = d.best_drop ? `${d.best_drop.name} (${d.best_drop.price}🪙)` : 'Нет';
+                document.getElementById('p-fav-case').textContent = d.fav_case;
 
-            inv = d.inventory;
-            
-            if(d.user.avatar && d.user.avatar.startsWith('data:')) {
-                document.getElementById('p-avatar').src = d.user.avatar;
-                document.getElementById('p-avatar').classList.remove('hidden');
-                document.getElementById('p-emoji').classList.add('hidden');
-            } else {
-                document.getElementById('p-emoji').textContent = d.user.avatar || '🦄';
-            }
-            document.getElementById('inv-grid').innerHTML = inv.map(i => `
-                <div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[10px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}">
-                    <div class="truncate font-bold mb-1">${i.name}</div>
-                    <div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div>
-                    <button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button>
-                </div>`).join('');
+                inv = d.inventory;
+                
+                if(d.user.avatar && d.user.avatar.startsWith('data:')) {
+                    document.getElementById('p-avatar').src = d.user.avatar;
+                    document.getElementById('p-avatar').classList.remove('hidden');
+                    document.getElementById('p-emoji').classList.add('hidden');
+                } else {
+                    document.getElementById('p-emoji').textContent = d.user.avatar || '🦄';
+                }
+                document.getElementById('inv-grid').innerHTML = inv.map(i => `
+                    <div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[10px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}">
+                        <div class="truncate font-bold mb-1">${i.name}</div>
+                        <div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div>
+                        <button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button>
+                    </div>`).join('');
+            } catch(e) { showToast("Ошибка профиля", 'lose'); }
         }
-        async function sell(id) { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); }
-        async function sellAll() { if(!confirm("Продать весь инвентарь?")) return; await req('/api/user/inventory/sell_all','POST'); loadProfile(); }
+        async function sell(id) { try { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); } catch(e) { showToast(e.message, 'lose'); } }
+        async function sellAll() { if(!confirm("Продать весь инвентарь?")) return; try { await req('/api/user/inventory/sell_all','POST'); loadProfile(); } catch(e) { showToast(e.message, 'lose'); } }
         
         async function uploadAvatar(input) {
             const file = input.files[0]; if(!file) return;
@@ -781,7 +791,6 @@
                 document.getElementById('p-avatar').src = d.avatar;
                 document.getElementById('p-avatar').classList.remove('hidden');
                 document.getElementById('p-emoji').classList.add('hidden');
-                // Обновляем и в шапке
                 document.getElementById('header-avatar').src = d.avatar;
                 document.getElementById('header-avatar').classList.remove('hidden');
                 document.getElementById('header-emoji').classList.add('hidden');
@@ -805,7 +814,7 @@
         function updateUpgradeUI() {
             const sel = document.getElementById('upg-select');
             const opt = sel.options[sel.selectedIndex];
-            if(!opt.value) return;
+            if(!opt || !opt.value) return;
             
             const price = parseInt(opt.getAttribute('data-price'));
             const targetPrice = Math.floor(price * upgMult);
@@ -833,7 +842,6 @@
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
             
             const arrow = document.getElementById('upg-arrow');
-            // Сброс стрелки в 0 без анимации
             arrow.style.transition = 'none';
             arrow.style.transform = 'translateX(-50%) rotate(0deg)';
             
@@ -848,7 +856,6 @@
                 if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
                 else targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
 
-                // Форсируем рефлоу браузера перед тем как дать новую трансформацию
                 void arrow.offsetWidth; 
 
                 setTimeout(() => {
@@ -889,7 +896,6 @@
                     r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣');
                     playSfx('lose'); 
                     
-                    // Тряска экрана и вибрация
                     document.getElementById('main-body').classList.add('shake');
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
                     
@@ -897,7 +903,7 @@
                     setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000);
                 } else if (r.status === 'ok') {
                     c.classList.add('opened'); c.textContent = '💎';
-                    playSfx('safe'); // Звук безопасной ячейки
+                    playSfx('safe'); 
                     document.getElementById('mines-multi').textContent = r.multiplier + 'x';
                     document.getElementById('mines-profit').textContent = r.next_win + ' 🪙';
                 }
@@ -915,8 +921,10 @@
 
         // --- ДЖЕКПОТ ---
         async function loadJackpot() {
-            const list = await req('/api/battles/active');
-            if(list.length > 0) updateJackpotUI(list[0]);
+            try {
+                const list = await req('/api/battles/active');
+                if(list.length > 0) updateJackpotUI(list[0]);
+            } catch(e) {}
         }
         
         function updateJackpotUI(j) {
