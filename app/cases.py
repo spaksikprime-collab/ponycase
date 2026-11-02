@@ -36,7 +36,6 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
     user.balance -= total_price
     results = []
     
-    # Открываем нужное количество
     for _ in range(data.count):
         user.nonce += 1
         server_seed = gen_seed()
@@ -45,12 +44,16 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
         rarity = pick_rarity(case_id, ticket)
         pony_id, price, color = pick_pony(rarity)
 
-        db.add(InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color))
+        # Сохраняем предмет в БД
+        item = InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color)
+        db.add(item)
+        db.flush() # Получаем ID предмета до коммита
+        
         db.add(CaseOpen(user_id=user.id, case_id=case_id, pony_id=pony_id, rarity=rarity, price=case["price"], server_seed=server_seed, client_seed=client_seed, nonce=user.nonce, ticket=ticket))
         
-        results.append({"pony_id": pony_id, "rarity": rarity, "price": price, "color": color})
+        # Возвращаем ID для возможности продажи
+        results.append({"id": item.id, "pony_id": pony_id, "rarity": rarity, "price": price, "color": color})
         
-        # Отправляем только самый дорогой дроп в Live-ленту, чтобы не спамить
         if price > 5000:
             await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
 
