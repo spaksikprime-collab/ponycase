@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
+import base64
 from .db import get_db
 from .models import User, InventoryItem, CaseOpen
 from .auth import current_user
@@ -16,31 +17,19 @@ def get_profile(user: User = Depends(current_user), db: Session = Depends(get_db
     
     return {
         "user": public_user(user),
-        "stats": {
-            "total_clicks": user.total_clicks,
-            "cases_opened": opened_cases
-        },
+        "stats": {"total_clicks": user.total_clicks, "cases_opened": opened_cases},
         "inventory": [{"id": i.id, "name": i.pony_id, "rarity": i.rarity, "price": i.price, "color": RARITY_BY_ID.get(i.rarity, ("","","","","#fff"))[4]} for i in inventory]
     }
 
-@router.post("/inventory/sell/{item_id}")
-def sell_item(item_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    item = db.get(InventoryItem, item_id)
-    if not item or item.user_id != user.id:
-        raise HTTPException(404, "Предмет не найден")
-    apply_passive(user)
-    user.balance += item.price
-    db.delete(item)
+@router.post("/avatar")
+async def upload_avatar(file: UploadFile = File(...), user: User = Depends(current_user), db: Session = Depends(get_db)):
+    contents = await file.read()
+    if len(contents) > 2 * 1024 * 1024: # Максимум 2МБ
+        raise HTTPException(400, "Файл слишком большой (макс 2МБ)")
+    
+    # Сохраняем как base64 строку прямо в БД (чтобы не терялось при перезапуске ZevCloud)
+    b64_str = base64.b64encode(contents).decode('utf-8')
+    mime_type = file.content_type or "image/jpeg"
+    user.avatar = f"data:{mime_type};base64,{b64_str}"
     db.commit()
-    return {"success": True, "balance": user.balance}
-
-@router.post("/inventory/sell_all")
-def sell_all(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    apply_passive(user)
-    items = db.query(InventoryItem).filter(InventoryItem.user_id == user.id).all()
-    total_gained = sum(item.price for item in items)
-    user.balance += total_gained
-    for item in items:
-        db.delete(item)
-    db.commit()
-    return {"success": True, "balance": user.balance, "gained": total_gained}
+    return {"success": True, "avatar": user.avatar}
