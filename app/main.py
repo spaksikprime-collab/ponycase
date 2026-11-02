@@ -16,20 +16,16 @@ from .battles import router as battles_router
 from .mines import router as mines_router
 from .ws import sio
 
-# 1. Создаем таблицы (если их нет)
 Base.metadata.create_all(bind=engine)
 
-# 2. АВТО-МИГРАЦИЯ (Добавляем новые колонки, если их нет)
 def run_migrations():
     with engine.connect() as conn:
         try:
-            # Добавляем колонки для верификации, аватарки и бонуса
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR DEFAULT '🦄';"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10);"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bonus TIMESTAMP;"))
             conn.commit()
-            print("Миграция базы данных прошла успешно!")
         except Exception as e:
             print(f"Ошибка миграции: {e}")
 
