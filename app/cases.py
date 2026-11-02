@@ -34,10 +34,11 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
     case = CASES[case_id]
     total_price = case["price"] * data.count
     
+    # Начисляем пассивный доход и проверяем баланс
     apply_passive(user, db)
     
     if user.balance < total_price: 
-        raise HTTPException(400, "Недостаточно копыт")
+        raise HTTPException(400, "Недостаточно копыт для открытия")
 
     user.balance -= total_price
     results = []
@@ -51,7 +52,7 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
             rarity = pick_rarity(case_id, ticket)
             pony_id, price, color = pick_pony(rarity)
 
-            # Добавляем предмет в инвентарь
+            # Создаем предмет в инвентаре
             item = InventoryItem(
                 user_id=user.id, 
                 pony_id=pony_id, 
@@ -60,9 +61,9 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
                 color=color
             )
             db.add(item)
-            db.flush() # Получаем ID
+            db.flush() # Получаем ID предмета до коммита
             
-            # Записываем открытие кейса
+            # Записываем открытие кейса (для Provably Fair)
             db.add(CaseOpen(
                 user_id=user.id, 
                 case_id=case_id, 
@@ -75,7 +76,7 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
                 ticket=ticket
             ))
 
-            # Запись в историю
+            # Запись в общую историю игр
             db.add(GameHistory(
                 user_id=user.id, 
                 game_type="Кейс", 
@@ -84,11 +85,12 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
                 result_text=f"Открыл {case['name']}"
             ))
             
-            # Обновляем лучший дроп
+            # Обновляем лучший дроп за всё время
             if price > user.best_drop_price:
                 user.best_drop_price = price
                 user.best_drop_name = pony_id
             
+            # Собираем результаты для отправки на фронтенд
             results.append({
                 "id": item.id, 
                 "pony_id": pony_id, 
@@ -97,7 +99,7 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
                 "color": color
             })
             
-            # Отправляем в Live-ленту только дорогие дропы
+            # Отправляем в Live-ленту только дорогие дропы (дороже 5000)
             if price > 5000:
                 await broadcast_drop(
                     user.username, 
