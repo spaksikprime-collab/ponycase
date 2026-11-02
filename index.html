@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PonyCase | Premium</title>
     
-    <!-- Подключение стилей и скриптов -->
+    <!-- Подключение внешних библиотек -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
-        /* Основные стили страницы */
+        /* ==========================================
+           ОБЩИЕ СТИЛИ
+           ========================================== */
         body { 
             background-color: #12161f; 
             color: #ffffff; 
@@ -22,14 +24,14 @@
             background-attachment: fixed; 
         }
         
-        /* Отступ для мобильного меню */
+        /* Отступ для мобильной навигации */
         @media (max-width: 1024px) { 
             body { 
                 padding-bottom: 70px; 
             } 
         }
 
-        /* Стеклянные панели */
+        /* Стеклянные панели (Glassmorphism) */
         .glass { 
             background: rgba(26, 32, 44, 0.7); 
             backdrop-filter: blur(12px); 
@@ -37,7 +39,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.4); 
         }
         
-        /* Переключение страниц */
+        /* Переключение вкладок */
         .page { 
             display: none; 
         } 
@@ -52,7 +54,9 @@
             to { opacity: 1; } 
         }
 
-        /* ===== НАВИГАЦИЯ ДЛЯ ПК ===== */
+        /* ==========================================
+           НАВИГАЦИЯ
+           ========================================== */
         .desktop-nav-btn { 
             padding: 8px 16px; 
             border-radius: 8px; 
@@ -76,7 +80,6 @@
             box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); 
         }
         
-        /* ===== НАВИГАЦИЯ ДЛЯ МОБИЛОК ===== */
         .nav-btn { 
             display: flex; 
             flex-direction: column; 
@@ -92,7 +95,9 @@
             color: #a855f7; 
         }
 
-        /* ===== РУЛЕТКА КЕЙСОВ (ЖЕСТКИЙ ФИКС) ===== */
+        /* ==========================================
+           РУЛЕТКА КЕЙСОВ
+           ========================================== */
         .roulette-wrapper { 
             overflow: hidden; 
             position: relative; 
@@ -138,7 +143,58 @@
             box-shadow: 0 0 10px #22c55e; 
         }
 
-        /* ===== АПГРЕЙД (Дизайн CSFail) ===== */
+        /* ==========================================
+           КОЛЕСО ФОРТУНЫ
+           ========================================== */
+        .wheel-container { 
+            position: relative; 
+            width: 300px; 
+            height: 300px; 
+            margin: 0 auto; 
+        }
+        
+        .wheel-visual { 
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%; 
+            border: 8px solid #1A202C; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); 
+            position: relative; 
+            overflow: hidden; 
+            transition: transform 5s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+        
+        .wheel-pointer { 
+            position: absolute; 
+            top: -25px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 50px; 
+            z-index: 20; 
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); 
+        }
+        
+        .wheel-center { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 100px; 
+            height: 100px; 
+            background: #12161f; 
+            border-radius: 50%; 
+            border: 4px solid #2d3748; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 10; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.9); 
+        }
+
+        /* ==========================================
+           АПГРЕЙД
+           ========================================== */
         .upg-container { 
             display: flex; 
             flex-direction: column; 
@@ -213,29 +269,9 @@
             filter: drop-shadow(0 0 10px rgba(255,255,255,0.8)); 
         }
 
-        /* ===== КОЛЕСО ФОРТУНЫ ===== */
-        .wheel-bg { 
-            position: relative; 
-            width: 280px; 
-            height: 280px; 
-            margin: 0 auto; 
-            border-radius: 50%; 
-            border: 6px solid #1A202C; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); 
-            transition: transform 5s cubic-bezier(0.1, 0.7, 0.1, 1);
-        }
-        
-        .wheel-pointer { 
-            position: absolute; 
-            top: -15px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            font-size: 40px; 
-            z-index: 20; 
-            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); 
-        }
-        
-        /* ===== МИНЫ ===== */
+        /* ==========================================
+           МИНЫ
+           ========================================== */
         .mines-grid { 
             display: grid; 
             grid-template-columns: repeat(5, 1fr); 
@@ -285,7 +321,9 @@
             animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; 
         }
 
-        /* ===== УВЕДОМЛЕНИЯ ===== */
+        /* ==========================================
+           УВЕДОМЛЕНИЯ (TOASTS)
+           ========================================== */
         #toast-container { 
             position: fixed; 
             top: 70px; 
@@ -331,22 +369,24 @@
 
     <div id="toast-container"></div>
 
-    <!-- HEADER -->
+    <!-- ==========================================
+         ШАПКА САЙТА (HEADER)
+         ========================================== -->
     <header class="glass sticky top-0 z-40 px-4 py-3 border-b border-gray-800">
         <div class="max-w-[1400px] mx-auto flex justify-between items-center">
+            
             <div class="flex items-center gap-6">
                 <h1 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
                 
-                <!-- ПК Навигация -->
+                <!-- Навигация для ПК -->
                 <div class="hidden lg:flex gap-1">
                     <button onclick="switchTab('cases')" id="nav-cases" class="desktop-nav-btn active">Кейсы</button>
-                    <button onclick="switchTab('wheel')" id="nav-wheel" class="desktop-nav-btn text-yellow-400 hover:text-yellow-300 font-bold">Колесо</button>
+                    <button onclick="switchTab('wheel')" id="nav-wheel" class="desktop-nav-btn text-yellow-400 font-bold">Колесо</button>
                     <button onclick="switchTab('clicker')" id="nav-clicker" class="desktop-nav-btn">Кликер</button>
                     <button onclick="switchTab('battles')" id="nav-battles" class="desktop-nav-btn">Батлы</button>
                     <button onclick="switchTab('upgrade')" id="nav-upgrade" class="desktop-nav-btn">Апгрейд</button>
                     <button onclick="switchTab('mines')" id="nav-mines" class="desktop-nav-btn">Мины</button>
                     <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="desktop-nav-btn text-yellow-400">🏆 Топ</button>
-                    <button onclick="switchTab('history')" id="nav-history" class="desktop-nav-btn">История</button>
                 </div>
             </div>
             
@@ -363,7 +403,9 @@
         </div>
     </header>
 
-    <!-- LIVE ДРОПЫ -->
+    <!-- ==========================================
+         ЛЕНТА ДРОПОВ (LIVE DROPS)
+         ========================================== -->
     <div class="bg-[#12161f] border-b border-gray-800 py-2 overflow-hidden relative">
         <div class="max-w-[1400px] mx-auto px-4">
             <div id="live-drops" class="flex gap-2 whitespace-nowrap items-center text-xs">
@@ -372,10 +414,12 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+    <!-- ==========================================
+         ОСНОВНОЙ КОНТЕНТ
+         ========================================== -->
     <main class="flex-1 w-full max-w-[1400px] mx-auto p-3 md:p-6 flex flex-col lg:flex-row gap-6">
         
-        <!-- ЛЕВАЯ КОЛОНКА -->
+        <!-- ЛЕВАЯ КОЛОНКА (ВКЛАДКИ) -->
         <div class="flex-1 min-w-0">
             
             <!-- ВКЛАДКА: КЕЙСЫ -->
@@ -467,10 +511,10 @@
                         <div class="text-3xl font-black text-white mb-2" id="wheel-timer">00:00</div>
                         <p class="text-xs text-gray-400 mb-6 uppercase tracking-widest">До старта</p>
                         
-                        <div class="wheel-bg" id="wheel-visual" style="background: conic-gradient(#ef4444 0% 50%, #22c55e 50% 80%, #3b82f6 80% 98%, #eab308 98% 100%);">
+                        <div class="wheel-container">
                             <div class="wheel-pointer">🔻</div>
-                            <div class="absolute inset-0 flex items-center justify-center z-10">
-                                <div class="w-24 h-24 bg-[#12161f] rounded-full border-4 border-gray-700 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                            <div class="wheel-visual" id="wheel-visual" style="background: conic-gradient(#ef4444 0% 50%, #22c55e 50% 80%, #3b82f6 80% 98%, #eab308 98% 100%);">
+                                <div class="wheel-center">
                                     <span class="text-[10px] text-gray-400">Победитель</span>
                                     <span class="text-sm font-bold text-white" id="wheel-winner-text">???</span>
                                 </div>
@@ -631,16 +675,9 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКА: ИСТОРИЯ -->
-            <div id="page-history" class="page">
-                <h2 class="text-2xl font-black mb-4">История игр</h2>
-                <div class="glass p-4 rounded-2xl">
-                    <div id="history-list" class="flex flex-col gap-2"></div>
-                </div>
-            </div>
-
             <!-- ВКЛАДКА: ПРОФИЛЬ -->
             <div id="page-profile" class="page">
+                <!-- Карточка профиля -->
                 <div class="glass p-6 rounded-2xl text-center mb-6 relative max-w-2xl mx-auto">
                     <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
                         <img id="p-avatar" class="w-full h-full object-cover hidden">
@@ -674,11 +711,18 @@
                     </div>
                 </div>
                 
+                <!-- Инвентарь -->
                 <div class="flex justify-between items-center mb-3 max-w-4xl mx-auto">
                     <h3 class="font-black text-lg">Инвентарь</h3>
                     <button onclick="sellAll()" class="text-xs bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/30 font-bold">Продать всё</button>
                 </div>
-                <div id="inv-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto"></div>
+                <div id="inv-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto mb-8"></div>
+
+                <!-- История игр (Внутри профиля) -->
+                <h3 class="font-black text-lg mb-3 max-w-2xl mx-auto">История игр</h3>
+                <div class="glass p-4 rounded-2xl max-w-2xl mx-auto">
+                    <div id="history-list" class="flex flex-col gap-2"></div>
+                </div>
             </div>
         </div>
 
@@ -686,9 +730,7 @@
         <aside class="hidden lg:flex flex-col w-80 flex-shrink-0 h-[calc(100vh-140px)] sticky top-[90px]">
             <div class="glass rounded-2xl flex flex-col h-full overflow-hidden border border-gray-700">
                 <div class="bg-purple-900/40 p-3 text-sm font-bold border-b border-gray-700">💬 Чат</div>
-                
                 <div id="chat-messages-pc" class="flex-1 p-3 overflow-y-auto bg-black/30"></div>
-                
                 <div class="flex border-t border-gray-700 bg-gray-900/90 p-2">
                     <input type="text" id="chat-input-pc" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('pc')">
                     <button onclick="sendChat('pc')" class="bg-purple-600 px-4 rounded text-sm font-bold">></button>
@@ -697,7 +739,9 @@
         </aside>
     </main>
 
-    <!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
+    <!-- ==========================================
+         МОБИЛЬНАЯ НАВИГАЦИЯ
+         ========================================== -->
     <nav class="fixed bottom-0 w-full h-[60px] bg-[#12161f] border-t border-gray-800 flex justify-around items-center z-40 pb-safe lg:hidden">
         <button onclick="switchTab('cases')" class="nav-btn active" id="m-nav-cases"><span class="text-xl">📦</span>Кейсы</button>
         <button onclick="switchTab('wheel')" class="nav-btn" id="m-nav-wheel"><span class="text-xl">🎡</span>Колесо</button>
@@ -708,7 +752,7 @@
         <button onclick="switchTab('leaderboard')" class="nav-btn" id="m-nav-leaderboard"><span class="text-xl">🏆</span>Топ</button>
     </nav>
 
-    <!-- МОБИЛЬНЫЙ ЧАТ -->
+    <!-- Мобильный чат -->
     <button onclick="toggleMobileChat()" class="fixed bottom-20 right-4 bg-purple-600 w-12 h-12 rounded-full shadow-lg z-40 flex lg:hidden items-center justify-center text-xl">💬</button>
     
     <div id="chat-box-mobile" class="fixed inset-0 bg-black/90 z-[90] hidden flex-col lg:hidden p-4">
@@ -717,9 +761,7 @@
                 <span>💬 Чат</span>
                 <button onclick="toggleMobileChat()" class="text-2xl leading-none">&times;</button>
             </div>
-            
             <div id="chat-messages-mob" class="flex-1 p-3 overflow-y-auto bg-black/20"></div>
-            
             <div class="flex border-t border-gray-700 bg-gray-800 p-2">
                 <input type="text" id="chat-input-mob" placeholder="Сообщение..." class="flex-1 bg-transparent p-2 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('mob')">
                 <button onclick="sendChat('mob')" class="bg-purple-600 px-4 rounded text-sm font-bold">></button>
@@ -727,31 +769,29 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА АВТОРИЗАЦИИ -->
+    <!-- ==========================================
+         МОДАЛКИ
+         ========================================== -->
+    <!-- Авторизация -->
     <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100] hidden">
         <div class="glass p-6 rounded-2xl w-full max-w-sm">
             <h2 class="text-xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">ВХОД</h2>
-            
             <input type="text" id="a-user" placeholder="Логин" class="w-full bg-[#12161f] p-3 rounded-lg mb-2 text-white border border-gray-700 outline-none text-sm">
             <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-[#12161f] p-3 rounded-lg mb-4 text-white border border-gray-700 outline-none text-sm">
-            
             <div class="flex gap-2">
                 <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-xs">ВХОД</button>
                 <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2.5 rounded-lg font-bold text-xs">РЕГА</button>
             </div>
+            <p id="a-err" class="text-red-500 text-[10px] text-center mt-2 hidden bg-red-500/10 p-2 rounded border border-red-500/20"></p>
         </div>
     </div>
 
-    <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ -->
+    <!-- Подтверждение -->
     <div id="modal-confirm" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-[110] backdrop-blur-md">
         <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center border border-red-500/30">
-            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl">⚠️</span>
-            </div>
-            
+            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-3xl">⚠️</span></div>
             <h3 class="text-xl font-black mb-2 text-white" id="confirm-title">Вы уверены?</h3>
             <p class="text-sm text-gray-300 mb-6" id="confirm-text">Действие нельзя отменить.</p>
-            
             <div class="flex gap-3">
                 <button onclick="closeConfirm()" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-sm">Отмена</button>
                 <button id="confirm-btn" onclick="executeConfirm()" class="flex-1 bg-red-600 py-2.5 rounded-lg font-bold text-sm shadow-lg">Да</button>
@@ -759,21 +799,17 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА РУЛЕТКИ -->
+    <!-- Рулетка кейсов -->
     <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md">
         <div class="w-full max-w-4xl">
             <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
-            
             <div id="spin-container" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto mb-4"></div>
             
             <div id="spin-results" class="hidden flex-col items-center mb-6 w-full max-w-2xl mx-auto">
                 <div class="bg-[#1A202C] px-6 py-2 rounded-full border border-purple-500/50 mb-4 text-center">
-                    <span class="text-gray-400 text-sm">Сумма:</span> 
-                    <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
+                    <span class="text-gray-400 text-sm">Сумма:</span> <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
                 </div>
-                
                 <div id="results-grid" class="flex flex-wrap justify-center gap-3 w-full"></div>
-                
                 <div class="flex gap-3 mt-6 w-full max-w-md">
                     <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 px-4 py-3 rounded-xl font-black text-sm">ПРОДАТЬ ВСЁ</button>
                     <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 px-4 py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
@@ -786,29 +822,19 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ПРОФИЛЯ ИГРОКА -->
+    <!-- Профиль игрока -->
     <div id="modal-player" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-[80] backdrop-blur-sm">
         <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center">
             <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-3 right-4 text-xl text-gray-400 hover:text-white">&times;</button>
-            
             <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
                 <img id="mp-avatar" class="w-full h-full object-cover hidden">
                 <div id="mp-emoji" class="w-full h-full flex items-center justify-center text-4xl">🦄</div>
             </div>
-            
             <h3 class="text-lg font-black mb-3" id="mp-name">Игрок</h3>
-            
             <div class="flex justify-between bg-[#12161f] p-3 rounded-xl text-xs mb-2">
-                <div>
-                    <div class="text-gray-400 text-[10px]">Клики</div>
-                    <div id="mp-clicks" class="font-bold text-yellow-400">0</div>
-                </div>
-                <div>
-                    <div class="text-gray-400 text-[10px]">Кейсы</div>
-                    <div id="mp-cases" class="font-bold text-purple-400">0</div>
-                </div>
+                <div><div class="text-gray-400 text-[10px]">Клики</div><div id="mp-clicks" class="font-bold text-yellow-400">0</div></div>
+                <div><div class="text-gray-400 text-[10px]">Кейсы</div><div id="mp-cases" class="font-bold text-purple-400">0</div></div>
             </div>
-            
             <div class="bg-[#12161f] p-3 rounded-xl text-xs text-left">
                 <div class="text-gray-400 text-[10px]">Лучший дроп:</div>
                 <div id="mp-best" class="font-bold text-green-400 truncate">Нет</div>
@@ -818,7 +844,7 @@
 
     <script>
         // ==========================================
-        // ЗВУКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ЗВУКИ
         // ==========================================
         const sfx = { 
             spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'), 
@@ -853,12 +879,14 @@
             } 
         }
 
+        // ==========================================
+        // УВЕДОМЛЕНИЯ
+        // ==========================================
         let lastToastTime = 0;
         function showToast(msg, type='info') { 
             const now = Date.now(); 
             if(now - lastToastTime < 500) return; 
             lastToastTime = now; 
-            
             const c = document.getElementById('toast-container'); 
             const d = document.createElement('div'); 
             d.className = `toast ${type}`; 
@@ -867,6 +895,9 @@
             setTimeout(() => d.remove(), 3000); 
         }
 
+        // ==========================================
+        // КАСТОМНЫЙ CONFIRM
+        // ==========================================
         let confirmCallback = null;
         function showConfirm(title, text, btnText, callback) { 
             document.getElementById('confirm-title').textContent = title; 
@@ -905,6 +936,7 @@
         let selectedWheelColor = 'red';
         let lastWheelStatus = null;
 
+        // Инициализация при загрузке
         if(token) { 
             document.getElementById('auth-modal').classList.add('hidden'); 
             init(); 
@@ -912,6 +944,9 @@
             document.getElementById('auth-modal').classList.remove('hidden'); 
         }
 
+        // ==========================================
+        // API ЗАПРОСЫ
+        // ==========================================
         async function req(ep, m='GET', b=null) {
             const h = { 'Content-Type': 'application/json' };
             if(token) h['Authorization'] = `Bearer ${token}`;
@@ -923,7 +958,7 @@
             });
             const d = await r.json();
             
-            if(!r.ok) throw new Error(d.detail || 'Ошибка');
+            if(!r.ok) throw new Error(d.detail || 'Ошибка сервера');
             return d;
         }
 
@@ -940,10 +975,15 @@
                 document.getElementById('auth-modal').classList.add('hidden'); 
                 init();
             } catch(e) { 
-                alert(e.message); 
+                const errEl = document.getElementById('a-err');
+                errEl.textContent = e.message;
+                errEl.classList.remove('hidden');
             }
         }
 
+        // ==========================================
+        // ИНИЦИАЛИЗАЦИЯ ИГРЫ
+        // ==========================================
         async function init() {
             try {
                 user = await req('/api/clicker/state'); 
@@ -992,6 +1032,7 @@
                     });
                     
                     socket.on('jackpot_update', d => updateJackpotUI(d));
+                    
                     socket.on('jackpot_finish', d => { 
                         document.getElementById('jp-winner').textContent = d.winner.username; 
                         playSfx('win'); confetti(); 
@@ -1013,6 +1054,7 @@
                     });
                     
                     socket.on('wheel_state_update', d => updateWheelUI(d));
+                    
                     socket.on('wheel_payout', d => {
                         playSfx('win'); 
                         confetti(); 
@@ -1049,7 +1091,6 @@
             if(t==='profile') loadProfile();
             if(t==='upgrade') loadUpgrade();
             if(t==='battles') { loadJackpot(); load1v1List(); }
-            if(t==='history') loadHistory();
             if(t==='leaderboard') loadLeaderboard();
         }
 
@@ -1104,7 +1145,6 @@
             const wheelVisual = document.getElementById('wheel-visual');
             const winnerText = document.getElementById('wheel-winner-text');
 
-            // Таймер
             if(state.status === 'waiting') {
                 let left = Math.max(0, Math.ceil(state.end_time - Date.now()/1000));
                 timerEl.textContent = `00:${left < 10 ? '0'+left : left}`;
@@ -1116,7 +1156,6 @@
                 timerEl.textContent = "Ожидание...";
             }
 
-            // Список ставок
             const betsList = document.getElementById('wheel-bets-list');
             if(state.bets && state.bets.length > 0) {
                 betsList.innerHTML = state.bets.map(b => `
@@ -1131,7 +1170,6 @@
                 document.getElementById('wheel-players-count').textContent = 0;
             }
 
-            // История
             if(state.history) {
                 document.getElementById('wheel-history').innerHTML = state.history.map(c => {
                     const hex = c === 'red' ? '#ef4444' : c === 'green' ? '#22c55e' : c === 'blue' ? '#3b82f6' : '#eab308';
@@ -1139,13 +1177,11 @@
                 }).join('');
             }
 
-            // Анимация
             if(state.status === 'spinning' && lastWheelStatus !== 'spinning') {
                 lastWheelStatus = 'spinning';
                 winnerText.textContent = '???';
                 startSpinSfx();
                 
-                // Крутим на случайный угол (5-6 полных оборотов + рандом)
                 const randomDeg = (360 * 5) + Math.floor(Math.random() * 360);
                 wheelVisual.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
                 wheelVisual.style.transform = `rotate(${randomDeg}deg)`;
@@ -1167,7 +1203,7 @@
         }
 
         // ==========================================
-        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ЧАТА И ТОПА
+        // ЧАТ И ТОП
         // ==========================================
         function renderChatMsg(boxId, d) { 
             const box = document.getElementById(boxId); 
@@ -1233,7 +1269,7 @@
         }
 
         // ==========================================
-        // КЕЙСЫ И РУЛЕТКА
+        // КЕЙСЫ
         // ==========================================
         async function loadCases() { 
             try { 
@@ -1459,7 +1495,7 @@
         }
 
         // ==========================================
-        // ИСТОРИЯ, КЛИКЕР И ПРОФИЛЬ
+        // ИСТОРИЯ И ПРОФИЛЬ
         // ==========================================
         async function loadHistory() { 
             try { 
@@ -1542,6 +1578,7 @@
                 } 
                 
                 renderInventory(); 
+                loadHistory();
             } catch(e) { 
                 showToast("Ошибка профиля", 'lose'); 
             } 
