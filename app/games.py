@@ -1,6 +1,5 @@
 import hmac, hashlib, secrets, random
 
-# База пони для превью
 PONY_DB = {
     "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
     "uncommon": ["Apple Bloom", "Sweetie Belle", "Scootaloo", "Babs Seed", "Silver Spoon", "Diamond Tiara"],
@@ -22,13 +21,24 @@ RARITIES = [
 ]
 RARITY_BY_ID = {r[0]: r for r in RARITIES}
 
+# 8 КЕЙСОВ
 CASES = {
     "starter":   {"name": "Стартовый",   "price": 100,
                   "weights": {"common": 650, "uncommon": 250, "rare": 80, "epic": 18, "legendary": 2}},
+    "barn":      {"name": "Амбар",       "price": 500,
+                  "weights": {"common": 400, "uncommon": 300, "rare": 200, "epic": 80, "legendary": 20}},
     "royal":     {"name": "Королевский", "price": 1000,
                   "weights": {"common": 300, "uncommon": 350, "rare": 250, "epic": 80, "legendary": 18, "mythic": 2}},
+    "cyber":     {"name": "Кибер-Пони",  "price": 5000,
+                  "weights": {"uncommon": 200, "rare": 400, "epic": 300, "legendary": 90, "mythic": 10}},
+    "neon":      {"name": "Неон",        "price": 10000,
+                  "weights": {"rare": 300, "epic": 400, "legendary": 200, "mythic": 90, "celestial": 10}},
+    "magic":     {"name": "Магия",       "price": 15000,
+                  "weights": {"rare": 200, "epic": 300, "legendary": 300, "mythic": 150, "celestial": 50}},
     "celestial": {"name": "Небесный",    "price": 25000,
                   "weights": {"rare": 200, "epic": 400, "legendary": 300, "mythic": 95, "celestial": 5}},
+    "god":       {"name": "Божественный","price": 50000,
+                  "weights": {"epic": 400, "legendary": 300, "mythic": 200, "celestial": 100}},
 }
 
 def gen_seed() -> str:
@@ -57,17 +67,14 @@ def pick_pony(rarity: str) -> tuple[str, int, str]:
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
 
-# Функция для генерации превью кейса
 def get_case_preview(case_id: str) -> list:
     weights = CASES[case_id]["weights"]
     preview = []
-    for rarity, weight in weights.items():
-        # Берем пару случайных пони из этой редкости для превью
+    for rarity in weights.keys():
         ponies = random.sample(PONY_DB.get(rarity, ["Unknown"]), min(2, len(PONY_DB.get(rarity, []))))
         for p in ponies:
             base_mult = RARITY_BY_ID[rarity][3]
             price = int(100 * base_mult * random.uniform(0.8, 1.2))
             color = RARITY_BY_ID[rarity][4]
             preview.append({"name": p, "price": price, "rarity": rarity, "color": color})
-    # Сортируем по цене
     return sorted(preview, key=lambda x: x["price"], reverse=True)
