@@ -21,11 +21,12 @@ Base.metadata.create_all(bind=engine)
 def run_migrations():
     with engine.connect() as conn:
         try:
+            # Добавляем колонки для аватарок, бонуса и ЦВЕТА инвентаря
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR DEFAULT '🦄';"))
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;"))
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10);"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bonus TIMESTAMP;"))
+            conn.execute(text("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS color VARCHAR(16) DEFAULT '#fff';"))
             conn.commit()
+            print("Миграция БД прошла успешно!")
         except Exception as e:
             print(f"Ошибка миграции: {e}")
 
