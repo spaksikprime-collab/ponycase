@@ -10,11 +10,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #12161f; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); background-attachment: fixed; }
-        @media (max-width: 768px) { body { padding-bottom: 70px; } }
+        
+        @media (max-width: 1024px) { body { padding-bottom: 70px; } }
 
         .glass { background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ПК Навигация */
+        .desktop-nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: bold; color: #9ca3af; transition: 0.2s; cursor: pointer; font-size: 14px; background: transparent; border: none; }
+        .desktop-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .desktop-nav-btn.active { color: #fff; background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
 
         /* Рулетка */
         .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; }
@@ -40,7 +46,7 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* Навигация */
+        /* Мобильная навигация */
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 10px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
         
@@ -58,7 +64,18 @@
     <!-- HEADER -->
     <header class="glass sticky top-0 z-40 px-4 py-3 border-b border-gray-800">
         <div class="max-w-[1400px] mx-auto flex justify-between items-center">
-            <h1 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
+            
+            <div class="flex items-center gap-8">
+                <h1 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
+                
+                <div class="hidden lg:flex gap-2">
+                    <button onclick="switchTab('cases')" id="nav-cases" class="desktop-nav-btn active">Кейсы</button>
+                    <button onclick="switchTab('clicker')" id="nav-clicker" class="desktop-nav-btn">Кликер</button>
+                    <button onclick="switchTab('battles')" id="nav-battles" class="desktop-nav-btn">Батлы</button>
+                    <button onclick="switchTab('upgrade')" id="nav-upgrade" class="desktop-nav-btn">Апгрейд</button>
+                    <button onclick="switchTab('mines')" id="nav-mines" class="desktop-nav-btn">Мины</button>
+                </div>
+            </div>
             
             <div class="flex gap-2 md:gap-4 items-center">
                 <div class="text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-500/20 font-bold hidden sm:block">🟢 <span id="online-count">0</span></div>
@@ -83,7 +100,7 @@
     </div>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 w-full max-w-[1400px] mx-auto p-3 md:p-6 flex flex-col md:flex-row gap-6">
+    <main class="flex-1 w-full max-w-[1400px] mx-auto p-3 md:p-6 flex flex-col lg:flex-row gap-6">
         
         <!-- ЛЕВАЯ КОЛОНКА -->
         <div class="flex-1 min-w-0">
@@ -112,6 +129,7 @@
                                 <select id="cd-count" class="w-full bg-[#12161f] p-2 rounded-lg text-white border border-gray-700 font-bold text-sm text-center outline-none">
                                     <option value="1">Открыть x1</option>
                                     <option value="2">Открыть x2</option>
+                                    <option value="3">Открыть x3</option>
                                     <option value="5">Открыть x5</option>
                                     <option value="10">Открыть x10</option>
                                 </select>
@@ -359,13 +377,26 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА РУЛЕТКИ (Мульти) -->
-    <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md">
-        <div class="w-full max-w-4xl">
-            <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Открываем кейс...</h3>
-            <div id="spin-container" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto mb-6"></div>
+    <!-- МОДАЛКА РУЛЕТКИ (Мульти + Продажа) -->
+    <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md overflow-y-auto">
+        <div class="w-full max-w-4xl my-auto">
+            <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
+            
+            <!-- Рулетки -->
+            <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto mb-4"></div>
+            
+            <!-- Результаты (Забрать/Продать) -->
+            <div id="spin-results" class="hidden flex-col items-center mb-6">
+                <h4 class="text-lg font-bold text-white mb-3">Твои дропы:</h4>
+                <div id="results-grid" class="flex flex-wrap justify-center gap-3"></div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="sellAllDrops()" class="bg-red-600 hover:bg-red-500 px-6 py-2 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(239,68,68,0.3)] transition">ПРОДАТЬ ВСЁ</button>
+                    <button onclick="closeSpinModal()" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-xl font-bold text-sm border border-gray-500 transition">ЗАБРАТЬ В ИНВЕНТАРЬ</button>
+                </div>
+            </div>
+
             <div class="text-center">
-                <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold border border-gray-600 hidden hover:bg-gray-700 transition">ЗАБРАТЬ</button>
+                <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold border border-gray-600 hidden hover:bg-gray-700 transition">ЗАКРЫТЬ</button>
             </div>
         </div>
     </div>
@@ -434,7 +465,8 @@
         let upgMult = 2, casesData = [], jpTimerInterval = null;
         let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
         let currentCase = null;
-        let currentCaseData = []; // Храним данные кейса здесь, чтобы не делать лишние запросы
+        let currentCaseData = [];
+        let currentDrops = []; // Храним дропы для продажи
 
         if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } else { document.getElementById('auth-modal').classList.remove('hidden'); }
 
@@ -518,6 +550,10 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
             
+            document.querySelectorAll('.desktop-nav-btn').forEach(b => b.classList.remove('active'));
+            const pcBtn = document.getElementById(`nav-${t}`);
+            if(pcBtn) pcBtn.classList.add('active');
+
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             const mobBtn = document.getElementById(`m-nav-${t}`);
             if(mobBtn) mobBtn.classList.add('active');
@@ -630,7 +666,6 @@
             if(!c) return;
             currentCase = id;
             
-            // Переключаем страницы ДО запроса, чтобы юзер видел, что клик сработал
             document.getElementById('page-cases').classList.remove('active');
             document.getElementById('page-case-detail').classList.add('active');
             
@@ -672,32 +707,31 @@
         async function startCaseSpin() {
             const btn = document.getElementById('spin-close-btn');
             btn.classList.add('hidden');
+            document.getElementById('spin-results').classList.add('hidden');
+            
             const isFast = document.getElementById('cd-fast').checked;
             const count = parseInt(document.getElementById('cd-count').value);
             
             const container = document.getElementById('spin-container');
             container.innerHTML = '';
             
-            // Защита от пустого пула
             const pool = currentCaseData.length > 0 ? currentCaseData : [{name: 'Pony', color: '#fff'}];
 
             document.getElementById('modal-spin').classList.remove('hidden');
+            document.getElementById('spin-title').textContent = "Открываем кейс...";
             
             try {
                 const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count});
                 updateBal(res.balance);
+                currentDrops = res.results; // Сохраняем для продажи
                 
-                if(!res.results || res.results.length === 0) {
-                    throw new Error("Сервер вернул пустой результат");
-                }
+                if(!res.results || res.results.length === 0) throw new Error("Пустой результат");
 
                 if (isFast) {
                     playSfx('win'); confetti();
-                    res.results.forEach(item => {
-                        container.innerHTML += `<div class="text-center py-2"><span class="text-lg font-bold" style="color:${item.color}">${item.pony_id}</span> <span class="text-yellow-400 text-sm ml-2">${item.price}🪙</span></div>`;
-                    });
-                    btn.classList.remove('hidden');
-                    btn.onclick = closeSpinModal;
+                    document.getElementById('spin-title').textContent = "Твои дропы!";
+                    document.getElementById('spin-container').classList.add('hidden');
+                    showSpinResults(res.results);
                 } else {
                     startSpinSfx();
                     let promises = [];
@@ -718,6 +752,9 @@
                         }
                         strip.innerHTML = html;
                         
+                        // Форсируем рефлоу для каждого ряда
+                        void strip.offsetWidth;
+
                         promises.push(new Promise(resolve => {
                             setTimeout(() => {
                                 const containerWidth = strip.parentElement.offsetWidth;
@@ -733,8 +770,9 @@
                     
                     Promise.all(promises).then(() => {
                         stopSpinSfx(); playSfx('win'); confetti();
-                        btn.classList.remove('hidden');
-                        btn.onclick = closeSpinModal;
+                        document.getElementById('spin-title').textContent = "Твои дропы!";
+                        document.getElementById('spin-container').classList.add('hidden'); // Прячем рулетки
+                        showSpinResults(res.results);
                     });
                 }
             } catch(e) { 
@@ -744,9 +782,63 @@
             }
         }
 
+        function showSpinResults(results) {
+            const grid = document.getElementById('results-grid');
+            grid.innerHTML = results.map((item, index) => `
+                <div class="glass p-3 rounded-xl flex flex-col items-center min-w-[120px] border-t-2" style="border-color:${item.color}">
+                    <div class="text-xs font-bold mb-1 text-center">${item.pony_id}</div>
+                    <div class="text-yellow-400 font-bold mb-3">${item.price} 🪙</div>
+                    <div class="flex gap-1 w-full" id="drop-actions-${index}">
+                        <button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 hover:text-white transition">Продать</button>
+                        <button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 hover:text-white transition">Забрать</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('spin-results').classList.remove('hidden');
+            document.getElementById('spin-results').classList.add('flex');
+        }
+
+        async function sellDropItem(id, price, index) {
+            try {
+                await req(`/api/user/inventory/sell/${id}`, 'POST');
+                updateBal(user.balance + price); // Оптимистичное обновление
+                const actions = document.getElementById(`drop-actions-${index}`);
+                actions.innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`;
+                playSfx('win');
+                // Обновляем реальный баланс с сервера
+                const state = await req('/api/clicker/state');
+                updateBal(state.balance);
+            } catch(e) { showToast(e.message, 'lose'); }
+        }
+
+        function keepDropItem(index) {
+            const actions = document.getElementById(`drop-actions-${index}`);
+            actions.innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`;
+            playSfx('click');
+        }
+
+        async function sellAllDrops() {
+            if(!confirm("Продать все выпавшие предметы?")) return;
+            let totalGained = 0;
+            for (const item of currentDrops) {
+                try {
+                    await req(`/api/user/inventory/sell/${item.id}`, 'POST');
+                    totalGained += item.price;
+                } catch(e) {}
+            }
+            const state = await req('/api/clicker/state');
+            updateBal(state.balance);
+            showToast(`Продано на ${totalGained} 🪙!`, 'win');
+            closeSpinModal();
+        }
+
         function closeSpinModal() {
             document.getElementById('modal-spin').classList.add('hidden');
             document.getElementById('spin-container').innerHTML = '';
+            document.getElementById('spin-container').classList.remove('hidden');
+            document.getElementById('spin-results').classList.add('hidden');
+            document.getElementById('spin-results').classList.remove('flex');
         }
 
         // --- ПРОФИЛЬ ---
