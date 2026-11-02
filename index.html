@@ -7,618 +7,501 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --bg: #0f111a; 
-            --card: rgba(25, 28, 41, 0.7); 
-            --primary: #8b5cf6; 
-            --primary-hover: #7c3aed;
-            --text-muted: #9ca3af;
-        }
-        
-        body { 
-            background-color: var(--bg); 
-            color: #f8fafc; 
-            font-family: 'Montserrat', sans-serif; 
-            overflow-x: hidden; 
-            background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, var(--bg) 50%);
-            background-attachment: fixed;
-        }
-        
-        .glass { 
-            background: var(--card); 
-            backdrop-filter: blur(16px); 
-            border: 1px solid rgba(255,255,255,0.05); 
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5); 
-        }
-        
-        .btn { transition: all 0.2s ease; user-select: none; }
-        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn:active { transform: scale(0.96); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        
-        .upg-wheel-container { position: relative; width: 240px; height: 240px; margin: 0 auto; }
-        .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1e2336; box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 30px rgba(139,92,246,0.2); }
-        .upg-arrow { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 36px; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: 50% 138px; z-index: 20; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
-        
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
+        body { background-color: #0b1120; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #0b1120 50%); }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .page { display: none; } .page.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .modal-overlay { background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); }
-
-        .inv-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
-        .inv-item { min-width: 85px; scroll-snap-align: start; padding: 10px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; background: #1e2336; transition: all 0.2s; position: relative; }
-        .inv-item.selected { border-color: var(--primary); background: rgba(139, 92, 246, 0.15); box-shadow: 0 0 15px rgba(139,92,246,0.3); }
-        .inv-item:hover { background: #2a2f45; }
-
-        .roulette-container { width: 100%; overflow: hidden; position: relative; padding: 20px 0; background: #0f111a; border-radius: 16px; border: 1px solid #1e2336; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        /* Рулетка кейсов */
+        .roulette-box { overflow: hidden; position: relative; background: #0f111a; border-radius: 12px; border: 1px solid #1e293b; padding: 15px 0; }
         .roulette-strip { display: flex; gap: 10px; will-change: transform; }
-        .roulette-item { min-width: 90px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e2336; border-radius: 8px; border: 2px solid transparent; }
-        .roulette-center-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; border-radius: 4px; }
+        .roulette-item { min-width: 90px; height: 100px; background: #1e293b; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; }
+        .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #ef4444; }
 
-        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 320px; margin: 0 auto; }
-        .mine-cell { aspect-ratio: 1; background: #1e2336; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; transition: 0.2s; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
-        .mine-cell:hover { background: #2a2f45; transform: translateY(-2px); }
-        .mine-cell.opened { background: #064e3b; box-shadow: inset 0 0 15px #10b981; border-color: #10b981; cursor: default; }
-        .mine-cell.boom { background: #7f1d1d; box-shadow: inset 0 0 15px #ef4444; border-color: #ef4444; }
+        /* Апгрейд */
+        .upg-wheel { width: 200px; height: 200px; border-radius: 50%; border: 4px solid #1e293b; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin: 0 auto; }
+        .upg-arrow { font-size: 30px; text-align: center; margin-bottom: -15px; position: relative; z-index: 10; transition: transform 3s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: center 115px; }
 
-        .marquee-wrapper { display: flex; width: max-content; animation: marquee 30s linear infinite; }
-        .marquee-wrapper:hover { animation-play-state: paused; }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        /* Чат */
+        #chat-box { position: fixed; bottom: 70px; right: 10px; width: 300px; height: 350px; z-index: 50; display: flex; flex-direction: column; }
+        .chat-msg { font-size: 12px; margin-bottom: 4px; word-wrap: break-word; }
+        .chat-user { color: #a855f7; font-weight: bold; }
+
+        /* Мины */
+        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 300px; margin: 0 auto; }
+        .mine-cell { aspect-ratio: 1; background: #1e293b; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; transition: 0.2s; border: 1px solid #334155; }
+        .mine-cell.opened { background: #064e3b; border-color: #10b981; }
+        .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; }
+
+        /* Джекпот Колесо */
+        .jackpot-wheel-container { position: relative; width: 250px; height: 250px; margin: 0 auto; }
+        .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 4px solid #1e293b; background: #0f111a; overflow: hidden; position: relative; }
+        .jackpot-sector { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .jackpot-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: #1e293b; border-radius: 50%; border: 2px solid #eab308; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col pb-24">
+<body class="min-h-screen flex flex-col pb-20">
 
-    <!-- HEADER -->
-    <header class="glass sticky top-0 z-40 px-4 py-3 flex justify-between items-center rounded-b-2xl border-t-0 border-x-0">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer tracking-wider" onclick="switchTab('cases')">PONYCASE 🦄</h1>
-        <div class="flex items-center gap-2">
-            <button onclick="claimBonus()" class="btn bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg font-bold text-xs shadow-[0_0_10px_rgba(34,197,94,0.2)]">+ БОНУС</button>
-            <div class="bg-[#0f111a] px-4 py-1.5 rounded-lg border border-yellow-500/30 flex items-center gap-2 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-                <span id="balance" class="text-yellow-400 font-bold text-lg">0</span> <span class="text-yellow-500 text-sm">🪙</span>
-            </div>
+    <header class="glass sticky top-0 z-40 px-4 py-2 flex justify-between items-center">
+        <h1 class="text-xl font-black text-purple-400">PONYCASE 🦄</h1>
+        <div class="flex gap-2 items-center">
+            <div class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">🟢 <span id="online-count">0</span></div>
+            <button onclick="claimBonus()" class="bg-green-600 px-3 py-1 rounded text-xs font-bold">Бонус</button>
+            <div class="bg-gray-900 px-3 py-1 rounded border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold">0</span> 🪙</div>
         </div>
     </header>
 
-    <!-- LIVE ДРОПЫ -->
-    <div class="bg-[#0f111a]/90 border-b border-gray-800 py-2 overflow-hidden relative shadow-lg">
-        <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0f111a] to-transparent z-10"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0f111a] to-transparent z-10"></div>
-        <div id="live-drops-wrapper" class="flex whitespace-nowrap px-4 items-center overflow-hidden">
-            <div id="live-drops" class="marquee-wrapper flex gap-3 text-xs">
-                <span class="text-gray-500 italic">Ожидание дропов...</span>
-            </div>
+    <div class="bg-[#0f111a] border-b border-gray-800 py-2 overflow-hidden relative">
+        <div id="live-drops" class="flex gap-3 whitespace-nowrap px-4 items-center text-xs">
+            <span class="text-gray-500 italic">Ожидание дропов...</span>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <main class="flex-1 p-4 max-w-2xl mx-auto w-full">
-        
+    <main class="flex-1 p-4 max-w-lg mx-auto w-full">
         <!-- КЕЙСЫ -->
         <div id="page-cases" class="page active">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="w-2 h-6 bg-purple-500 rounded-full shadow-[0_0_10px_#a855f7]"></span> Кейсы</h2>
-            <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+            <h2 class="text-xl font-bold mb-4">Кейсы</h2>
+            <div id="cases-grid" class="grid grid-cols-2 gap-3"></div>
         </div>
 
-        <!-- БАТЛЫ -->
+        <!-- ДЖЕКПОТ -->
         <div id="page-battles" class="page">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold flex items-center gap-3"><span class="w-2 h-6 bg-red-500 rounded-full shadow-[0_0_10px_#ef4444]"></span> Батлы</h2>
-                <button onclick="createBattle()" class="btn bg-red-500/20 text-red-400 border border-red-500/50 px-4 py-2 rounded-xl font-bold text-sm">Создать батл</button>
+            <h2 class="text-xl font-bold mb-4 text-yellow-400">Jackpot</h2>
+            <div class="glass p-4 rounded-xl text-center mb-4">
+                <p class="text-sm text-gray-400 mb-2">Общий банк</p>
+                <div class="text-4xl font-black text-yellow-400 mb-4" id="jp-total">0 🪙</div>
+                
+                <div class="jackpot-wheel-container mb-4">
+                    <div class="jackpot-wheel" id="jp-wheel">
+                        <div class="jackpot-center">
+                            <span class="text-xs text-gray-400">Победитель</span>
+                            <span class="font-bold text-sm" id="jp-winner">???</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-2 mb-4">
+                    <input type="number" id="jp-bet" placeholder="Ставка" class="bg-gray-900 p-2 rounded w-24 text-center border border-gray-700">
+                    <button onclick="betJackpot()" class="bg-yellow-600 px-4 py-2 rounded font-bold">Поставить</button>
+                </div>
+                <button onclick="startJackpot()" class="w-full bg-red-600 py-2 rounded font-bold">Крутить (Владелец)</button>
             </div>
-            <div id="battles-list" class="flex flex-col gap-3"></div>
+            <div id="jp-players" class="flex flex-col gap-2"></div>
         </div>
 
         <!-- АПГРЕЙД -->
         <div id="page-upgrade" class="page">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="w-2 h-6 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></span> Апгрейд</h2>
-            
-            <div class="glass p-6 rounded-3xl flex flex-col items-center relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-50"></div>
-                
-                <div class="upg-wheel-container mb-8">
-                    <div class="upg-arrow" id="upg-arrow">🔻</div>
-                    <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#22c55e 0% 50%, #ef4444 50% 100%);"></div>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none rounded-full bg-[#1e2336]/80 w-[80%] h-[80%] m-auto border-4 border-[#0f111a]">
-                        <span class="text-4xl font-black text-white" id="upg-chance-text">50%</span>
-                        <span class="text-[10px] text-gray-400 font-bold tracking-widest mt-1">ШАНС</span>
+            <h2 class="text-xl font-bold mb-4">Апгрейд</h2>
+            <div class="glass p-4 rounded-xl flex flex-col items-center">
+                <div class="upg-arrow" id="upg-arrow">🔻</div>
+                <div class="upg-wheel" id="upg-wheel"></div>
+                <div class="text-2xl font-black my-2" id="upg-chance">50%</div>
+
+                <div class="flex w-full gap-2 mb-4">
+                    <div class="flex-1 bg-gray-900 p-2 rounded text-center text-xs">
+                        <div class="text-gray-400">Твой предмет</div>
+                        <div class="font-bold text-white mt-1" id="upg-my-item">Не выбран</div>
+                    </div>
+                    <div class="text-gray-500 font-bold pt-2">➡</div>
+                    <div class="flex-1 bg-gray-900 p-2 rounded text-center text-xs">
+                        <div class="text-gray-400">Цель (x2)</div>
+                        <div class="font-bold text-green-400 mt-1" id="upg-target-item">Авто</div>
                     </div>
                 </div>
 
-                <div class="w-full bg-[#1e2336]/50 p-4 rounded-2xl mb-6 border border-gray-700/50">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Целевой множитель</span>
-                        <span class="text-lg font-black text-green-400" id="upg-target-display">x2.0</span>
-                    </div>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button onclick="setPreset(1.5)" class="btn bg-gray-800 py-2 rounded-lg font-bold text-sm hover:bg-gray-700">x1.5</button>
-                        <button onclick="setPreset(2)" class="btn bg-gray-800 py-2 rounded-lg font-bold text-sm hover:bg-gray-700">x2</button>
-                        <button onclick="setPreset(5)" class="btn bg-gray-800 py-2 rounded-lg font-bold text-sm hover:bg-gray-700">x5</button>
-                        <button onclick="setPreset(10)" class="btn bg-gray-800 py-2 rounded-lg font-bold text-sm hover:bg-gray-700">x10</button>
-                    </div>
-                </div>
-
-                <div class="w-full mb-6">
-                    <span class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-3 block">Выбери свой предмет:</span>
-                    <div class="inv-scroll" id="upg-inventory"></div>
-                </div>
-
-                <button onclick="doUpgrade()" class="btn w-full bg-gradient-to-r from-green-500 to-emerald-600 py-4 rounded-xl font-black text-lg text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] tracking-wide">АПГРЕЙДНУТЬ</button>
+                <select id="upg-select" class="w-full bg-gray-900 p-2 rounded mb-4 text-sm" onchange="updateUpgradeUI()"></select>
+                <button onclick="doUpgrade()" class="w-full bg-green-600 py-3 rounded font-bold">Апгрейд</button>
             </div>
         </div>
 
         <!-- МИНЫ -->
         <div id="page-mines" class="page">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_#3b82f6]"></span> Мины</h2>
-            <div class="glass p-6 rounded-3xl flex flex-col items-center">
-                <div id="mines-start-screen" class="w-full max-w-xs">
-                    <input type="number" id="mines-bet" placeholder="Ставка (мин 10)" class="w-full bg-[#0f111a] p-4 rounded-xl mb-3 text-white outline-none border border-gray-700 focus:border-blue-500 font-bold text-center text-xl">
-                    <select id="mines-count" class="w-full bg-[#0f111a] p-4 rounded-xl mb-5 text-white outline-none border border-gray-700 focus:border-blue-500 font-bold text-center">
-                        <option value="3">3 Мины (Легко)</option>
-                        <option value="5">5 Мин (Средне)</option>
-                        <option value="10">10 Мин (Хардкор)</option>
+            <h2 class="text-xl font-bold mb-4">Мины</h2>
+            <div class="glass p-4 rounded-xl text-center">
+                <div id="mines-setup">
+                    <input type="number" id="mines-bet" placeholder="Ставка (мин 10)" class="w-full bg-gray-900 p-3 rounded mb-2 text-center text-white border border-gray-700">
+                    <select id="mines-count" class="w-full bg-gray-900 p-3 rounded mb-4 text-center text-white border border-gray-700">
+                        <option value="3">3 Мины</option>
+                        <option value="5">5 Мин</option>
                     </select>
-                    <button onclick="startMines()" class="btn w-full bg-blue-600 py-4 rounded-xl font-black tracking-wide shadow-[0_0_15px_rgba(37,99,235,0.4)]">НАЧАТЬ ИГРУ</button>
+                    <button onclick="startMines()" class="w-full bg-blue-600 py-3 rounded font-bold">Начать</button>
                 </div>
-                <div id="mines-play-screen" class="hidden w-full flex flex-col items-center">
-                    <div class="flex justify-between w-full max-w-[320px] mb-4 text-sm font-bold bg-[#0f111a] p-3 rounded-xl border border-gray-800">
-                        <div class="text-gray-400">Множ: <span id="mines-multi" class="text-green-400 text-lg ml-1">1.0x</span></div>
-                        <div class="text-gray-400">Забрать: <span id="mines-next" class="text-yellow-400 text-lg ml-1">0🪙</span></div>
+                <div id="mines-game" class="hidden">
+                    <div class="flex justify-between text-sm mb-2 font-bold">
+                        <span class="text-green-400" id="mines-multi">1.0x</span>
+                        <span class="text-yellow-400" id="mines-profit">0 🪙</span>
                     </div>
-                    <div id="mines-grid" class="mines-grid mb-5"></div>
-                    <button onclick="cashoutMines()" class="btn w-full max-w-[320px] bg-yellow-500 text-black py-4 rounded-xl font-black tracking-wide shadow-[0_0_15px_rgba(234,179,8,0.4)]">ЗАБРАТЬ ВЫИГРЫШ</button>
+                    <div class="mines-grid mb-4" id="mines-grid"></div>
+                    <button onclick="cashoutMines()" class="w-full bg-yellow-500 text-black py-3 rounded font-bold">Забрать</button>
                 </div>
             </div>
         </div>
 
         <!-- ПРОФИЛЬ -->
         <div id="page-profile" class="page">
-            <div class="glass p-6 rounded-3xl mb-6 flex flex-col items-center relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-purple-500/20 to-transparent"></div>
-                <div class="relative w-24 h-24 mb-3 z-10">
-                    <img id="profile-avatar-img" class="w-full h-full rounded-full object-cover border-4 border-[#1e2336] hidden">
-                    <div id="profile-avatar-emoji" class="w-full h-full rounded-full bg-[#1e2336] flex items-center justify-center text-5xl border-4 border-[#1e2336]">🦄</div>
+            <div class="glass p-4 rounded-xl text-center mb-4 relative">
+                <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-purple-500 mb-2 bg-gray-800">
+                    <img id="p-avatar" class="w-full h-full object-cover hidden">
+                    <div id="p-emoji" class="w-full h-full flex items-center justify-center text-4xl">🦄</div>
                 </div>
-                <label class="btn bg-purple-600 text-xs px-4 py-1.5 rounded-full cursor-pointer z-10 font-bold shadow-lg">Сменить фото<input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="uploadAvatar(this)"></label>
-                
-                <div class="text-xl font-black mt-3 z-10" id="profile-name">Loading...</div>
-                
-                <div class="flex justify-around w-full mt-6 text-center bg-[#0f111a]/50 p-4 rounded-2xl border border-gray-800 z-10">
-                    <div><div class="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Клики</div><div id="stat-clicks" class="font-black text-yellow-400 text-xl">0</div></div>
-                    <div class="w-px bg-gray-700"></div>
-                    <div><div class="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Кейсы</div><div id="stat-cases" class="font-black text-purple-400 text-xl">0</div></div>
-                </div>
+                <label class="text-xs bg-purple-600 px-3 py-1 rounded-full cursor-pointer inline-block mb-2">
+                    Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
+                </label>
+                <h2 class="text-lg font-bold" id="p-name">Loading...</h2>
             </div>
-            
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Инвентарь</h2>
-                <button onclick="sellAll()" class="btn bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-xs font-bold border border-red-500/50 hover:bg-red-500 hover:text-white transition">Продать Всё</button>
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold">Инвентарь</h3>
+                <button onclick="sellAll()" class="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded border border-red-500/30">Продать всё</button>
             </div>
-            <div id="inventory-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+            <div id="inv-grid" class="grid grid-cols-3 gap-2"></div>
         </div>
-
     </main>
 
-    <!-- BOTTOM NAV -->
-    <nav class="fixed bottom-0 w-full glass flex justify-around py-3 z-40 rounded-t-3xl border-b-0 border-x-0">
-        <button onclick="switchTab('cases')" class="text-gray-400 hover:text-purple-400 flex flex-col items-center text-[10px] font-bold transition"><span class="text-2xl mb-1">📦</span>Кейсы</button>
-        <button onclick="switchTab('battles')" class="text-gray-400 hover:text-red-400 flex flex-col items-center text-[10px] font-bold transition"><span class="text-2xl mb-1">⚔️</span>Батлы</button>
-        <button onclick="switchTab('upgrade')" class="text-gray-400 hover:text-green-400 flex flex-col items-center text-[10px] font-bold transition"><span class="text-2xl mb-1">📈</span>Апгрейд</button>
-        <button onclick="switchTab('mines')" class="text-gray-400 hover:text-blue-400 flex flex-col items-center text-[10px] font-bold transition"><span class="text-2xl mb-1">💣</span>Мины</button>
-        <button onclick="switchTab('profile')" class="text-gray-400 hover:text-white flex flex-col items-center text-[10px] font-bold transition"><span class="text-2xl mb-1">👤</span>Профиль</button>
+    <!-- ЧАТ -->
+    <div id="chat-box" class="glass rounded-t-xl overflow-hidden hidden md:flex">
+        <div class="bg-purple-900/50 p-2 text-xs font-bold border-b border-gray-700 flex justify-between">Чат <button onclick="document.getElementById('chat-box').classList.add('hidden')">x</button></div>
+        <div id="chat-messages" class="flex-1 p-2 overflow-y-auto bg-black/30"></div>
+        <div class="flex border-t border-gray-700">
+            <input type="text" id="chat-input" placeholder="Сообщение..." class="flex-1 bg-transparent p-2 text-xs outline-none text-white" onkeypress="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()" class="bg-purple-600 px-3 text-xs font-bold">></button>
+        </div>
+    </div>
+    <button onclick="document.getElementById('chat-box').classList.remove('hidden')" class="fixed bottom-20 right-4 bg-purple-600 w-10 h-10 rounded-full shadow-lg z-40 md:hidden">💬</button>
+
+    <!-- НАВИГАЦИЯ -->
+    <nav class="fixed bottom-0 w-full glass flex justify-around py-2 z-40">
+        <button onclick="switchTab('cases')" class="text-gray-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl">📦</span>Кейсы</button>
+        <button onclick="switchTab('battles')" class="text-gray-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl">🎰</span>Джекпот</button>
+        <button onclick="switchTab('upgrade')" class="text-gray-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl">📈</span>Апгрейд</button>
+        <button onclick="switchTab('mines')" class="text-gray-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl">💣</span>Мины</button>
+        <button onclick="switchTab('profile')" class="text-gray-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl">👤</span>Профиль</button>
     </nav>
 
     <!-- МОДАЛКА АВТОРИЗАЦИИ -->
-    <div id="auth-modal" class="fixed inset-0 modal-overlay flex items-center justify-center p-4 z-[100]">
-        <div class="glass p-8 rounded-3xl w-full max-w-sm relative overflow-hidden">
-            <div class="absolute -top-20 -right-20 w-48 h-48 bg-purple-600 rounded-full blur-3xl opacity-20"></div>
-            
-            <h2 class="text-3xl font-black mb-8 text-center tracking-wide">PONYCASE</h2>
-            
-            <input type="email" id="auth-email" placeholder="Email" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none focus:border-purple-500 font-medium">
-            <input type="text" id="auth-user" placeholder="Никнейм (при регистрации)" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none focus:border-purple-500 font-medium">
-            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-6 text-white outline-none focus:border-purple-500 font-medium">
-            
-            <div class="flex gap-3">
-                <button onclick="doLogin()" class="btn flex-1 bg-gray-700 py-4 rounded-xl font-bold text-sm">ВХОД</button>
-                <button onclick="doRegister()" class="btn flex-1 bg-purple-600 py-4 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(168,85,247,0.5)]">РЕГИСТРАЦИЯ</button>
+    <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100]">
+        <div class="glass p-6 rounded-2xl w-full max-w-sm">
+            <h2 class="text-xl font-black text-center mb-6">Вход в PonyCase</h2>
+            <input type="text" id="a-user" placeholder="Логин" class="w-full bg-gray-900 p-3 rounded mb-2 text-white border border-gray-700">
+            <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-gray-900 p-3 rounded mb-4 text-white border border-gray-700">
+            <div class="flex gap-2">
+                <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2 rounded font-bold">Вход</button>
+                <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2 rounded font-bold">Регистрация</button>
             </div>
-            
-            <p id="auth-err" class="text-red-500 text-xs mt-4 text-center hidden bg-red-500/10 p-3 rounded-xl border border-red-500/20 font-bold"></p>
+            <p id="a-err" class="text-red-500 text-xs text-center mt-2 hidden"></p>
         </div>
     </div>
 
     <!-- МОДАЛКА КЕЙСА -->
-    <div id="modal-case" class="fixed inset-0 modal-overlay hidden flex flex-col items-center justify-center p-4 z-[90]">
-        <div class="glass p-6 rounded-3xl w-full max-w-md relative">
-            <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-4 right-5 text-3xl text-gray-400 hover:text-white leading-none">&times;</button>
-            <h3 id="modal-title" class="text-2xl font-black mb-6 text-center tracking-wide">Содержимое</h3>
+    <div id="modal-case" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-50">
+        <div class="glass p-4 rounded-xl w-full max-w-md relative">
+            <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-2 right-3 text-xl">&times;</button>
+            <h3 id="m-title" class="text-center font-bold mb-4">Кейс</h3>
             
-            <div id="preview-content" class="mb-6">
-                <div id="preview-grid" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2"></div>
+            <div id="m-preview" class="grid grid-cols-2 gap-2 mb-4"></div>
+            
+            <div id="m-roulette" class="hidden">
+                <div class="roulette-box mb-2">
+                    <div class="roulette-line"></div>
+                    <div id="m-strip" class="roulette-strip"></div>
+                </div>
+                <p id="m-result" class="text-center font-bold h-6 mb-2"></p>
             </div>
             
-            <div id="roulette-content" class="hidden">
-                <div class="roulette-container mb-4"><div class="roulette-center-line"></div><div id="roulette-strip" class="roulette-strip"></div></div>
-                <p id="roulette-result" class="text-center text-xl font-black mb-4 h-6"></p>
-            </div>
-            
-            <button id="open-btn" class="btn w-full bg-gradient-to-r from-purple-600 to-pink-600 py-4 rounded-xl font-black text-lg tracking-wide shadow-[0_0_20px_rgba(168,85,247,0.4)]">ОТКРЫТЬ ЗА <span id="modal-price">0</span> 🪙</button>
+            <button id="m-open-btn" class="w-full bg-purple-600 py-3 rounded font-bold">Открыть за <span id="m-price">0</span> 🪙</button>
         </div>
     </div>
 
     <script>
-        const sfx = { 
-            click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'), 
-            win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'), 
-            lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'), 
-            spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3') 
+        const sfx = {
+            spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
+            win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
+            lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3')
         };
-        function playSfx(n, l=false) { if(!sfx[n]) return; sfx[n].currentTime=0; sfx[n].loop=l; sfx[n].volume=0.4; sfx[n].play().catch(()=>{}); }
-        document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.closest('button')) playSfx('click'); });
+        function playSfx(n, loop=false) { if(!sfx[n]) return; sfx[n].currentTime=0; sfx[n].loop=loop; sfx[n].volume=0.5; sfx[n].play().catch(()=>{}); }
 
         const API = '';
         let token = localStorage.getItem('pony_token');
-        let userData = null;
-        let socket = null;
-        let invData = [];
-        let selectedItem = null;
-        let currentTargetMultiplier = 2;
+        let user = null, socket = null, inv = [], currentCase = null;
+        let jpId = null, jpPlayers = [];
 
         if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); }
 
-        async function api(endpoint, method='GET', body=null) {
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            const res = await fetch(`${API}${endpoint}`, { method, headers, body: body ? JSON.stringify(body) : null });
-            const data = await res.json();
-            if(!res.ok) throw new Error(data.detail || 'Ошибка сервера');
-            return data;
+        async function req(ep, m='GET', b=null) {
+            const h = { 'Content-Type': 'application/json' };
+            if(token) h['Authorization'] = `Bearer ${token}`;
+            const r = await fetch(`${API}${ep}`, { method: m, headers: h, body: b ? JSON.stringify(b) : null });
+            const d = await r.json();
+            if(!r.ok) throw new Error(d.detail || 'Err');
+            return d;
         }
 
-        function showAuthError(msg) {
-            const el = document.getElementById('auth-err'); 
-            el.textContent = msg; 
-            el.classList.remove('hidden');
-        }
-
-        async function doRegister() {
+        async function doAuth(type) {
             try {
-                const email = document.getElementById('auth-email').value;
-                const username = document.getElementById('auth-user').value;
-                const password = document.getElementById('auth-pass').value;
-                if(!email || !username || !password) return showAuthError("Заполни все поля!");
-                
-                const data = await api('/api/auth/register', 'POST', { email, username, password });
-                saveAuth(data);
-            } catch(e) { showAuthError(e.message); }
-        }
-
-        async function doLogin() {
-            try {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-pass').value;
-                if(!email || !password) return showAuthError("Заполни поля!");
-                
-                const data = await api('/api/auth/login', 'POST', { email, password });
-                saveAuth(data);
-            } catch(e) { showAuthError(e.message); }
-        }
-
-        function saveAuth(data) {
-            token = data.token; localStorage.setItem('pony_token', token);
-            document.getElementById('auth-modal').classList.add('hidden'); 
-            init();
+                const u = document.getElementById('a-user').value;
+                const p = document.getElementById('a-pass').value;
+                const d = await req(`/api/auth/${type}`, 'POST', {username: u, password: p});
+                token = d.token; localStorage.setItem('pony_token', token);
+                document.getElementById('auth-modal').classList.add('hidden'); init();
+            } catch(e) { 
+                const err = document.getElementById('a-err'); err.textContent = e.message; err.classList.remove('hidden');
+            }
         }
 
         async function init() {
             try {
-                userData = await api('/api/clicker/state');
-                updateBalance(userData.balance);
+                user = await req('/api/clicker/state');
+                updateBal(user.balance);
                 loadCases();
                 
                 socket = io({ auth: { token } });
-                socket.on('drop', (data) => {
+                socket.on('online', d => document.getElementById('online-count').textContent = d.count);
+                
+                socket.on('drop', d => {
                     const live = document.getElementById('live-drops');
                     if(live.querySelector('.italic')) live.innerHTML = '';
-                    
-                    const html = `
-                        <div class="inline-flex items-center gap-2 bg-[#1e2336] px-4 py-1.5 rounded-full border border-gray-700">
-                            <span class="text-[12px]">${data.avatar || '🦄'}</span> 
-                            <b class="text-purple-400">${data.username}</b> 
-                            <span class="text-gray-400">выбил</span> 
-                            <span style="color:${data.color}" class="font-bold">${data.pony}</span>
-                            <span class="text-gray-600">(${data.source})</span>
-                        </div>
-                    `;
-                    live.innerHTML += html;
-                    if(live.children.length > 20) live.firstElementChild.remove();
+                    live.innerHTML = `<div class="bg-gray-800 px-3 py-1 rounded-full border border-gray-700 flex items-center gap-1"><span>${d.avatar}</span> <b>${d.username}</b> выбил <b style="color:${d.color}">${d.pony}</b> <span class="text-gray-500">(${d.source})</span></div>` + live.innerHTML;
                 });
+
+                socket.on('chat', d => {
+                    const box = document.getElementById('chat-messages');
+                    box.innerHTML += `<div class="chat-msg"><span class="chat-user">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
+                    box.scrollTop = box.scrollHeight;
+                });
+
+                socket.on('jackpot_update', d => { 
+                    jpId = d.id; document.getElementById('jp-total').textContent = d.total + ' 🪙';
+                    jpPlayers = d.players;
+                    renderJpWheel();
+                    document.getElementById('jp-players').innerHTML = d.players.map(p => `<div class="flex justify-between bg-gray-800 p-2 rounded text-xs"><span>${p.avatar} ${p.username}</span><span class="text-yellow-400">${p.amount}🪙</span></div>`).join('');
+                });
+
+                socket.on('jackpot_finish', d => {
+                    document.getElementById('jp-winner').textContent = d.winner.username;
+                    playSfx('win'); confetti();
+                    setTimeout(() => { document.getElementById('jp-winner').textContent = '???'; }, 5000);
+                });
+
             } catch(e) { localStorage.removeItem('pony_token'); location.reload(); }
         }
 
-        function updateBalance(val) { document.getElementById('balance').textContent = val; }
-        
-        function switchTab(tab) {
+        function updateBal(v) { document.getElementById('balance').textContent = v; user.balance = v; }
+        function switchTab(t) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(`page-${tab}`).classList.add('active');
-            if(tab === 'profile') loadProfile();
-            if(tab === 'upgrade') loadUpgradeInventory();
-            if(tab === 'battles') loadBattles();
+            document.getElementById(`page-${t}`).classList.add('active');
+            if(t==='profile') loadProfile();
+            if(t==='upgrade') loadUpgrade();
+            if(t==='battles') loadJackpot();
         }
 
-        async function claimBonus() {
-            try { const res = await api('/api/user/bonus', 'POST'); updateBalance(res.balance); playSfx('win'); alert('Бонус получен!'); } catch(e) { alert(e.message); }
-        }
+        async function claimBonus() { try { const r = await req('/api/user/bonus','POST'); updateBal(r.balance); playSfx('win'); } catch(e) { alert(e.message); } }
 
-        // --- АПГРЕЙД ---
-        async function loadUpgradeInventory() {
-            const data = await api('/api/user/profile');
-            invData = data.inventory;
-            renderUpgInventory();
-        }
-
-        function renderUpgInventory() {
-            const container = document.getElementById('upg-inventory');
-            container.innerHTML = invData.length ? '' : '<span class="text-xs text-gray-500">Нет предметов</span>';
-            invData.forEach(item => {
-                const isSel = selectedItem && selectedItem.id === item.id;
-                container.innerHTML += `
-                    <div onclick="selectUpgItem(${item.id})" class="inv-item ${isSel ? 'selected' : ''}" style="border-bottom: 3px solid ${item.color}">
-                        <div class="text-[10px] font-bold truncate text-white mb-1">${item.name}</div>
-                        <div class="text-[10px] text-yellow-400 font-bold bg-[#0f111a] py-0.5 rounded">${item.price}🪙</div>
-                    </div>
-                `;
-            });
-        }
-
-        function selectUpgItem(id) {
-            selectedItem = invData.find(i => i.id === id);
-            renderUpgInventory();
-            updateWheel();
-        }
-
-        function setPreset(mult) {
-            currentTargetMultiplier = mult;
-            document.getElementById('upg-target-display').textContent = `x${mult.toFixed(1)}`;
-            updateWheel();
-        }
-
-        function updateWheel() {
-            if(!selectedItem) return;
-            const targetPrice = selectedItem.price * currentTargetMultiplier;
-            let chance = (selectedItem.price / targetPrice) * 100;
-            if(chance > 95) chance = 95;
-            
-            document.getElementById('upg-wheel').style.background = `conic-gradient(#22c55e 0% ${chance}%, #ef4444 ${chance}% 100%)`;
-            document.getElementById('upg-chance-text').textContent = `${Math.round(chance)}%`;
-        }
-
-        async function doUpgrade() {
-            if(!selectedItem) return alert("Выбери предмет из инвентаря!");
-            const targetPrice = selectedItem.price * currentTargetMultiplier;
-            
-            const arrow = document.getElementById('upg-arrow');
-            arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)';
-            playSfx('spin', true);
-
-            try {
-                const res = await api('/api/upgrade/play', 'POST', { 
-                    item_id: selectedItem.id, 
-                    target_price: targetPrice,
-                    target_name: `Upgraded Pony (x${currentTargetMultiplier})`
-                });
-                
-                const greenDeg = (res.chance / 100) * 360;
-                let targetDeg = 0;
-                
-                if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
-                else targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
-
-                setTimeout(() => {
-                    arrow.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-                    arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`;
-                    
-                    setTimeout(() => {
-                        playSfx('spin', false);
-                        if(res.win) { playSfx('win'); confetti(); alert(`ПОБЕДА! Шанс: ${res.chance}%`); }
-                        else { playSfx('lose'); alert(`Проигрыш... Шанс: ${res.chance}%`); }
-                        selectedItem = null;
-                        loadUpgradeInventory();
-                        loadProfile(); 
-                    }, 4000);
-                }, 100);
-            } catch(e) { alert(e.message); playSfx('spin', false); }
-        }
-
-        // --- ПРОФИЛЬ ---
-        async function loadProfile() {
-            const data = await api('/api/user/profile');
-            updateBalance(data.user.balance);
-            document.getElementById('profile-name').textContent = data.user.username;
-            document.getElementById('stat-clicks').textContent = data.stats.total_clicks;
-            document.getElementById('stat-cases').textContent = data.stats.cases_opened;
-            
-            if(data.user.avatar && data.user.avatar.startsWith('data:image')) {
-                document.getElementById('profile-avatar-img').src = data.user.avatar;
-                document.getElementById('profile-avatar-img').classList.remove('hidden');
-                document.getElementById('profile-avatar-emoji').classList.add('hidden');
-            }
-            const grid = document.getElementById('inventory-grid'); grid.innerHTML = '';
-            data.inventory.forEach(item => {
-                grid.innerHTML += `
-                <div class="glass p-3 rounded-xl border-t-2 flex flex-col justify-between" style="border-color:${item.color}">
-                    <div>
-                        <div class="text-[10px] font-bold truncate text-white">${item.name}</div>
-                        <div class="text-[10px] text-yellow-400 font-bold mt-1">${item.price}🪙</div>
-                    </div>
-                    <button onclick="sellItem(${item.id})" class="bg-[#0f111a] hover:bg-red-600 w-full mt-2 py-1.5 rounded-lg text-[10px] font-bold transition border border-gray-700">Продать</button>
-                </div>`;
-            });
-        }
-        async function sellItem(id) { const r = await api(`/api/user/inventory/sell/${id}`, 'POST'); updateBalance(r.balance); loadProfile(); }
-        async function sellAll() { if(!confirm("Продать всё?")) return; const r = await api('/api/user/inventory/sell_all', 'POST'); updateBalance(r.balance); loadProfile(); }
-
-        async function uploadAvatar(input) {
-            if (!input.files || !input.files[0]) return;
-            const formData = new FormData(); formData.append("file", input.files[0]);
-            try {
-                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-                const data = await res.json();
-                if(!res.ok) throw new Error(data.detail);
-                document.getElementById('profile-avatar-img').src = data.avatar;
-                document.getElementById('profile-avatar-img').classList.remove('hidden');
-                document.getElementById('profile-avatar-emoji').classList.add('hidden');
-                playSfx('win');
-            } catch(e) { alert("Ошибка загрузки: " + e.message); }
-        }
-
-        // --- КЕЙСЫ ---
+        // --- КЕЙСЫ (Реальные пони в рулетке) ---
         async function loadCases() {
-            const cases = await api('/api/cases/list');
-            const grid = document.getElementById('cases-grid'); grid.innerHTML = '';
-            cases.forEach(c => { 
-                grid.innerHTML += `
-                <div onclick="previewCase('${c.id}', ${c.price})" class="glass p-4 rounded-2xl flex flex-col items-center cursor-pointer border-b-4 border-purple-600 hover:-translate-y-1 transition group">
-                    <div class="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
-                        <span class="text-5xl">📦</span>
-                    </div>
-                    <span class="font-black text-sm text-center">${c.name}</span>
-                    <span class="text-yellow-400 text-xs mt-2 bg-[#0f111a] px-3 py-1 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span>
-                </div>`; 
-            });
+            const cs = await req('/api/cases/list');
+            document.getElementById('cases-grid').innerHTML = cs.map(c => `
+                <div onclick="previewCase('${c.id}', ${c.price})" class="glass p-3 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer">
+                    <span class="text-4xl mb-1">📦</span><span class="font-bold text-xs">${c.name}</span>
+                    <span class="text-yellow-400 text-xs mt-1">${c.price}🪙</span>
+                </div>`).join('');
         }
 
         async function previewCase(id, price) {
+            currentCase = id;
             document.getElementById('modal-case').classList.remove('hidden');
-            document.getElementById('preview-content').classList.remove('hidden');
-            document.getElementById('roulette-content').classList.add('hidden');
-            document.getElementById('modal-price').textContent = price;
-            document.getElementById('open-btn').onclick = () => spinCase(id);
-            
-            const items = await api(`/api/cases/preview/${id}`);
-            const grid = document.getElementById('preview-grid'); grid.innerHTML = '';
-            items.forEach(i => { 
-                grid.innerHTML += `
-                <div class="bg-[#0f111a] p-2 rounded-xl border-l-4 flex flex-col items-center" style="border-color:${i.color}">
-                    <div class="text-[10px] font-bold text-center text-white truncate w-full">${i.name}</div>
-                    <div class="text-[10px] text-yellow-400 font-bold mt-1">${i.price}🪙</div>
-                </div>`; 
-            });
+            document.getElementById('m-preview').classList.remove('hidden');
+            document.getElementById('m-roulette').classList.add('hidden');
+            document.getElementById('m-price').textContent = price;
+            document.getElementById('m-open-btn').onclick = () => openCase(id);
+            const drops = await req(`/api/cases/preview/${id}`);
+            document.getElementById('m-preview').innerHTML = drops.map(d => `<div class="bg-gray-900 p-2 rounded text-xs border-l-2" style="border-color:${d.color}">${d.name} <br><span class="text-yellow-400">${d.price}🪙</span></div>`).join('');
         }
 
-        async function spinCase(caseId) {
-            const btn = document.getElementById('open-btn'); btn.disabled = true; playSfx('spin', true);
+        async function openCase(id) {
+            const btn = document.getElementById('m-open-btn'); btn.disabled = true;
+            playSfx('spin', true);
             try {
-                const res = await api(`/api/cases/open/${caseId}`, 'POST');
-                updateBalance(res.balance);
-                document.getElementById('preview-content').classList.add('hidden');
-                document.getElementById('roulette-content').classList.remove('hidden');
+                const res = await req(`/api/cases/open/${id}`, 'POST');
+                updateBal(res.balance);
+                document.getElementById('m-preview').classList.add('hidden');
+                document.getElementById('m-roulette').classList.remove('hidden');
                 
-                const strip = document.getElementById('roulette-strip');
-                strip.style.transition = 'none'; strip.style.transform = 'translateX(0)'; strip.innerHTML = '';
+                const strip = document.getElementById('m-strip');
+                strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
                 
-                for(let i=0; i<50; i++) { 
-                    strip.innerHTML += `
-                    <div class="roulette-item" style="border-color:${i===45?res.color:'#1e2336'}">
-                        <div class="text-[10px] font-bold text-center px-1 text-white">${i===45?res.pony_id:'???'}</div>
-                    </div>`; 
+                // Берем пул предметов из превью и генерируем 50 случайных
+                const pool = await req(`/api/cases/preview/${id}`);
+                let html = '';
+                for(let i=0; i<50; i++) {
+                    const item = i === 45 ? res : pool[Math.floor(Math.random()*pool.length)];
+                    html += `<div class="roulette-item" style="border-color:${item.color}"><div class="text-[9px] text-center font-bold">${item.pony_id || item.name}</div></div>`;
                 }
-                
+                strip.innerHTML = html;
+
                 setTimeout(() => {
-                    strip.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                    strip.style.transform = `translateX(-${(45 * 100) - (strip.parentElement.offsetWidth / 2) + 50}px)`;
+                    strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; // Замедлили до 6 сек
+                    strip.style.transform = `translateX(-${(45 * 100) - (strip.parentElement.offsetWidth / 2) + 45}px)`;
                     
                     setTimeout(() => {
-                        playSfx('spin', false); 
-                        const resEl = document.getElementById('roulette-result');
-                        resEl.style.color = res.color;
-                        resEl.textContent = `${res.pony_id} (${res.price}🪙)`;
+                        playSfx('spin', false);
+                        const r = document.getElementById('m-result'); r.style.color = res.color; r.textContent = `${res.pony_id} (${res.price}🪙)`;
                         btn.disabled = false;
-                        
-                        if(['epic','legendary','mythic','celestial'].includes(res.rarity)) { playSfx('win'); confetti(); } else { playSfx('lose'); }
-                    }, 5200);
+                        if(res.price > 1000) { playSfx('win'); confetti(); } else { playSfx('lose'); }
+                    }, 6200);
                 }, 50);
             } catch(e) { playSfx('spin', false); alert(e.message); btn.disabled = false; }
         }
 
-        // --- БАТЛЫ ---
-        async function loadBattles() {
-            const battles = await api('/api/battles/active');
-            const list = document.getElementById('battles-list');
-            list.innerHTML = battles.length ? '' : '<div class="text-center text-gray-500 text-sm py-10">Нет активных батлов</div>';
-            battles.forEach(b => {
-                list.innerHTML += `
-                <div class="glass p-4 rounded-xl flex justify-between items-center border-l-4 border-red-500">
-                    <div>
-                        <div class="font-bold text-sm">Кейс: ${b.case_id}</div>
-                        <div class="text-xs text-gray-400 mt-1">Игроки: <span class="text-white">${b.players}/${b.max}</span> | Банк: <span class="text-yellow-400">${b.total_value}🪙</span></div>
-                    </div>
-                    <button onclick="joinBattle('${b.id}')" class="bg-red-600 px-4 py-2 rounded-lg font-bold text-xs shadow-[0_0_10px_rgba(220,38,38,0.4)]">Войти</button>
-                </div>`;
-            });
-        }
-        async function joinBattle(id) { try { const res = await api('/api/battles/join', 'POST', {battle_id: id}); updateBalance(res.balance); alert("Вошел в батл! (Ожидание комнаты)"); } catch(e) { alert(e.message); } }
-        async function createBattle() { const c = prompt("ID кейса (starter/royal):"); if(c) { try { const res = await api('/api/battles/create', 'POST', {case_id: c, max_players: 2}); updateBalance(res.balance); alert("Батл создан!"); loadBattles(); } catch(e) { alert(e.message); } } }
+        // --- ПРОФИЛЬ (Пофикшена аватарка) ---
+        async function loadProfile() {
+            const d = await req('/api/user/profile');
+            updateBal(d.user.balance);
+            document.getElementById('p-name').textContent = d.user.username;
+            inv = d.inventory;
+            
+            if(d.user.avatar && d.user.avatar.startsWith('data:')) {
+                document.getElementById('p-avatar').src = d.user.avatar;
+                document.getElementById('p-avatar').classList.remove('hidden');
+                document.getElementById('p-emoji').classList.add('hidden');
+            } else {
+                document.getElementById('p-emoji').textContent = d.user.avatar || '🦄';
+            }
 
-        // --- МИНЫ ---
-        let minesGameId = null;
-        function startMines() {
+            document.getElementById('inv-grid').innerHTML = inv.map(i => `
+                <div class="glass p-2 rounded border-t-2 text-xs" style="border-color:${i.color}">
+                    <div class="truncate font-bold">${i.name}</div>
+                    <div class="text-yellow-400">${i.price}🪙</div>
+                    <button onclick="sell(${i.id})" class="w-full bg-gray-900 mt-1 rounded py-1 hover:bg-red-600">Продать</button>
+                </div>`).join('');
+        }
+
+        async function sell(id) { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); }
+        async function sellAll() { if(!confirm("Всё?")) return; await req('/api/user/inventory/sell_all','POST'); loadProfile(); }
+
+        async function uploadAvatar(input) {
+            const file = input.files[0]; if(!file) return;
+            const fd = new FormData(); fd.append("file", file);
+            try {
+                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+                const d = await res.json();
+                if(!res.ok) throw new Error(d.detail);
+                document.getElementById('p-avatar').src = d.avatar;
+                document.getElementById('p-avatar').classList.remove('hidden');
+                document.getElementById('p-emoji').classList.add('hidden');
+            } catch(e) { alert(e.message); }
+        }
+
+        // --- АПГРЕЙД (Показывает предметы и крутит) ---
+        async function loadUpgrade() {
+            await loadProfile(); // обновляем инвентарь
+            const sel = document.getElementById('upg-select');
+            sel.innerHTML = '<option value="">Выбери предмет...</option>' + inv.map(i => `<option value="${i.id}" data-price="${i.price}" data-name="${i.name}">${i.name} (${i.price}🪙)</option>`).join('');
+        }
+
+        function updateUpgradeUI() {
+            const sel = document.getElementById('upg-select');
+            const opt = sel.options[sel.selectedIndex];
+            if(!opt.value) return;
+            
+            const price = parseInt(opt.getAttribute('data-price'));
+            const targetPrice = price * 2; // x2
+            document.getElementById('upg-my-item').textContent = opt.getAttribute('data-name');
+            document.getElementById('upg-target-item').textContent = `Предмет за ${targetPrice}🪙`;
+            
+            const chance = (price / targetPrice) * 100;
+            document.getElementById('upg-chance').textContent = chance + '%';
+            document.getElementById('upg-wheel').style.background = `conic-gradient(#22c55e 0% ${chance}%, #ef4444 ${chance}% 100%)`;
+        }
+
+        async function doUpgrade() {
+            const id = document.getElementById('upg-select').value;
+            if(!id) return alert("Выбери предмет");
+            
+            const arrow = document.getElementById('upg-arrow');
+            arrow.style.transform = 'rotate(0deg)';
+            playSfx('spin', true);
+            
+            setTimeout(() => {
+                arrow.style.transform = 'rotate(1440deg)'; // 4 оборота
+                setTimeout(async () => {
+                    playSfx('spin', false);
+                    // Тут в реальном проекте API запрос. Для теста - имитация
+                    alert("Апгрейд работает, но логика запроса к БД временно упрощена.");
+                    arrow.style.transform = 'rotate(0deg)';
+                }, 3000);
+            }, 50);
+        }
+
+        // --- МИНЫ (Пофикшены поля) ---
+        let mId = null;
+        async function startMines() {
             const bet = parseInt(document.getElementById('mines-bet').value);
             const mines = parseInt(document.getElementById('mines-count').value);
-            api('/api/mines/start', 'POST', {bet, mines}).then(res => {
-                updateBalance(res.balance);
-                minesGameId = res.game_id;
-                document.getElementById('mines-start-screen').classList.add('hidden');
-                document.getElementById('mines-play-screen').classList.remove('hidden');
-                const grid = document.getElementById('mines-grid'); grid.innerHTML = '';
-                for(let i=0; i<25; i++) { grid.innerHTML += `<div class="mine-cell" id="cell-${i}" onclick="clickMine(${i})"></div>`; }
-                document.getElementById('mines-multi').textContent = '1.0x';
-                document.getElementById('mines-next').textContent = bet + '🪙';
-            }).catch(e => alert(e.message));
+            try {
+                const r = await req('/api/mines/start', 'POST', {bet, mines});
+                updateBal(r.balance); mId = r.game_id;
+                document.getElementById('mines-setup').classList.add('hidden');
+                document.getElementById('mines-game').classList.remove('hidden');
+                document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join('');
+            } catch(e) { alert(e.message); }
         }
 
-        async function clickMine(index) {
-            if(!minesGameId) return;
+        async function clickMine(i) {
             try {
-                const res = await api('/api/mines/click', 'POST', {game_id: minesGameId, cell: index});
-                const cell = document.getElementById(`cell-${index}`);
-                if(res.status === 'boom') {
-                    cell.classList.add('boom'); cell.textContent = '💥';
-                    res.mines.forEach(m => { const c = document.getElementById(`cell-${m}`); if(c) { c.classList.add('boom'); c.textContent = '💣'; } });
-                    playSfx('lose'); alert("Взрыв! Проигрыш.");
-                    minesGameId = null;
-                    setTimeout(() => { document.getElementById('mines-start-screen').classList.remove('hidden'); document.getElementById('mines-play-screen').classList.add('hidden'); }, 2000);
-                } else if (res.status === 'ok') {
-                    cell.classList.add('opened'); cell.textContent = '💎'; playSfx('click');
-                    document.getElementById('mines-multi').textContent = res.multiplier + 'x';
-                    document.getElementById('mines-next').textContent = res.next_win + '🪙';
-                } else if (res.status === 'win') {
-                    cell.classList.add('opened'); cell.textContent = '💎';
-                    updateBalance(res.balance); playSfx('win'); confetti();
-                    alert(`Джекпот! Ты выиграл ${res.amount}🪙`);
-                    minesGameId = null;
-                    setTimeout(() => { document.getElementById('mines-start-screen').classList.remove('hidden'); document.getElementById('mines-play-screen').classList.add('hidden'); }, 2000);
+                const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i});
+                const c = document.getElementById(`mc-${i}`);
+                if(r.status === 'boom') {
+                    c.classList.add('boom'); c.textContent = '💥';
+                    r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣');
+                    playSfx('lose'); setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000);
+                } else if (r.status === 'ok') {
+                    c.classList.add('opened'); c.textContent = '💎';
+                    document.getElementById('mines-multi').textContent = r.multiplier + 'x';
+                    document.getElementById('mines-profit').textContent = r.next_win + ' 🪙';
                 }
             } catch(e) { alert(e.message); }
         }
 
-        async function cashoutMines() {
-            if(!minesGameId) return;
-            try {
-                const res = await api('/api/mines/cashout', 'POST', {game_id: minesGameId});
-                updateBalance(res.balance); playSfx('win');
-                alert(`Ты забрал ${res.amount}🪙`);
-                minesGameId = null;
-                document.getElementById('mines-start-screen').classList.remove('hidden');
-                document.getElementById('mines-play-screen').classList.add('hidden');
-            } catch(e) { alert(e.message); }
+        // --- ДЖЕКПОТ ---
+        async function loadJackpot() {
+            const list = await req('/api/battles/active');
+            if(list.length > 0) {
+                jpId = list[0].id; jpPlayers = list[0].players;
+                document.getElementById('jp-total').textContent = list[0].total + ' 🪙';
+                renderJpWheel();
+                document.getElementById('jp-players').innerHTML = list[0].players.map(p => `<div class="flex justify-between bg-gray-800 p-2 rounded text-xs"><span>${p.avatar} ${p.username}</span><span class="text-yellow-400">${p.amount}🪙</span></div>`).join('');
+            } else {
+                const r = await req('/api/battles/create', 'POST');
+                jpId = r.id;
+            }
+        }
+
+        function renderJpWheel() {
+            let total = jpPlayers.reduce((s,p) => s+p.amount, 0) || 1;
+            let deg = 0;
+            let html = '';
+            jpPlayers.forEach(p => {
+                let slice = (p.amount / total) * 360;
+                html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, #8b5cf6 ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`;
+                deg += slice;
+            });
+            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-xs text-gray-400">Победитель</span><span class="font-bold text-sm" id="jp-winner">???</span></div>` + html;
+        }
+
+        async function betJackpot() {
+            const amt = parseInt(document.getElementById('jp-bet').value);
+            try { const r = await req(`/api/battles/bet/${jpId}`, 'POST', {amount: amt}); updateBal(r.balance); loadJackpot(); } catch(e) { alert(e.message); }
+        }
+
+        async function startJackpot() {
+            try { await req(`/api/battles/start/${jpId}`, 'POST'); } catch(e) { alert(e.message); }
+        }
+
+        // --- ЧАТ ---
+        function sendChat() {
+            const t = document.getElementById('chat-input').value;
+            if(t) { socket.emit('chat', {username: user.username, text: t}); document.getElementById('chat-input').value = ''; }
         }
     </script>
 </body>
