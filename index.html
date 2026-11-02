@@ -26,7 +26,6 @@
             background-attachment: fixed;
         }
         
-        /* Стекло */
         .glass { 
             background: var(--card); 
             backdrop-filter: blur(16px); 
@@ -39,49 +38,36 @@
         .btn:active { transform: scale(0.96); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         
-        /* Колесо Апгрейда */
         .upg-wheel-container { position: relative; width: 240px; height: 240px; margin: 0 auto; }
         .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1e2336; box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 30px rgba(139,92,246,0.2); }
-        .upg-arrow { 
-            position: absolute; top: -18px; left: 50%; transform: translateX(-50%); 
-            font-size: 36px; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); 
-            transform-origin: 50% 138px; z-index: 20; 
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); 
-        }
+        .upg-arrow { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 36px; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: 50% 138px; z-index: 20; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
         
-        /* Скроллбары */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-        /* Навигация */
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Модалки */
         .modal-overlay { background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); }
 
-        /* Инвентарь (горизонтальный скролл) */
         .inv-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
         .inv-item { min-width: 85px; scroll-snap-align: start; padding: 10px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; background: #1e2336; transition: all 0.2s; position: relative; }
         .inv-item.selected { border-color: var(--primary); background: rgba(139, 92, 246, 0.15); box-shadow: 0 0 15px rgba(139,92,246,0.3); }
         .inv-item:hover { background: #2a2f45; }
 
-        /* Рулетка кейсов */
         .roulette-container { width: 100%; overflow: hidden; position: relative; padding: 20px 0; background: #0f111a; border-radius: 16px; border: 1px solid #1e2336; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
         .roulette-strip { display: flex; gap: 10px; will-change: transform; }
         .roulette-item { min-width: 90px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e2336; border-radius: 8px; border: 2px solid transparent; }
         .roulette-center-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; border-radius: 4px; }
 
-        /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 320px; margin: 0 auto; }
         .mine-cell { aspect-ratio: 1; background: #1e2336; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; transition: 0.2s; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
         .mine-cell:hover { background: #2a2f45; transform: translateY(-2px); }
         .mine-cell.opened { background: #064e3b; box-shadow: inset 0 0 15px #10b981; border-color: #10b981; cursor: default; }
         .mine-cell.boom { background: #7f1d1d; box-shadow: inset 0 0 15px #ef4444; border-color: #ef4444; }
 
-        /* Бегущая строка дропов */
         .marquee-wrapper { display: flex; width: max-content; animation: marquee 30s linear infinite; }
         .marquee-wrapper:hover { animation-play-state: paused; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
@@ -136,7 +122,6 @@
             <div class="glass p-6 rounded-3xl flex flex-col items-center relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-50"></div>
                 
-                <!-- Колесо -->
                 <div class="upg-wheel-container mb-8">
                     <div class="upg-arrow" id="upg-arrow">🔻</div>
                     <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#22c55e 0% 50%, #ef4444 50% 100%);"></div>
@@ -146,7 +131,6 @@
                     </div>
                 </div>
 
-                <!-- Пресеты -->
                 <div class="w-full bg-[#1e2336]/50 p-4 rounded-2xl mb-6 border border-gray-700/50">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Целевой множитель</span>
@@ -160,12 +144,9 @@
                     </div>
                 </div>
 
-                <!-- Инвентарь -->
                 <div class="w-full mb-6">
                     <span class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-3 block">Выбери свой предмет:</span>
-                    <div class="inv-scroll" id="upg-inventory">
-                        <!-- JS -->
-                    </div>
+                    <div class="inv-scroll" id="upg-inventory"></div>
                 </div>
 
                 <button onclick="doUpgrade()" class="btn w-full bg-gradient-to-r from-green-500 to-emerald-600 py-4 rounded-xl font-black text-lg text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] tracking-wide">АПГРЕЙДНУТЬ</button>
@@ -240,21 +221,13 @@
             
             <h2 class="text-3xl font-black mb-8 text-center tracking-wide">PONYCASE</h2>
             
-            <div id="auth-step-1">
-                <input type="email" id="auth-email" placeholder="Email" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none focus:border-purple-500 font-medium">
-                <input type="text" id="auth-user" placeholder="Никнейм (при регистрации)" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none focus:border-purple-500 font-medium">
-                <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-6 text-white outline-none focus:border-purple-500 font-medium">
-                
-                <div class="flex gap-3">
-                    <button onclick="doLogin()" class="btn flex-1 bg-gray-700 py-4 rounded-xl font-bold text-sm">ВХОД</button>
-                    <button onclick="doRegister()" class="btn flex-1 bg-purple-600 py-4 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(168,85,247,0.5)]">РЕГИСТРАЦИЯ</button>
-                </div>
-            </div>
-
-            <div id="auth-step-2" class="hidden text-center">
-                <p class="text-sm text-gray-400 mb-6">Мы отправили код на твою почту. Проверь логи ZevCloud!</p>
-                <input type="text" id="auth-code" placeholder="000000" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-6 text-white text-center text-3xl tracking-widest outline-none focus:border-green-500 font-black">
-                <button onclick="doVerify()" class="btn w-full bg-green-600 py-4 rounded-xl font-bold shadow-[0_0_15px_rgba(34,197,94,0.5)]">ПОДТВЕРДИТЬ</button>
+            <input type="email" id="auth-email" placeholder="Email" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none focus:border-purple-500 font-medium">
+            <input type="text" id="auth-user" placeholder="Никнейм (при регистрации)" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none focus:border-purple-500 font-medium">
+            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-[#0f111a] border border-gray-700 p-4 rounded-xl mb-6 text-white outline-none focus:border-purple-500 font-medium">
+            
+            <div class="flex gap-3">
+                <button onclick="doLogin()" class="btn flex-1 bg-gray-700 py-4 rounded-xl font-bold text-sm">ВХОД</button>
+                <button onclick="doRegister()" class="btn flex-1 bg-purple-600 py-4 rounded-xl font-bold text-sm shadow-[0_0_15px_rgba(168,85,247,0.5)]">РЕГИСТРАЦИЯ</button>
             </div>
             
             <p id="auth-err" class="text-red-500 text-xs mt-4 text-center hidden bg-red-500/10 p-3 rounded-xl border border-red-500/20 font-bold"></p>
@@ -281,7 +254,6 @@
     </div>
 
     <script>
-        // --- ЗВУКИ ---
         const sfx = { 
             click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'), 
             win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'), 
@@ -298,7 +270,6 @@
         let invData = [];
         let selectedItem = null;
         let currentTargetMultiplier = 2;
-        let tempEmail = '';
 
         if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); }
 
@@ -324,18 +295,7 @@
                 const password = document.getElementById('auth-pass').value;
                 if(!email || !username || !password) return showAuthError("Заполни все поля!");
                 
-                await api('/api/auth/register', 'POST', { email, username, password });
-                tempEmail = email;
-                document.getElementById('auth-step-1').classList.add('hidden');
-                document.getElementById('auth-step-2').classList.remove('hidden');
-                document.getElementById('auth-err').classList.add('hidden');
-            } catch(e) { showAuthError(e.message); }
-        }
-
-        async function doVerify() {
-            try {
-                const code = document.getElementById('auth-code').value;
-                const data = await api('/api/auth/verify', 'POST', { email: tempEmail, code });
+                const data = await api('/api/auth/register', 'POST', { email, username, password });
                 saveAuth(data);
             } catch(e) { showAuthError(e.message); }
         }
@@ -353,7 +313,8 @@
 
         function saveAuth(data) {
             token = data.token; localStorage.setItem('pony_token', token);
-            document.getElementById('auth-modal').classList.add('hidden'); init();
+            document.getElementById('auth-modal').classList.add('hidden'); 
+            init();
         }
 
         async function init() {
@@ -367,7 +328,6 @@
                     const live = document.getElementById('live-drops');
                     if(live.querySelector('.italic')) live.innerHTML = '';
                     
-                    // Дублируем контент для бесконечной прокрутки
                     const html = `
                         <div class="inline-flex items-center gap-2 bg-[#1e2336] px-4 py-1.5 rounded-full border border-gray-700">
                             <span class="text-[12px]">${data.avatar || '🦄'}</span> 
@@ -378,8 +338,6 @@
                         </div>
                     `;
                     live.innerHTML += html;
-                    
-                    // Ограничиваем количество элементов, чтобы не лагало
                     if(live.children.length > 20) live.firstElementChild.remove();
                 });
             } catch(e) { localStorage.removeItem('pony_token'); location.reload(); }
