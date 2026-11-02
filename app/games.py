@@ -1,4 +1,7 @@
-import hmac, hashlib, secrets, random
+import hmac
+import hashlib
+import secrets
+import random
 
 PONY_DB = {
     "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
@@ -10,7 +13,7 @@ PONY_DB = {
     "celestial": ["The Creator", "Goddess of Sun", "Goddess of Moon", "Alpha Pony"]
 }
 
-# СИЛЬНО СНИЖЕНЫ МНОЖИТЕЛИ, ЧТОБЫ НЕ БЫЛО ИНФЛЯЦИИ
+# СНИЖЕНЫ МНОЖИТЕЛИ, ЧТОБЫ НЕ БЫЛО ИНФЛЯЦИИ
 RARITIES = [
     ("common",    500_000, "Обычная",     2, "#9ca3af"), 
     ("uncommon",  250_000, "Необычная",   5, "#4ade80"), 
@@ -65,7 +68,6 @@ def pick_rarity(case_id: str, ticket: int) -> str:
 def pick_pony(rarity: str) -> tuple[str, int, str]:
     base_mult = RARITY_BY_ID[rarity][3]
     pony_name = random.choice(PONY_DB.get(rarity, ["Unknown Pony"]))
-    # Цена теперь адекватная (2, 5, 20, 100...)
     price = int(100 * base_mult * random.uniform(0.5, 1.5))
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
@@ -86,7 +88,11 @@ def get_case_preview(case_id: str) -> list:
             item_chance = chance / len(ponies) 
             
             preview.append({
-                "name": p, "price": price, "rarity": rarity, "color": color, "chance": item_chance
+                "name": p, 
+                "price": price, 
+                "rarity": rarity, 
+                "color": color, 
+                "chance": item_chance
             })
             
     return sorted(preview, key=lambda x: x["price"], reverse=True)
