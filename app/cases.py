@@ -19,44 +19,62 @@ def list_cases():
 
 @router.get("/preview/{case_id}")
 def preview_case(case_id: str):
-    if case_id not in CASES: raise HTTPException(404, "Нет кейса")
+    if case_id not in CASES: 
+        raise HTTPException(404, "Такого кейса не существует")
     return get_case_preview(case_id)
 
 @router.post("/open_multi/{case_id}")
 async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if case_id not in CASES: raise HTTPException(404, "Нет кейса")
-    if data.count < 1 or data.count > 10: raise HTTPException(400, "От 1 до 10")
+    if case_id not in CASES: 
+        raise HTTPException(404, "Кейс не найден")
+    if data.count < 1 or data.count > 10: 
+        raise HTTPException(400, "Можно открывать от 1 до 10 кейсов за раз")
     
     case = CASES[case_id]
     total_price = case["price"] * data.count
     
     apply_passive(user, db)
-    if user.balance < total_price: raise HTTPException(400, "Недостаточно копыт")
+    if user.balance < total_price: 
+        raise HTTPException(400, "Недостаточно копыт для открытия")
 
     user.balance -= total_price
     results = []
     
-    for _ in range(data.count):
-        user.nonce += 1
-        server_seed = gen_seed()
-        client_seed = gen_seed()
-        ticket = roll_ticket(server_seed, client_seed, user.nonce)
-        rarity = pick_rarity(case_id, ticket)
-        pony_id, price, color = pick_pony(rarity)
+    try:
+        for _ in range(data.count):
+            user.nonce += 1
+            server_seed = gen_seed()
+            client_seed = gen_seed()
+            ticket = roll_ticket(server_seed, client_seed, user.nonce)
+            rarity = pick_rarity(case_id, ticket)
+            pony_id, price, color = pick_pony(rarity)
 
-        # Сохраняем предмет в БД
-        item = InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color)
-        db.add(item)
-        db.flush() # Получаем ID предмета до коммита
-        
-        db.add(CaseOpen(user_id=user.id, case_id=case_id, pony_id=pony_id, rarity=rarity, price=case["price"], server_seed=server_seed, client_seed=client_seed, nonce=user.nonce, ticket=ticket))
-        
-        # Возвращаем ID для возможности продажи
-        results.append({"id": item.id, "pony_id": pony_id, "rarity": rarity, "price": price, "color": color})
-        
-        if price > 5000:
-            await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
+            # Создаем предмет
+            item = InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color)
+            db.add(item)
+            db.flush() # Получаем ID предмета до коммита
+            
+            # Записываем открытие
+            db.add(CaseOpen(
+                user_id=user.id, case_id=case_id, pony_id=pony_id, rarity=rarity, 
+                price=case["price"], server_seed=server_seed, client_seed=client_seed, 
+                nonce=user.nonce, ticket=ticket
+            ))
+            
+            # ОБНОВЛЯЕМ ЛУЧШИЙ ДРОП (Только если цена выше предыдущей)
+            if price > user.best_drop_price:
+                user.best_drop_price = price
+                user.best_drop_name = pony_id
+            
+            results.append({"id": item.id, "pony_id": pony_id, "rarity": rarity, "price": price, "color": color})
+            
+            # Отправляем в Live-ленту только если дроп дорогой
+            if price > 5000:
+                await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
 
-    db.commit()
-    
-    return {"results": results, "balance": user.balance}
+        db.commit()
+        return {"results": results, "balance": user.balance}
+        
+    except Exception as e:
+        db.rollback() # Откатываем всё, если произошла ошибка
+        raise HTTPException(500, "Ошибка при открытии кейса. Деньги возвращены.")
