@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Text
 from .db import Base
 
 class User(Base):
@@ -7,8 +7,8 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(32), unique=True, index=True, nullable=False)
     password_hash = Column(String(256), nullable=False)
-    avatar = Column(Text, default="🦄")
-    balance = Column(BigInteger, default=1000, nullable=False)
+    avatar = Column(Text, default="🦄") # <-- TEXT вместо VARCHAR
+    balance = Column(BigInteger, default=5000, nullable=False) # <-- Даем 5000 на старт
     total_clicks = Column(BigInteger, default=0)
     click_power = Column(Integer, default=1)
     auto_rate = Column(Float, default=0.0)
