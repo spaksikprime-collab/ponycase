@@ -21,10 +21,6 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str
 
-class VerifyIn(BaseModel):
-    email: EmailStr
-    code: str
-
 class LoginIn(BaseModel):
     email: EmailStr
     password: str
@@ -42,10 +38,6 @@ def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer), db: Sessi
     if not user: raise HTTPException(401, "Юзер не найден")
     return user
 
-def send_email(to_email, code):
-    # В реальном проекте тут SMTP, а пока смотрим код в логах ZevCloud
-    print(f"=== EMAIL SENT to {to_email}: Code = {code} ===")
-
 @router.post("/register")
 def register(data: RegisterIn, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
@@ -53,29 +45,28 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == data.username).first():
         raise HTTPException(400, "Этот никнейм уже занят!")
     
-    code = str(random.randint(100000, 999999))
-    user = User(username=data.username, email=data.email, password_hash=pwd.hash(data.password), verification_code=code)
-    db.add(user); db.commit()
-    send_email(data.email, code)
-    return {"status": "verify_needed", "message": "Код отправлен на почту"}
-
-@router.post("/verify")
-def verify_email(data: VerifyIn, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user or user.verification_code != data.code:
-        raise HTTPException(400, "Неверный код подтверждения")
+    # Создаем пользователя и сразу ставим галочку "подтвержден"
+    user = User(
+        username=data.username, 
+        email=data.email, 
+        password_hash=pwd.hash(data.password), 
+        is_verified=True, 
+        verification_code=None
+    )
+    db.add(user); db.commit(); db.refresh(user)
     
-    user.is_verified = True
-    user.verification_code = None
-    db.commit()
-    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
+    return {
+        "token": create_token(user.id), 
+        "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}
+    }
 
 @router.post("/login")
 def login(data: LoginIn, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not pwd.verify(data.password, user.password_hash):
         raise HTTPException(401, "Неверная почта или пароль")
-    if not user.is_verified:
-        raise HTTPException(403, "Пожалуйста, подтвердите почту")
         
-    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
+    return {
+        "token": create_token(user.id), 
+        "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}
+    }
