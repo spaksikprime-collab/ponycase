@@ -3,21 +3,22 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import random
 from .db import get_db
-from .models import User
+from .models import User, InventoryItem
 from .auth import current_user
-from .games import gen_seed
+from .games import CASES, pick_pony, gen_seed, roll_ticket
 from .clicker import apply_passive
 from .ws import sio, broadcast_drop
 
 router = APIRouter()
-JACKPOTS = {} # Активные джекпоты
 
+# --- ДЖЕКПОТ (Общий банк) ---
+JACKPOTS = {}
 class BetIn(BaseModel):
     amount: int
 
 @router.get("/active")
 def get_active():
-    return [{"id": k, "status": v["status"], "total": v["total"], "players_count": len(v["players"]), "players": v["players"]} for k, v in JACKPOTS.items() if v["status"] == "waiting"]
+    return [{"id": k, "status": v["status"], "total": v["total"], "players": v["players"]} for k, v in JACKPOTS.items() if v["status"] == "waiting"]
 
 @router.post("/create")
 async def create_jackpot(user: User = Depends(current_user)):
@@ -36,7 +37,6 @@ async def place_bet(j_id: str, data: BetIn, user: User = Depends(current_user), 
     if user.balance < data.amount: raise HTTPException(400, "Мало денег")
     user.balance -= data.amount; db.commit()
     
-    # Обновляем или добавляем игрока
     player = next((p for p in j["players"] if p["id"] == user.id), None)
     if player: player["amount"] += data.amount
     else: j["players"].append({"id": user.id, "username": user.username, "avatar": user.avatar, "amount": data.amount})
@@ -53,20 +53,79 @@ async def start_jackpot(j_id: str, user: User = Depends(current_user), db: Sessi
     j["status"] = "playing"
     await sio.emit("jackpot_update", j)
     
-    # Розыгрыш (шанс пропорционален ставке)
     total = j["total"]
     weights = [p["amount"] / total for p in j["players"]]
     winner_idx = random.choices(range(len(j["players"])), weights=weights, k=1)[0]
     winner = j["players"][winner_idx]
     
-    # Начисляем выигрыш
     w_user = db.get(User, winner["id"])
-    w_user.balance += int(total * 0.95) # 5% комиссия казино
+    w_user.balance += int(total * 0.95)
     db.commit()
     
     j["status"] = "finished"
     j["winner"] = winner
     await sio.emit("jackpot_finish", j)
     await broadcast_drop(winner["username"], winner["avatar"], "ДЖЕКПОТ!", int(total*0.95), "#facc15", "Джекпот")
+    return {"status": "ok"}
+
+# --- КЕЙС-БАТЛ 1 на 1 ---
+CASE_BATTLES = {}
+class Create1v1(BaseModel):
+    case_id: str
+
+@router.get("/1v1/active")
+def get_1v1():
+    return [{"id": k, "case_id": v["case_id"], "creator": v["players"][0]["username"], "status": v["status"]} for k, v in CASE_BATTLES.items() if v["status"] == "waiting"]
+
+@router.post("/1v1/create")
+async def create_1v1(data: Create1v1, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if data.case_id not in CASES: raise HTTPException(400, "Нет кейса")
+    price = CASES[data.case_id]["price"]
+    apply_passive(user)
+    if user.balance < price: raise HTTPException(400, "Мало денег")
+    
+    user.balance -= price; db.commit()
+    b_id = gen_seed()[:6]
+    CASE_BATTLES[b_id] = {"id": b_id, "case_id": data.case_id, "status": "waiting", "players": [{"id": user.id, "username": user.username, "avatar": user.avatar}]}
+    await sio.emit("case_battle_update", CASE_BATTLES[b_id])
+    return {"id": b_id, "balance": user.balance}
+
+@router.post("/1v1/join/{b_id}")
+async def join_1v1(b_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    b = CASE_BATTLES.get(b_id)
+    if not b or b["status"] != "waiting": raise HTTPException(400, "Недоступно")
+    price = CASES[b["case_id"]]["price"]
+    apply_passive(user)
+    if user.balance < price: raise HTTPException(400, "Мало денег")
+    
+    user.balance -= price; db.commit()
+    b["players"].append({"id": user.id, "username": user.username, "avatar": user.avatar})
+    b["status"] = "playing"
+    await sio.emit("case_battle_start", b)
+    
+    # Генерируем дропы
+    results = []
+    total_val = 0
+    for p in b["players"]:
+        rarity = random.choices(["common", "uncommon", "rare", "epic", "legendary"], weights=[50, 25, 15, 8, 2])[0]
+        name, price_drop, color = pick_pony(rarity)
+        results.append({"player": p, "item": name, "price": price_drop, "color": color})
+        total_val += price_drop
+    
+    # Определяем победителя
+    winner_res = max(results, key=lambda x: x["price"])
+    winner = winner_res["player"]
+    
+    # Начисляем
+    w_user = db.get(User, winner["id"])
+    w_user.balance += total_val
+    db.add(InventoryItem(user_id=winner["id"], pony_id=f"BATTLE WIN: {winner_res['item']}", rarity="epic", price=total_val, color=winner_res["color"]))
+    db.commit()
+    
+    b["status"] = "finished"
+    b["results"] = results
+    b["winner"] = winner
+    await sio.emit("case_battle_finish", b)
+    await broadcast_drop(winner["username"], winner["avatar"], winner_res["item"], total_val, winner_res["color"], "Батл 1v1")
     
     return {"status": "ok"}
