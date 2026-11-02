@@ -1,7 +1,7 @@
-import os, random
+import os
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -11,18 +11,12 @@ from .models import User
 
 SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_pony_key_123")
 ALGORITHM = "HS256"
-
 router = APIRouter()
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
-class RegisterIn(BaseModel):
+class AuthIn(BaseModel):
     username: str
-    email: EmailStr
-    password: str
-
-class LoginIn(BaseModel):
-    email: EmailStr
     password: str
 
 def create_token(user_id: int) -> str:
@@ -39,34 +33,16 @@ def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer), db: Sessi
     return user
 
 @router.post("/register")
-def register(data: RegisterIn, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(400, "Эта почта уже зарегистрирована!")
+def register(data: AuthIn, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == data.username).first():
         raise HTTPException(400, "Этот никнейм уже занят!")
-    
-    # Создаем пользователя и сразу ставим галочку "подтвержден"
-    user = User(
-        username=data.username, 
-        email=data.email, 
-        password_hash=pwd.hash(data.password), 
-        is_verified=True, 
-        verification_code=None
-    )
+    user = User(username=data.username, password_hash=pwd.hash(data.password))
     db.add(user); db.commit(); db.refresh(user)
-    
-    return {
-        "token": create_token(user.id), 
-        "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}
-    }
+    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
 
 @router.post("/login")
-def login(data: LoginIn, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user or not user.password_hash or not pwd.verify(data.password, user.password_hash):
-        raise HTTPException(401, "Неверная почта или пароль")
-        
-    return {
-        "token": create_token(user.id), 
-        "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}
-    }
+def login(data: AuthIn, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == data.username).first()
+    if not user or not pwd.verify(data.password, user.password_hash):
+        raise HTTPException(401, "Неверный логин или пароль")
+    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
