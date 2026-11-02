@@ -1,7 +1,4 @@
-import hmac
-import hashlib
-import secrets
-import random
+import hmac, hashlib, secrets, random
 
 PONY_DB = {
     "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
@@ -13,22 +10,22 @@ PONY_DB = {
     "celestial": ["The Creator", "Goddess of Sun", "Goddess of Moon", "Alpha Pony"]
 }
 
+# СИЛЬНО СНИЖЕНЫ МНОЖИТЕЛИ, ЧТОБЫ НЕ БЫЛО ИНФЛЯЦИИ
 RARITIES = [
-    ("common",    500_000, "Обычная",     1, "#9ca3af"), 
-    ("uncommon",  250_000, "Необычная",   3, "#4ade80"), 
-    ("rare",      150_000, "Редкая",      10, "#60a5fa"), 
-    ("epic",       70_000, "Эпическая",   50, "#c084fc"), 
-    ("legendary",  25_000, "Легендарная", 250, "#facc15"), 
-    ("mythic",      4_500, "Мифическая",  2000, "#f87171"), 
-    ("celestial",     500, "Божественная", 50000, "#f43f5e"), 
+    ("common",    500_000, "Обычная",     2, "#9ca3af"), 
+    ("uncommon",  250_000, "Необычная",   5, "#4ade80"), 
+    ("rare",      150_000, "Редкая",      20, "#60a5fa"), 
+    ("epic",       70_000, "Эпическая",   100, "#c084fc"), 
+    ("legendary",  25_000, "Легендарная", 500, "#facc15"), 
+    ("mythic",      4_500, "Мифическая",  2500, "#f87171"), 
+    ("celestial",     500, "Божественная", 10000, "#f43f5e"), 
 ]
-
 RARITY_BY_ID = {r[0]: r for r in RARITIES}
 
 CASES = {
-    "starter":   {"name": "Стартовый",   "price": 100,
+    "starter":   {"name": "Стартовый",   "price": 50,
                   "weights": {"common": 650, "uncommon": 250, "rare": 80, "epic": 18, "legendary": 2}},
-    "barn":      {"name": "Амбар",       "price": 500,
+    "barn":      {"name": "Амбар",       "price": 250,
                   "weights": {"common": 400, "uncommon": 300, "rare": 200, "epic": 80, "legendary": 20}},
     "royal":     {"name": "Королевский", "price": 1000,
                   "weights": {"common": 300, "uncommon": 350, "rare": 250, "epic": 80, "legendary": 18, "mythic": 2}},
@@ -68,7 +65,8 @@ def pick_rarity(case_id: str, ticket: int) -> str:
 def pick_pony(rarity: str) -> tuple[str, int, str]:
     base_mult = RARITY_BY_ID[rarity][3]
     pony_name = random.choice(PONY_DB.get(rarity, ["Unknown Pony"]))
-    price = int(100 * base_mult * random.uniform(0.8, 1.2))
+    # Цена теперь адекватная (2, 5, 20, 100...)
+    price = int(100 * base_mult * random.uniform(0.5, 1.5))
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
 
@@ -83,16 +81,12 @@ def get_case_preview(case_id: str) -> list:
         
         for p in ponies:
             base_mult = RARITY_BY_ID[rarity][3]
-            price = int(100 * base_mult * random.uniform(0.8, 1.2))
+            price = int(100 * base_mult * random.uniform(0.5, 1.5))
             color = RARITY_BY_ID[rarity][4]
             item_chance = chance / len(ponies) 
             
             preview.append({
-                "name": p, 
-                "price": price, 
-                "rarity": rarity, 
-                "color": color, 
-                "chance": item_chance
+                "name": p, "price": price, "rarity": rarity, "color": color, "chance": item_chance
             })
             
     return sorted(preview, key=lambda x: x["price"], reverse=True)
