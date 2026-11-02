@@ -12,7 +12,7 @@ from .ws import broadcast_drop
 router = APIRouter()
 
 class UpgradeRequest(BaseModel):
-    item_ids: List[int] # СПИСОК предметов
+    item_ids: List[int]
     target_price: int
     target_name: str
     boost: int = 0
@@ -47,7 +47,6 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
     win = roll_pct <= chance
     
     try:
-        # Удаляем ВСЕ выбранные предметы
         for item in items:
             db.delete(item)
             
