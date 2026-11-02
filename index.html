@@ -15,16 +15,13 @@
         .glass { background: var(--card); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
         .btn { transition: all 0.2s; user-select: none; }
         .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         /* Колесо Апгрейда */
         .upg-wheel-container { position: relative; width: 220px; height: 220px; margin: 0 auto; }
         .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 4px solid #1e293b; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .upg-arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 32px; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: 50% 125px; z-index: 20; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
         
-        /* Live Дропы (Бегущая строка) */
-        .marquee { display: flex; gap: 10px; animation: scroll 20s linear infinite; }
-        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
         /* Скроллбар */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
@@ -55,7 +52,7 @@
     <!-- LIVE ДРОПЫ -->
     <div class="bg-[#0f172a]/90 border-b border-gray-800 py-2 overflow-hidden relative shadow-lg">
         <div id="live-drops-container" class="flex whitespace-nowrap px-4 items-center overflow-hidden">
-            <div id="live-drops" class="marquee text-xs">
+            <div id="live-drops" class="flex gap-2 text-xs">
                 <span class="text-gray-500 italic">Ожидание дропов...</span>
             </div>
         </div>
@@ -79,12 +76,10 @@
             <div id="battles-list" class="flex flex-col gap-3"></div>
         </div>
 
-        <!-- АПГРЕЙД (ПОЛНОСТЬЮ ПЕРЕДЕЛАН) -->
+        <!-- АПГРЕЙД -->
         <div id="page-upgrade" class="page">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-green-500 rounded"></span> Апгрейд</h2>
-            
             <div class="glass p-5 rounded-2xl flex flex-col items-center">
-                <!-- Колесо -->
                 <div class="upg-wheel-container mb-6">
                     <div class="upg-arrow" id="upg-arrow">🔻</div>
                     <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#22c55e 0% 50%, #ef4444 50% 100%);"></div>
@@ -94,7 +89,6 @@
                     </div>
                 </div>
 
-                <!-- Выбор цели -->
                 <div class="w-full bg-gray-900/50 p-3 rounded-xl mb-4 border border-gray-700">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs text-gray-400">Цель:</span>
@@ -108,7 +102,6 @@
                     </div>
                 </div>
 
-                <!-- Твой инвентарь -->
                 <div class="w-full mb-4">
                     <span class="text-xs text-gray-400 mb-2 block">Выбери свой предмет:</span>
                     <div class="inv-scroll" id="upg-inventory"></div>
@@ -120,7 +113,6 @@
 
         <!-- ПРОФИЛЬ -->
         <div id="page-profile" class="page">
-            <!-- ... (оставляем как было) ... -->
             <div class="glass p-5 rounded-2xl mb-4 flex flex-col items-center relative">
                 <div class="relative w-24 h-24 mb-2">
                     <img id="profile-avatar-img" class="w-full h-full rounded-full object-cover border-2 border-purple-500 hidden">
@@ -150,7 +142,38 @@
         <button onclick="switchTab('profile')" class="text-gray-400 hover:text-blue-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl mb-1">👤</span>Профиль</button>
     </nav>
 
-    <!-- МОДАЛКА КЕЙСА (как было) -->
+    <!-- МОДАЛКА АВТОРИЗАЦИИ -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
+        <div class="glass p-6 rounded-3xl w-full max-w-sm relative overflow-hidden">
+            <h2 class="text-2xl font-black mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Вход в PonyCase</h2>
+            
+            <div id="auth-step-1">
+                <button onclick="document.getElementById('auth-err').textContent='Вход через Google пока не настроен разработчиком. Используй почту.'; document.getElementById('auth-err').classList.remove('hidden')" class="w-full bg-white text-black font-bold py-3 rounded-xl mb-4 flex items-center justify-center gap-2 opacity-70">
+                    <img src="https://www.google.com/favicon.ico" class="w-5 h-5"> Войти через Google
+                </button>
+                <div class="flex items-center gap-2 mb-4 opacity-50"><hr class="flex-1"><span class="text-xs">или</span><hr class="flex-1"></div>
+                
+                <input type="email" id="auth-email" placeholder="Email" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-2 text-white outline-none focus:border-purple-500">
+                <input type="text" id="auth-user" placeholder="Никнейм (только для реги)" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-2 text-white outline-none focus:border-purple-500">
+                <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-4 text-white outline-none focus:border-purple-500">
+                
+                <div class="flex gap-2">
+                    <button onclick="doLogin()" class="btn flex-1 bg-gray-700 py-3 rounded-xl font-bold">Вход</button>
+                    <button onclick="doRegister()" class="btn flex-1 bg-purple-600 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(168,85,247,0.5)]">Регистрация</button>
+                </div>
+            </div>
+
+            <div id="auth-step-2" class="hidden text-center">
+                <p class="text-sm text-gray-400 mb-4">Код отправлен на почту. Он также есть в логах сервера!</p>
+                <input type="text" id="auth-code" placeholder="000000" class="w-full bg-gray-900/80 border border-gray-700 p-3 rounded-xl mb-4 text-white text-center text-2xl tracking-widest outline-none focus:border-purple-500">
+                <button onclick="doVerify()" class="btn w-full bg-green-600 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(34,197,94,0.5)]">Подтвердить</button>
+            </div>
+            
+            <p id="auth-err" class="text-red-500 text-xs mt-3 text-center hidden bg-red-500/10 p-2 rounded-lg"></p>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА КЕЙСА -->
     <div id="modal-case" class="fixed inset-0 bg-black/80 backdrop-blur hidden flex flex-col items-center justify-center p-4 z-50">
         <div class="glass p-5 rounded-2xl w-full max-w-md relative">
             <button onclick="document.getElementById('modal-case').classList.add('hidden')" class="absolute top-3 right-4 text-2xl">&times;</button>
@@ -165,7 +188,6 @@
     </div>
 
     <script>
-        // ... (Звуки и API как были) ...
         const sfx = { click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'), win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'), lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'), spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3') };
         function playSfx(n, l=false) { if(!sfx[n]) return; sfx[n].currentTime=0; sfx[n].loop=l; sfx[n].volume=0.4; sfx[n].play().catch(()=>{}); }
         document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON') playSfx('click'); });
@@ -176,19 +198,66 @@
         let socket = null;
         let invData = [];
         let selectedItem = null;
-        let currentTargetMultiplier = 2; // По умолчанию x2
+        let currentTargetMultiplier = 2;
+        let tempEmail = '';
 
-        if(!token) { prompt("Нужно зайти в профиль для авторизации (обнови страницу)"); } else { init(); }
+        if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); }
 
         async function api(endpoint, method='GET', body=null) {
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
             const res = await fetch(`${API}${endpoint}`, { method, headers, body: body ? JSON.stringify(body) : null });
             const data = await res.json();
-            if(!res.ok) throw new Error(data.detail || 'Error');
+            if(!res.ok) throw new Error(data.detail || 'Ошибка сервера');
             return data;
         }
 
+        function showAuthError(msg) {
+            const el = document.getElementById('auth-err'); 
+            el.textContent = msg; 
+            el.classList.remove('hidden');
+        }
+
+        async function doRegister() {
+            try {
+                const email = document.getElementById('auth-email').value;
+                const username = document.getElementById('auth-user').value;
+                const password = document.getElementById('auth-pass').value;
+                if(!email || !username || !password) return showAuthError("Заполни все поля!");
+                
+                await api('/api/auth/register', 'POST', { email, username, password });
+                tempEmail = email;
+                document.getElementById('auth-step-1').classList.add('hidden');
+                document.getElementById('auth-step-2').classList.remove('hidden');
+                document.getElementById('auth-err').classList.add('hidden');
+            } catch(e) { showAuthError(e.message); }
+        }
+
+        async function doVerify() {
+            try {
+                const code = document.getElementById('auth-code').value;
+                const data = await api('/api/auth/verify', 'POST', { email: tempEmail, code });
+                saveAuth(data);
+            } catch(e) { showAuthError(e.message); }
+        }
+
+        async function doLogin() {
+            try {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-pass').value;
+                if(!email || !password) return showAuthError("Заполни поля!");
+                
+                const data = await api('/api/auth/login', 'POST', { email, password });
+                saveAuth(data);
+            } catch(e) { showAuthError(e.message); }
+        }
+
+        function saveAuth(data) {
+            token = data.token; localStorage.setItem('pony_token', token);
+            document.getElementById('auth-modal').classList.add('hidden'); init();
+        }
+
+        // ... (Дальше идет код init, аватарки, кейсов, апгрейда, профиля и т.д. - он остается таким же, как в прошлом сообщении) ...
         async function init() {
             try {
                 userData = await api('/api/clicker/state');
@@ -200,7 +269,7 @@
                     if(live.querySelector('.italic')) live.innerHTML = '';
                     const el = document.createElement('div');
                     el.className = 'inline-flex items-center gap-2 bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700 mr-2';
-                    el.innerHTML = `<span class="text-[10px]">${data.avatar}</span> <b>${data.username}</b> выбил <span style="color:${data.color}" class="font-bold">${data.pony}</span> <span class="text-gray-500 text-[10px]">(${data.source})</span>`;
+                    el.innerHTML = `<b>${data.username}</b> выбил <span style="color:${data.color}" class="font-bold">${data.pony}</span> <span class="text-gray-500 text-[10px]">(${data.source})</span>`;
                     live.appendChild(el);
                 });
             } catch(e) { localStorage.removeItem('pony_token'); location.reload(); }
@@ -219,7 +288,6 @@
             try { const res = await api('/api/user/bonus', 'POST'); updateBalance(res.balance); playSfx('win'); alert('Бонус получен!'); } catch(e) { alert(e.message); }
         }
 
-        // --- АПГРЕЙД (С ЛОГИКОЙ И ГРАДИЕНТОМ) ---
         async function loadUpgradeInventory() {
             const data = await api('/api/user/profile');
             invData = data.inventory;
@@ -258,7 +326,6 @@
             let chance = (selectedItem.price / targetPrice) * 100;
             if(chance > 95) chance = 95;
             
-            // В CSS conic-gradient: 0% - это 12 часов. Мы ставим зеленый от 0 до chance.
             document.getElementById('upg-wheel').style.background = `conic-gradient(#22c55e 0% ${chance}%, #ef4444 ${chance}% 100%)`;
             document.getElementById('upg-chance-text').textContent = `${Math.round(chance)}%`;
         }
@@ -278,19 +345,11 @@
                     target_name: `Upgraded Pony (x${currentTargetMultiplier})`
                 });
                 
-                // ЛОГИКА АНИМАЦИИ (Исправленный баг с красным)
-                // Круг = 360 градусов. Зеленая зона: 0 до chance%. Красная: chance% до 100%.
                 const greenDeg = (res.chance / 100) * 360;
                 let targetDeg = 0;
                 
-                if (res.win) {
-                    // Если выиграл, стрелка должна упасть в зеленую зону (от 0 до greenDeg)
-                    // Добавляем 3600 (10 оборотов) для красоты
-                    targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
-                } else {
-                    // Если проиграл, падает в красную (от greenDeg до 360)
-                    targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
-                }
+                if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
+                else targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
 
                 setTimeout(() => {
                     arrow.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
@@ -302,13 +361,12 @@
                         else { playSfx('lose'); alert(`Проигрыш... Шанс: ${res.chance}%`); }
                         selectedItem = null;
                         loadUpgradeInventory();
-                        loadProfile(); // обновить баланс
+                        loadProfile(); 
                     }, 4000);
                 }, 100);
             } catch(e) { alert(e.message); playSfx('spin', false); }
         }
 
-        // ... (Функции Profile, Cases, Battles оставляем как были, я лишь поправил вызовы) ...
         async function loadProfile() {
             const data = await api('/api/user/profile');
             updateBalance(data.user.balance);
@@ -329,7 +387,21 @@
         async function sellItem(id) { const r = await api(`/api/user/inventory/sell/${id}`, 'POST'); updateBalance(r.balance); loadProfile(); }
         async function sellAll() { if(!confirm("Всё продать?")) return; const r = await api('/api/user/inventory/sell_all', 'POST'); updateBalance(r.balance); loadProfile(); }
 
-        // ЗАГРУЗКА КЕЙСОВ
+        async function uploadAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const formData = new FormData(); formData.append("file", file);
+            try {
+                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                const data = await res.json();
+                if(!res.ok) throw new Error(data.detail);
+                document.getElementById('profile-avatar-img').src = data.avatar;
+                document.getElementById('profile-avatar-img').classList.remove('hidden');
+                document.getElementById('profile-avatar-emoji').classList.add('hidden');
+                playSfx('win');
+            } catch(e) { alert("Ошибка загрузки: " + e.message); }
+        }
+
         async function loadCases() {
             const cases = await api('/api/cases/list');
             const grid = document.getElementById('cases-grid'); grid.innerHTML = '';
