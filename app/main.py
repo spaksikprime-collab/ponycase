@@ -21,15 +21,13 @@ Base.metadata.create_all(bind=engine)
 def run_migrations():
     with engine.connect() as conn:
         try:
-            # Расширяем колонку аватарки до TEXT (чтобы влезли фото)
+            # Расширяем колонку аватарки до TEXT
             conn.execute(text("ALTER TABLE users ALTER COLUMN avatar TYPE TEXT;"))
-            # Добавляем колонки, если их нет
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bonus TIMESTAMP;"))
-            conn.execute(text("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS color VARCHAR(16) DEFAULT '#fff';"))
+            conn.execute(text("ALTER TABLE inventory ALTER COLUMN color TYPE VARCHAR(32);"))
             conn.commit()
-            print("Миграция БД успешно применена!")
+            print("=== БАЗА ДАННЫХ ОБНОВЛЕНА ===")
         except Exception as e:
-            print(f"Ошибка миграции: {e}")
+            print(f"=== ОШИБКА МИГРАЦИИ: {e} ===")
 
 run_migrations()
 
