@@ -12,22 +12,27 @@ from .ws import sio
 
 router = APIRouter()
 
-# Настройки цветов и их множителей
-# Сумма шансов должна быть равна 100
+# 20 секторов для колеса
+WHEEL_SEGMENTS = [
+    "red", "green", "red", "blue", "red", "green", "red", "yellow", 
+    "red", "green", "red", "blue", "red", "green", "red", "blue",
+    "red", "green", "red", "green"
+]
+
 WHEEL_COLORS = {
-    "red":    {"name": "Красный", "mult": 2,  "chance": 50, "hex": "#ef4444"},
-    "green":  {"name": "Зеленый", "mult": 3,  "chance": 30, "hex": "#22c55e"},
-    "blue":   {"name": "Синий",   "mult": 4,  "chance": 18, "hex": "#3b82f6"},
-    "yellow": {"name": "Желтый",  "mult": 35, "chance": 2,  "hex": "#eab308"}
+    "red":    {"name": "Красный", "mult": 2,  "hex": "#ef4444"},
+    "green":  {"name": "Зеленый", "mult": 3,  "hex": "#22c55e"},
+    "blue":   {"name": "Синий",   "mult": 4,  "hex": "#3b82f6"},
+    "yellow": {"name": "Желтый",  "mult": 35, "hex": "#eab308"}
 }
 
-# Глобальное состояние игры (хранится в памяти сервера)
 GAME_STATE = {
-    "status": "waiting", # waiting, spinning, finished
+    "status": "waiting", 
     "end_time": 0,
-    "bets": [], # Список всех ставок за раунд: {"user_id": int, "username": str, "avatar": str, "color": str, "amount": int}
+    "bets": [],
     "winning_color": None,
-    "history": [] # Последние 50 выигрышных цветов
+    "winning_index": 0, # Индекс для точной остановки колеса
+    "history": []
 }
 
 class BetRequest(BaseModel):
@@ -43,112 +48,75 @@ async def place_bet(data: BetRequest, user: User = Depends(current_user), db: Se
     global GAME_STATE
     
     if GAME_STATE["status"] != "waiting":
-        raise HTTPException(400, "Ставки на этот раунд закрыты")
-    
+        raise HTTPException(400, "Ставки закрыты")
     if data.color not in WHEEL_COLORS:
         raise HTTPException(400, "Неверный цвет")
-        
     if data.amount < 10:
-        raise HTTPException(400, "Минимальная ставка 10 🪙")
+        raise HTTPException(400, "Мин. ставка 10")
 
     apply_passive(user, db)
-    
     if user.balance < data.amount:
-        raise HTTPException(400, "Недостаточно средств")
+        raise HTTPException(400, "Мало денег")
 
-    # Списываем баланс
     user.balance -= data.amount
     db.commit()
 
-    # Добавляем ставку в общий пул
-    bet_info = {
-        "user_id": user.id,
-        "username": user.username,
-        "avatar": user.avatar,
-        "color": data.color,
-        "amount": data.amount
-    }
+    bet_info = {"user_id": user.id, "username": user.username, "avatar": user.avatar, "color": data.color, "amount": data.amount}
     GAME_STATE["bets"].append(bet_info)
-
-    # Отправляем обновление всем в сокет (чтобы у всех обновился список ставок)
     await sio.emit("wheel_state_update", GAME_STATE)
-    
     return {"balance": user.balance}
 
-# ==========================================
-# ФОНОВАЯ ЗАДАЧА (Запускается из main.py)
-# ==========================================
 async def wheel_game_loop():
     global GAME_STATE
     
-    # Небольшая задержка при старте сервера, чтобы все прогрузилось
     await asyncio.sleep(5)
     
     while True:
-        # --- ФАЗА 1: Ожидание ставок (10 секунд) ---
+        # ФАЗА 1: Ожидание (15 секунд)
         GAME_STATE["status"] = "waiting"
         GAME_STATE["bets"] = []
         GAME_STATE["winning_color"] = None
-        GAME_STATE["end_time"] = time.time() + 10
-        
+        GAME_STATE["end_time"] = time.time() + 15
         await sio.emit("wheel_state_update", GAME_STATE)
+        await asyncio.sleep(15)
         
-        # Ждем 10 секунд
-        await asyncio.sleep(10)
-        
-        # --- ФАЗА 2: Кручение (5 секунд) ---
+        # ФАЗА 2: Кручение (5 секунд)
         GAME_STATE["status"] = "spinning"
         
-        # Выбираем победителя на основе шансов
-        colors = list(WHEEL_COLORS.keys())
-        weights = [WHEEL_COLORS[c]["chance"] for c in colors]
-        winning_color = random.choices(colors, weights=weights, k=1)[0]
+        # Выбираем индекс (0-19)
+        winning_index = random.randint(0, 19)
+        winning_color = WHEEL_SEGMENTS[winning_index]
         
         GAME_STATE["winning_color"] = winning_color
-        
+        GAME_STATE["winning_index"] = winning_index
         await sio.emit("wheel_state_update", GAME_STATE)
-        
-        # Ждем 5 секунд, пока на фронтенде крутится анимация
         await asyncio.sleep(5)
         
-        # --- ФАЗА 3: Выдача выигрышей ---
+        # ФАЗА 3: Выдача призов
         db = SessionLocal()
         try:
             for bet in GAME_STATE["bets"]:
                 if bet["color"] == winning_color:
-                    # Игрок выиграл
                     win_amount = int(bet["amount"] * WHEEL_COLORS[winning_color]["mult"])
                     w_user = db.get(User, bet["user_id"])
-                    
                     if w_user:
                         w_user.balance += win_amount
-                        
-                        # Пишем в историю
                         db.add(GameHistory(
-                            user_id=w_user.id,
-                            game_type="Колесо",
-                            item_name=WHEEL_COLORS[winning_color]["name"],
-                            price=win_amount,
-                            result_text=f"Ставка: {bet['amount']} (x{WHEEL_COLORS[winning_color]['mult']})"
+                            user_id=w_user.id, game_type="Колесо", item_name=WHEEL_COLORS[winning_color]["name"],
+                            price=win_amount, result_text=f"x{WHEEL_COLORS[winning_color]['mult']}"
                         ))
-                        
-                        # Отправляем персональное уведомление (на фронте можно поймать)
                         await sio.emit("wheel_payout", {"amount": win_amount, "color": winning_color})
-            
             db.commit()
         except Exception as e:
             db.rollback()
-            print(f"Ошибка при выдаче выигрышей в Колесе: {e}")
         finally:
             db.close()
 
-        # Обновляем историю (максимум 50 записей)
         GAME_STATE["history"].insert(0, winning_color)
         if len(GAME_STATE["history"]) > 50:
             GAME_STATE["history"].pop()
             
-        # --- ФАЗА 4: Конец раунда (висит 3 секунды, чтобы все увидели победителя) ---
+        # ФАЗА 4: Результат (3 секунды)
         GAME_STATE["status"] = "finished"
         await sio.emit("wheel_state_update", GAME_STATE)
-        
-        await asyncio.sleep(3) 
+        await asyncio.sleep(3)
