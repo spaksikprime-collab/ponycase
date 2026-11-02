@@ -39,27 +39,16 @@ async def open_case(case_id: str, user: User = Depends(current_user),
     rarity = pick_rarity(case_id, ticket)
     pony_id, price, color = pick_pony(rarity)
 
-    db.add(InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price))
+    db.add(InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color))
     db.add(CaseOpen(user_id=user.id, case_id=case_id, pony_id=pony_id,
                     rarity=rarity, price=case["price"], server_seed=server_seed,
                     client_seed=client_seed, nonce=nonce, ticket=ticket))
     db.commit()
 
-    await broadcast_drop(user.username, pony_id, rarity, price)
+    # ИСПРАВЛЕНО: передаем все 6 аргументов
+    await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
 
     return {
         "pony_id": pony_id, "rarity": rarity, "price": price, "color": color,
         "balance": user.balance,
-        "fair": {"server_seed": server_seed, "client_seed": client_seed,
-                 "nonce": nonce, "ticket": ticket},
     }
-
-@router.post("/sell/{item_id}")
-def sell(item_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    item = db.get(InventoryItem, item_id)
-    if not item or item.user_id != user.id:
-        raise HTTPException(404, "Предмет не найден")
-    apply_passive(user)
-    user.balance += item.price
-    db.delete(item); db.commit()
-    return {"balance": user.balance, "sold_for": item.price}
