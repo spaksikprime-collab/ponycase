@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from .db import get_db
-from .models import User, InventoryItem, CaseOpen
+from .models import User, InventoryItem, CaseOpen, GameHistory
 from .auth import current_user
 from .games import CASES, gen_seed, roll_ticket, pick_rarity, pick_pony, get_case_preview
 from .clicker import apply_passive
@@ -20,7 +20,7 @@ def list_cases():
 @router.get("/preview/{case_id}")
 def preview_case(case_id: str):
     if case_id not in CASES: 
-        raise HTTPException(404, "Такого кейса не существует")
+        raise HTTPException(404, "Кейс не найден")
     return get_case_preview(case_id)
 
 @router.post("/open_multi/{case_id}")
@@ -28,14 +28,14 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
     if case_id not in CASES: 
         raise HTTPException(404, "Кейс не найден")
     if data.count < 1 or data.count > 10: 
-        raise HTTPException(400, "Можно открывать от 1 до 10 кейсов за раз")
+        raise HTTPException(400, "От 1 до 10")
     
     case = CASES[case_id]
     total_price = case["price"] * data.count
     
     apply_passive(user, db)
     if user.balance < total_price: 
-        raise HTTPException(400, "Недостаточно копыт для открытия")
+        raise HTTPException(400, "Недостаточно копыт")
 
     user.balance -= total_price
     results = []
@@ -49,26 +49,28 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
             rarity = pick_rarity(case_id, ticket)
             pony_id, price, color = pick_pony(rarity)
 
-            # Создаем предмет
             item = InventoryItem(user_id=user.id, pony_id=pony_id, rarity=rarity, price=price, color=color)
             db.add(item)
-            db.flush() # Получаем ID предмета до коммита
+            db.flush()
             
-            # Записываем открытие
             db.add(CaseOpen(
                 user_id=user.id, case_id=case_id, pony_id=pony_id, rarity=rarity, 
                 price=case["price"], server_seed=server_seed, client_seed=client_seed, 
                 nonce=user.nonce, ticket=ticket
             ))
+
+            # Запись в историю
+            db.add(GameHistory(
+                user_id=user.id, game_type="Кейс", item_name=pony_id, 
+                price=price, result_text=f"Открыл {case['name']}"
+            ))
             
-            # ОБНОВЛЯЕМ ЛУЧШИЙ ДРОП (Только если цена выше предыдущей)
             if price > user.best_drop_price:
                 user.best_drop_price = price
                 user.best_drop_name = pony_id
             
             results.append({"id": item.id, "pony_id": pony_id, "rarity": rarity, "price": price, "color": color})
             
-            # Отправляем в Live-ленту только если дроп дорогой
             if price > 5000:
                 await broadcast_drop(user.username, user.avatar, pony_id, price, color, f"Кейс: {case['name']}")
 
@@ -76,5 +78,5 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
         return {"results": results, "balance": user.balance}
         
     except Exception as e:
-        db.rollback() # Откатываем всё, если произошла ошибка
-        raise HTTPException(500, "Ошибка при открытии кейса. Деньги возвращены.")
+        db.rollback()
+        raise HTTPException(500, "Ошибка при открытии. Деньги возвращены.")
