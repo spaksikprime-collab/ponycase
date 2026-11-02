@@ -24,8 +24,9 @@
         .upg-wheel { width: 200px; height: 200px; border-radius: 50%; border: 4px solid #1e293b; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin: 0 auto; }
         .upg-arrow { font-size: 30px; text-align: center; margin-bottom: -15px; position: relative; z-index: 10; transition: transform 3s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: center 115px; }
 
-        /* Чат */
-        #chat-box { position: fixed; bottom: 70px; right: 10px; width: 300px; height: 350px; z-index: 50; display: flex; flex-direction: column; }
+        /* Чат (Перенесен наверх) */
+        #chat-box { position: fixed; top: 60px; right: 10px; width: 320px; height: 400px; z-index: 60; display: none; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        #chat-box.open { display: flex; }
         .chat-msg { font-size: 12px; margin-bottom: 4px; word-wrap: break-word; }
         .chat-user { color: #a855f7; font-weight: bold; }
 
@@ -44,14 +45,28 @@
 </head>
 <body class="min-h-screen flex flex-col pb-20">
 
-    <header class="glass sticky top-0 z-40 px-4 py-2 flex justify-between items-center">
+    <header class="glass sticky top-0 z-50 px-4 py-2 flex justify-between items-center">
         <h1 class="text-xl font-black text-purple-400">PONYCASE 🦄</h1>
         <div class="flex gap-2 items-center">
-            <div class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">🟢 <span id="online-count">0</span></div>
+            <button onclick="toggleChat()" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold shadow-[0_0_10px_rgba(168,85,247,0.5)]">💬 Чат</button>
+            <div class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded hidden sm:block">🟢 <span id="online-count">0</span></div>
             <button onclick="claimBonus()" class="bg-green-600 px-3 py-1 rounded text-xs font-bold">Бонус</button>
             <div class="bg-gray-900 px-3 py-1 rounded border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold">0</span> 🪙</div>
         </div>
     </header>
+
+    <!-- Выпадающий ЧАТ -->
+    <div id="chat-box" class="glass rounded-bl-xl rounded-br-xl">
+        <div class="bg-purple-900/80 p-2 text-xs font-bold border-b border-gray-700 flex justify-between items-center">
+            <span>💬 Общий чат</span>
+            <button onclick="toggleChat()" class="text-gray-300 hover:text-white px-2 text-lg leading-none">&times;</button>
+        </div>
+        <div id="chat-messages" class="flex-1 p-2 overflow-y-auto bg-black/40"></div>
+        <div class="flex border-t border-gray-700 bg-gray-900/80">
+            <input type="text" id="chat-input" placeholder="Сообщение..." class="flex-1 bg-transparent p-2 text-xs outline-none text-white" onkeypress="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()" class="bg-purple-600 px-3 text-xs font-bold">➤</button>
+        </div>
+    </div>
 
     <div class="bg-[#0f111a] border-b border-gray-800 py-2 overflow-hidden relative">
         <div id="live-drops" class="flex gap-3 whitespace-nowrap px-4 items-center text-xs">
@@ -76,14 +91,14 @@
                 <div class="jackpot-wheel-container mb-4">
                     <div class="jackpot-wheel" id="jp-wheel">
                         <div class="jackpot-center">
-                            <span class="text-xs text-gray-400">Победитель</span>
+                            <span class="text-[10px] text-gray-400">Победитель</span>
                             <span class="font-bold text-sm" id="jp-winner">???</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex justify-center gap-2 mb-4">
-                    <input type="number" id="jp-bet" placeholder="Ставка" class="bg-gray-900 p-2 rounded w-24 text-center border border-gray-700">
+                    <input type="number" id="jp-bet" placeholder="Ставка" class="bg-gray-900 p-2 rounded w-24 text-center border border-gray-700 text-white">
                     <button onclick="betJackpot()" class="bg-yellow-600 px-4 py-2 rounded font-bold">Поставить</button>
                 </div>
                 <button onclick="startJackpot()" class="w-full bg-red-600 py-2 rounded font-bold">Крутить (Владелец)</button>
@@ -111,7 +126,7 @@
                     </div>
                 </div>
 
-                <select id="upg-select" class="w-full bg-gray-900 p-2 rounded mb-4 text-sm" onchange="updateUpgradeUI()"></select>
+                <select id="upg-select" class="w-full bg-gray-900 p-2 rounded mb-4 text-sm text-white border border-gray-700" onchange="updateUpgradeUI()"></select>
                 <button onclick="doUpgrade()" class="w-full bg-green-600 py-3 rounded font-bold">Апгрейд</button>
             </div>
         </div>
@@ -159,17 +174,6 @@
         </div>
     </main>
 
-    <!-- ЧАТ -->
-    <div id="chat-box" class="glass rounded-t-xl overflow-hidden hidden md:flex">
-        <div class="bg-purple-900/50 p-2 text-xs font-bold border-b border-gray-700 flex justify-between">Чат <button onclick="document.getElementById('chat-box').classList.add('hidden')">x</button></div>
-        <div id="chat-messages" class="flex-1 p-2 overflow-y-auto bg-black/30"></div>
-        <div class="flex border-t border-gray-700">
-            <input type="text" id="chat-input" placeholder="Сообщение..." class="flex-1 bg-transparent p-2 text-xs outline-none text-white" onkeypress="if(event.key==='Enter') sendChat()">
-            <button onclick="sendChat()" class="bg-purple-600 px-3 text-xs font-bold">></button>
-        </div>
-    </div>
-    <button onclick="document.getElementById('chat-box').classList.remove('hidden')" class="fixed bottom-20 right-4 bg-purple-600 w-10 h-10 rounded-full shadow-lg z-40 md:hidden">💬</button>
-
     <!-- НАВИГАЦИЯ -->
     <nav class="fixed bottom-0 w-full glass flex justify-around py-2 z-40">
         <button onclick="switchTab('cases')" class="text-gray-400 flex flex-col items-center text-[10px] font-bold"><span class="text-xl">📦</span>Кейсы</button>
@@ -180,7 +184,7 @@
     </nav>
 
     <!-- МОДАЛКА АВТОРИЗАЦИИ -->
-    <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100]">
+    <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100] hidden">
         <div class="glass p-6 rounded-2xl w-full max-w-sm">
             <h2 class="text-xl font-black text-center mb-6">Вход в PonyCase</h2>
             <input type="text" id="a-user" placeholder="Логин" class="w-full bg-gray-900 p-3 rounded mb-2 text-white border border-gray-700">
@@ -189,7 +193,7 @@
                 <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2 rounded font-bold">Вход</button>
                 <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2 rounded font-bold">Регистрация</button>
             </div>
-            <p id="a-err" class="text-red-500 text-xs text-center mt-2 hidden"></p>
+            <p id="a-err" class="text-red-500 text-xs text-center mt-2 hidden bg-red-500/10 p-2 rounded"></p>
         </div>
     </div>
 
@@ -226,14 +230,20 @@
         let user = null, socket = null, inv = [], currentCase = null;
         let jpId = null, jpPlayers = [];
 
-        if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); }
+        // Проверка при загрузке
+        if(token) { 
+            document.getElementById('auth-modal').classList.add('hidden'); 
+            init(); 
+        } else {
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
 
         async function req(ep, m='GET', b=null) {
             const h = { 'Content-Type': 'application/json' };
             if(token) h['Authorization'] = `Bearer ${token}`;
             const r = await fetch(`${API}${ep}`, { method: m, headers: h, body: b ? JSON.stringify(b) : null });
             const d = await r.json();
-            if(!r.ok) throw new Error(d.detail || 'Err');
+            if(!r.ok) throw new Error(d.detail || 'Ошибка сервера');
             return d;
         }
 
@@ -241,52 +251,72 @@
             try {
                 const u = document.getElementById('a-user').value;
                 const p = document.getElementById('a-pass').value;
+                if(!u || !p) return;
+                
                 const d = await req(`/api/auth/${type}`, 'POST', {username: u, password: p});
-                token = d.token; localStorage.setItem('pony_token', token);
-                document.getElementById('auth-modal').classList.add('hidden'); init();
+                token = d.token; 
+                localStorage.setItem('pony_token', token);
+                
+                document.getElementById('a-err').classList.add('hidden');
+                document.getElementById('auth-modal').classList.add('hidden'); 
+                
+                init(); // Запускаем игру
             } catch(e) { 
-                const err = document.getElementById('a-err'); err.textContent = e.message; err.classList.remove('hidden');
+                const err = document.getElementById('a-err'); 
+                err.textContent = e.message; 
+                err.classList.remove('hidden');
             }
         }
 
         async function init() {
             try {
+                // Если тут ошибка, мы не выходим из аккаунта, а просто показываем в консоли
                 user = await req('/api/clicker/state');
                 updateBal(user.balance);
                 loadCases();
                 
-                socket = io({ auth: { token } });
-                socket.on('online', d => document.getElementById('online-count').textContent = d.count);
-                
-                socket.on('drop', d => {
-                    const live = document.getElementById('live-drops');
-                    if(live.querySelector('.italic')) live.innerHTML = '';
-                    live.innerHTML = `<div class="bg-gray-800 px-3 py-1 rounded-full border border-gray-700 flex items-center gap-1"><span>${d.avatar}</span> <b>${d.username}</b> выбил <b style="color:${d.color}">${d.pony}</b> <span class="text-gray-500">(${d.source})</span></div>` + live.innerHTML;
-                });
+                if(!socket) {
+                    socket = io({ auth: { token } });
+                    
+                    socket.on('online', d => document.getElementById('online-count').textContent = d.count);
+                    
+                    socket.on('drop', d => {
+                        const live = document.getElementById('live-drops');
+                        if(live.querySelector('.italic')) live.innerHTML = '';
+                        live.innerHTML = `<div class="bg-gray-800 px-3 py-1 rounded-full border border-gray-700 flex items-center gap-1"><span>${d.avatar}</span> <b>${d.username}</b> выбил <b style="color:${d.color}">${d.pony}</b> <span class="text-gray-500">(${d.source})</span></div>` + live.innerHTML;
+                    });
 
-                socket.on('chat', d => {
-                    const box = document.getElementById('chat-messages');
-                    box.innerHTML += `<div class="chat-msg"><span class="chat-user">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
-                    box.scrollTop = box.scrollHeight;
-                });
+                    socket.on('chat', d => {
+                        const box = document.getElementById('chat-messages');
+                        box.innerHTML += `<div class="chat-msg"><span class="chat-user">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
+                        box.scrollTop = box.scrollHeight;
+                    });
 
-                socket.on('jackpot_update', d => { 
-                    jpId = d.id; document.getElementById('jp-total').textContent = d.total + ' 🪙';
-                    jpPlayers = d.players;
-                    renderJpWheel();
-                    document.getElementById('jp-players').innerHTML = d.players.map(p => `<div class="flex justify-between bg-gray-800 p-2 rounded text-xs"><span>${p.avatar} ${p.username}</span><span class="text-yellow-400">${p.amount}🪙</span></div>`).join('');
-                });
+                    socket.on('jackpot_update', d => { 
+                        jpId = d.id; document.getElementById('jp-total').textContent = d.total + ' 🪙';
+                        jpPlayers = d.players;
+                        renderJpWheel();
+                        document.getElementById('jp-players').innerHTML = d.players.map(p => `<div class="flex justify-between bg-gray-800 p-2 rounded text-xs"><span>${p.avatar} ${p.username}</span><span class="text-yellow-400">${p.amount}🪙</span></div>`).join('');
+                    });
 
-                socket.on('jackpot_finish', d => {
-                    document.getElementById('jp-winner').textContent = d.winner.username;
-                    playSfx('win'); confetti();
-                    setTimeout(() => { document.getElementById('jp-winner').textContent = '???'; }, 5000);
-                });
-
-            } catch(e) { localStorage.removeItem('pony_token'); location.reload(); }
+                    socket.on('jackpot_finish', d => {
+                        document.getElementById('jp-winner').textContent = d.winner.username;
+                        playSfx('win'); confetti();
+                        setTimeout(() => { document.getElementById('jp-winner').textContent = '???'; }, 5000);
+                    });
+                }
+            } catch(e) { 
+                console.error("Ошибка init:", e); 
+                // Если токен протух, выкидываем
+                if(e.message.includes('токен') || e.message.includes('Юзер')) {
+                    localStorage.removeItem('pony_token'); 
+                    location.reload();
+                }
+            }
         }
 
-        function updateBal(v) { document.getElementById('balance').textContent = v; user.balance = v; }
+        function updateBal(v) { document.getElementById('balance').textContent = v; if(user) user.balance = v; }
+        
         function switchTab(t) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
@@ -295,9 +325,15 @@
             if(t==='battles') loadJackpot();
         }
 
+        function toggleChat() { document.getElementById('chat-box').classList.toggle('open'); }
+        function sendChat() {
+            const inp = document.getElementById('chat-input');
+            if(inp.value && socket) { socket.emit('chat', {username: user.username, text: inp.value}); inp.value = ''; }
+        }
+
         async function claimBonus() { try { const r = await req('/api/user/bonus','POST'); updateBal(r.balance); playSfx('win'); } catch(e) { alert(e.message); } }
 
-        // --- КЕЙСЫ (Реальные пони в рулетке) ---
+        // --- КЕЙСЫ ---
         async function loadCases() {
             const cs = await req('/api/cases/list');
             document.getElementById('cases-grid').innerHTML = cs.map(c => `
@@ -330,7 +366,6 @@
                 const strip = document.getElementById('m-strip');
                 strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
                 
-                // Берем пул предметов из превью и генерируем 50 случайных
                 const pool = await req(`/api/cases/preview/${id}`);
                 let html = '';
                 for(let i=0; i<50; i++) {
@@ -340,7 +375,7 @@
                 strip.innerHTML = html;
 
                 setTimeout(() => {
-                    strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; // Замедлили до 6 сек
+                    strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
                     strip.style.transform = `translateX(-${(45 * 100) - (strip.parentElement.offsetWidth / 2) + 45}px)`;
                     
                     setTimeout(() => {
@@ -353,7 +388,7 @@
             } catch(e) { playSfx('spin', false); alert(e.message); btn.disabled = false; }
         }
 
-        // --- ПРОФИЛЬ (Пофикшена аватарка) ---
+        // --- ПРОФИЛЬ ---
         async function loadProfile() {
             const d = await req('/api/user/profile');
             updateBal(d.user.balance);
@@ -392,9 +427,9 @@
             } catch(e) { alert(e.message); }
         }
 
-        // --- АПГРЕЙД (Показывает предметы и крутит) ---
+        // --- АПГРЕЙД ---
         async function loadUpgrade() {
-            await loadProfile(); // обновляем инвентарь
+            await loadProfile();
             const sel = document.getElementById('upg-select');
             sel.innerHTML = '<option value="">Выбери предмет...</option>' + inv.map(i => `<option value="${i.id}" data-price="${i.price}" data-name="${i.name}">${i.name} (${i.price}🪙)</option>`).join('');
         }
@@ -405,7 +440,7 @@
             if(!opt.value) return;
             
             const price = parseInt(opt.getAttribute('data-price'));
-            const targetPrice = price * 2; // x2
+            const targetPrice = price * 2;
             document.getElementById('upg-my-item').textContent = opt.getAttribute('data-name');
             document.getElementById('upg-target-item').textContent = `Предмет за ${targetPrice}🪙`;
             
@@ -423,17 +458,16 @@
             playSfx('spin', true);
             
             setTimeout(() => {
-                arrow.style.transform = 'rotate(1440deg)'; // 4 оборота
-                setTimeout(async () => {
+                arrow.style.transform = 'rotate(1440deg)';
+                setTimeout(() => {
                     playSfx('spin', false);
-                    // Тут в реальном проекте API запрос. Для теста - имитация
-                    alert("Апгрейд работает, но логика запроса к БД временно упрощена.");
+                    alert("Апгрейд работает (демо).");
                     arrow.style.transform = 'rotate(0deg)';
                 }, 3000);
             }, 50);
         }
 
-        // --- МИНЫ (Пофикшены поля) ---
+        // --- МИНЫ ---
         let mId = null;
         async function startMines() {
             const bet = parseInt(document.getElementById('mines-bet').value);
@@ -496,12 +530,6 @@
 
         async function startJackpot() {
             try { await req(`/api/battles/start/${jpId}`, 'POST'); } catch(e) { alert(e.message); }
-        }
-
-        // --- ЧАТ ---
-        function sendChat() {
-            const t = document.getElementById('chat-input').value;
-            if(t) { socket.emit('chat', {username: user.username, text: t}); document.getElementById('chat-input').value = ''; }
         }
     </script>
 </body>
