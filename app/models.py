@@ -27,3 +27,17 @@ class InventoryItem(Base):
     price = Column(BigInteger, default=0)
     color = Column(String(16), default="#fff")
     obtained_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class CaseOpen(Base):
+    __tablename__ = "case_opens"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    case_id = Column(String(32), nullable=False)
+    pony_id = Column(String(64), nullable=False)
+    rarity = Column(String(32), nullable=False)
+    price = Column(BigInteger, nullable=False)
+    server_seed = Column(String(64), nullable=False)
+    client_seed = Column(String(64), nullable=False)
+    nonce = Column(BigInteger, nullable=False)
+    ticket = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
