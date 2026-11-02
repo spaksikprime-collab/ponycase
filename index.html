@@ -18,16 +18,16 @@
         .click-pony { transition: transform 0.1s; user-select: none; cursor: pointer; }
         .click-pony:active { transform: scale(0.9); }
 
-        /* Рулетка */
+        /* Рулетка (Аппаратное ускорение) */
         .roulette-box { overflow: hidden; position: relative; background: #0B0E14; border-radius: 12px; border: 1px solid #2d3748; padding: 15px 0; }
-        .roulette-strip { display: flex; gap: 10px; will-change: transform; }
+        .roulette-strip { display: flex; gap: 10px; will-change: transform; transform: translate3d(0, 0, 0); }
         .roulette-item { min-width: 85px; height: 95px; background: #1A202C; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; }
 
-        /* Апгрейд */
+        /* Апгрейд (Аппаратное ускорение) */
         .upg-wheel-container { position: relative; width: 200px; height: 200px; margin: 0 auto; }
         .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .upg-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 28px; z-index: 20; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: 50% 112px; }
+        .upg-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 28px; z-index: 20; will-change: transform; transform-origin: 50% 112px; }
 
         /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-width: 300px; margin: 0 auto; }
@@ -38,7 +38,7 @@
 
         /* Джекпот */
         .jackpot-wheel-container { position: relative; width: 220px; height: 220px; margin: 0 auto; }
-        .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; background: #0B0E14; overflow: hidden; position: relative; box-shadow: 0 0 40px rgba(234, 179, 8, 0.15); }
+        .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; background: #0B0E14; overflow: hidden; position: relative; box-shadow: 0 0 40px rgba(234, 179, 8, 0.15); will-change: transform; }
         .jackpot-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #1A202C; border-radius: 50%; border: 3px solid #eab308; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; }
 
         /* Уведомления */
@@ -245,15 +245,15 @@
         </div>
     </main>
 
-    <!-- НАВИГАЦИЯ (Добавлен Кликер) -->
+    <!-- НАВИГАЦИЯ -->
     <nav class="bottom-nav">
         <button onclick="switchTab('cases', this)" class="nav-btn active"><span class="icon">📦</span><span class="text">Кейсы</span></button>
         <button onclick="switchTab('clicker', this)" class="nav-btn"><span class="icon">🦄</span><span class="text">Кликер</span></button>
         <button onclick="switchTab('battles', this)" class="nav-btn"><span class="icon">⚔️</span><span class="text">Батлы</span></button>
         <button onclick="switchTab('upgrade', this)" class="nav-btn"><span class="icon">📈</span><span class="text">Апгрейд</span></button>
         <button onclick="switchTab('mines', this)" class="nav-btn"><span class="icon">💣</span><span class="text">Мины</span></button>
-        <!-- Профиль перенесен в хедер или скрыт, чтобы влезло 5 вкладок. Для мобилок лучше 5. Оставим Профиль как 6-ю или заменим. -->
     </nav>
+    <button onclick="switchTab('profile', this)" class="fixed bottom-20 right-4 bg-purple-600 w-10 h-10 rounded-full shadow-lg z-40 flex items-center justify-center text-xl hover:scale-110 transition" title="Мой Профиль">👤</button>
 
     <!-- МОДАЛКИ -->
     <div id="chat-box" class="fixed top-[60px] right-2 w-[90%] max-w-[300px] h-[400px] glass rounded-xl flex-col z-[60] hidden shadow-2xl">
@@ -297,7 +297,6 @@
         </div>
     </div>
 
-    <!-- ПРОФИЛЬ ЧУЖОЙ -->
     <div id="modal-player" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-[80] backdrop-blur-sm">
         <div class="glass p-4 rounded-xl w-full max-w-sm relative text-center">
             <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-2 right-3 text-xl">&times;</button>
@@ -320,9 +319,6 @@
             </div>
         </div>
     </div>
-
-    <!-- СКРЫТАЯ КНОПКА ПРОФИЛЯ (можно вынести в хедер) -->
-    <button onclick="switchTab('profile', this)" class="fixed bottom-20 right-4 bg-purple-600 w-10 h-10 rounded-full shadow-lg z-40 flex items-center justify-center text-xl hover:scale-110 transition" title="Мой Профиль">👤</button>
 
     <script>
         const sfx = {
@@ -434,7 +430,6 @@
             } catch(e) { console.error(e); }
         }
 
-        // ЕДИНАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ БАЛАНСА
         function updateBal(v) { 
             if (v !== undefined && v !== null) {
                 document.getElementById('balance').textContent = v; 
@@ -512,8 +507,6 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- ОСТАЛЬНОЕ (кейсы, батлы, апгрейд, мины) ---
-        // ... (код для кейсов, батлов и т.д. остается тем же, что я скидывал в прошлый раз) ...
         async function showPlayerProfile(username) {
             try {
                 const u = await req(`/api/user/public/by_name/${username}`);
@@ -536,6 +529,7 @@
             } catch(e) { showToast("Ошибка профиля", 'lose'); }
         }
 
+        // --- КЕЙСЫ ---
         async function loadCases() {
             casesData = await req('/api/cases/list');
             document.getElementById('cases-grid').innerHTML = casesData.map(c => `
@@ -578,7 +572,12 @@
                     btn.disabled = false;
                 } else {
                     const strip = document.getElementById('m-strip');
-                    strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
+                    
+                    // ПРИНУДИТЕЛЬНЫЙ СБРОС И ОТРИСОВКА (ФИКС ЛАГОВ)
+                    strip.style.transition = 'none';
+                    strip.style.transform = 'translate3d(0, 0, 0)';
+                    strip.innerHTML = ''; // Очищаем старое
+                    
                     const pool = await req(`/api/cases/preview/${id}`);
                     let html = '';
                     for(let i=0; i<50; i++) {
@@ -587,13 +586,18 @@
                         html += `<div class="roulette-item" style="border-color:${item.color}; ${shadow}"><div class="text-[9px] text-center font-bold px-1">${item.pony_id || item.name}</div></div>`;
                     }
                     strip.innerHTML = html;
+
+                    // Ждем 50мс, чтобы браузер отрисовал стартовую позицию, затем даем команду
                     setTimeout(() => {
                         strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                        strip.style.transform = `translateX(-${(45 * 95) - (strip.parentElement.offsetWidth / 2) + 42}px)`;
+                        strip.style.transform = `translate3d(-${(45 * 95) - (strip.parentElement.offsetWidth / 2) + 42}px, 0, 0)`;
+                        
                         setTimeout(() => {
                             playSfx('spin', false);
                             const first = res.results[0];
-                            const r = document.getElementById('m-result'); r.style.color = first.color; r.textContent = `${first.pony_id} (${first.price}🪙)`;
+                            const r = document.getElementById('m-result'); 
+                            r.style.color = first.color; 
+                            r.textContent = `${first.pony_id} (${first.price}🪙)`;
                             btn.disabled = false;
                             if(first.price > 1000) { playSfx('win'); confetti(); showToast(`Выпал ${first.pony_id}!`, 'win'); } else { playSfx('lose'); }
                         }, 6200);
@@ -602,6 +606,7 @@
             } catch(e) { playSfx('spin', false); showToast(e.message, 'lose'); btn.disabled = false; }
         }
 
+        // --- ПРОФИЛЬ ---
         async function loadProfile() {
             const d = await req('/api/user/profile');
             updateBal(d.user.balance);
@@ -640,6 +645,7 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
+        // --- АПГРЕЙД ---
         async function loadUpgrade() {
             await loadProfile();
             const sel = document.getElementById('upg-select');
@@ -680,29 +686,38 @@
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
             
             const arrow = document.getElementById('upg-arrow');
-            arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)';
+            
+            // СБРОС СТРЕЛКИ (БЕЗ АНИМАЦИИ)
+            arrow.style.transition = 'none';
+            arrow.style.transform = 'translateX(-50%) rotate(0deg)';
+            
             playSfx('spin', true);
+            
             try {
                 const res = await req('/api/upgrade/play', 'POST', { item_id: parseInt(id), target_price: targetPrice, target_name: `Upgraded (${targetPrice}🪙)`, boost: boost });
-                updateBal(res.balance); // Обновляем баланс сразу после ответа
+                updateBal(res.balance);
                 
                 const greenDeg = (res.chance / 100) * 360;
                 let targetDeg = 0;
                 if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
                 else targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
+
+                // ЖДЕМ 50МС, ЧТОБЫ БРАУЗЕР ОТРИСОВАЛ СБРОС, И ВКЛЮЧАЕМ ПЛАВНЫЙ ПОВОРОТ
                 setTimeout(() => {
                     arrow.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
                     arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`;
+                    
                     setTimeout(() => {
                         playSfx('spin', false);
                         if(res.win) { playSfx('win'); confetti(); showToast(`ПОБЕДА!`, 'win'); }
                         else { playSfx('lose'); showToast(`Проигрыш...`, 'lose'); }
                         loadUpgrade(); loadProfile(); 
                     }, 4000);
-                }, 100);
+                }, 50);
             } catch(e) { playSfx('spin', false); showToast(e.message, 'lose'); }
         }
 
+        // --- МИНЫ ---
         let mId = null;
         async function startMines() {
             const bet = parseInt(document.getElementById('mines-bet').value);
@@ -742,6 +757,7 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
+        // --- ДЖЕКПОТ ---
         async function loadJackpot() {
             const list = await req('/api/battles/active');
             if(list.length > 0) updateJackpotUI(list[0]);
@@ -781,6 +797,7 @@
             try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); }
         }
 
+        // --- БАТЛ 1v1 ---
         async function create1v1() {
             const caseId = document.getElementById('b-case').value;
             try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); }
