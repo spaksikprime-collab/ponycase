@@ -18,23 +18,29 @@ class UpgradeRequest(BaseModel):
 
 @router.post("/play")
 async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    # Ищем предмет в инвентаре
     item = db.get(InventoryItem, data.item_id)
     if not item or item.user_id != user.id: 
         raise HTTPException(404, "Предмет не найден")
     
+    # Проверка целевой цены
     if data.target_price <= (item.price + data.boost):
         raise HTTPException(400, "Целевая цена должна быть выше")
 
     apply_passive(user, db)
     
+    # Списание буста
     if data.boost > 0:
         if user.balance < data.boost: 
             raise HTTPException(400, "Недостаточно средств для буста")
         user.balance -= data.boost
     
+    # Расчет шанса
     total_bet_value = item.price + data.boost
     chance = (total_bet_value / data.target_price) * 100
-    if chance > 95: chance = 95.0
+    
+    if chance > 95: 
+        chance = 95.0
 
     user.nonce += 1
     ticket = roll_ticket(gen_seed(), gen_seed(), user.nonce)
@@ -44,30 +50,47 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
     
     try:
         if win:
+            # Удаляем старый предмет
             db.delete(item)
+            
+            # Выдаем новый
             new_item = InventoryItem(
-                user_id=user.id, pony_id=data.target_name, rarity="upgraded", price=data.target_price, color="#facc15"
+                user_id=user.id, 
+                pony_id=data.target_name, 
+                rarity="upgraded", 
+                price=data.target_price, 
+                color="#facc15"
             )
             db.add(new_item)
             
+            # Обновляем лучший дроп
             if data.target_price > user.best_drop_price:
                 user.best_drop_price = data.target_price
                 user.best_drop_name = data.target_name
             
             # Запись в историю
             db.add(GameHistory(
-                user_id=user.id, game_type="Апгрейд", item_name=data.target_name, 
-                price=data.target_price, result_text="Победа"
+                user_id=user.id, 
+                game_type="Апгрейд", 
+                item_name=data.target_name, 
+                price=data.target_price, 
+                result_text="Победа"
             ))
             
             db.commit()
             await broadcast_drop(user.username, user.avatar, data.target_name, data.target_price, "#facc15", "Апгрейд")
+            
         else:
+            # Предмет сгорает
             db.delete(item)
-            # Запись в историю (проигрыш)
+            
+            # Запись в историю
             db.add(GameHistory(
-                user_id=user.id, game_type="Апгрейд", item_name=item.pony_id, 
-                price=0, result_text="Проигрыш (сгорел)"
+                user_id=user.id, 
+                game_type="Апгрейд", 
+                item_name=item.pony_id, 
+                price=0, 
+                result_text="Проигрыш (сгорел)"
             ))
             db.commit()
             
