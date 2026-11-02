@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PonyCase 🦄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body { background-color: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .neon-text { text-shadow: 0 0 5px #a855f7, 0 0 10px #a855f7; }
+        .neon-button { box-shadow: 0 0 10px #a855f7; transition: all 0.1s; }
+        .neon-button:active { transform: scale(0.95); box-shadow: 0 0 20px #a855f7; }
+        .drop-item { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Шапка -->
+    <header class="bg-gray-900 border-b border-purple-500/30 p-4 flex justify-between items-center shadow-lg">
+        <h1 class="text-2xl font-bold text-purple-400 neon-text">PonyCase 🦄</h1>
+        <div class="flex items-center gap-4">
+            <div class="bg-gray-800 px-4 py-2 rounded-lg border border-yellow-500/50">
+                <span id="balance" class="text-yellow-400 font-bold text-xl">0</span> 🪙
+            </div>
+            <button onclick="logout()" class="text-gray-400 hover:text-white">Выйти</button>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="flex-1 container mx-auto p-4 flex flex-col md:flex-row gap-6">
+        
+        <!-- Левая колонка: Кликер -->
+        <section class="flex-1 bg-gray-800/50 p-6 rounded-2xl border border-gray-700 flex flex-col items-center justify-center relative overflow-hidden">
+            <div class="absolute top-4 left-4 text-green-400 text-sm flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Онлайн: <span id="online-count">0</span>
+            </div>
+            
+            <h2 class="text-xl mb-8 text-gray-300">Заработай копыта!</h2>
+            
+            <button id="pony-btn" class="w-48 h-48 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-6xl flex items-center justify-center neon-button select-none cursor-pointer">
+                🦄
+            </button>
+            
+            <p class="mt-8 text-gray-400">Кликов сделано: <span id="clicks" class="text-white font-bold">0</span></p>
+        </section>
+
+        <!-- Правая колонка: Кейсы и Лента -->
+        <section class="flex-1 flex flex-col gap-6">
+            
+            <!-- Кейсы -->
+            <div class="bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
+                <h2 class="text-xl mb-4 font-bold">Кейсы</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button onclick="openCase('starter')" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-xl border border-gray-600 flex flex-col items-center">
+                        <span class="text-3xl mb-2">📦</span>
+                        <span class="font-bold">Стартовый</span>
+                        <span class="text-yellow-400 text-sm">100 🪙</span>
+                    </button>
+                    <button onclick="openCase('royal')" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-xl border border-gray-600 flex flex-col items-center">
+                        <span class="text-3xl mb-2">🎁</span>
+                        <span class="font-bold">Королевский</span>
+                        <span class="text-yellow-400 text-sm">1000 🪙</span>
+                    </button>
+                    <button onclick="openCase('celestial')" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-xl border border-gray-600 flex flex-col items-center">
+                        <span class="text-3xl mb-2">🌟</span>
+                        <span class="font-bold">Небесный</span>
+                        <span class="text-yellow-400 text-sm">25000 🪙</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Лента дропов -->
+            <div class="bg-gray-800/50 p-6 rounded-2xl border border-gray-700 flex-1">
+                <h2 class="text-xl mb-4 font-bold flex items-center gap-2">
+                    <span class="w-2 h-2 bg-red-500 rounded-full animate-ping"></span> Live Дропы
+                </h2>
+                <div id="drop-feed" class="flex flex-col gap-2 h-48 overflow-y-auto pr-2">
+                    <div class="text-gray-500 text-sm italic">Ожидание дропов...</div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Модальное окно входа/регистрации -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm z-50">
+        <div class="bg-gray-800 p-8 rounded-2xl border border-purple-500/50 w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-center neon-text">Вход в PonyCase</h2>
+            <input type="email" id="email" placeholder="Email" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-4 text-white">
+            <input type="text" id="username" placeholder="Никнейм (только для реги)" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-4 text-white">
+            <input type="password" id="password" placeholder="Пароль" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-6 text-white">
+            
+            <div class="flex gap-4">
+                <button onclick="login()" class="flex-1 bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-bold">Войти</button>
+                <button onclick="register()" class="flex-1 bg-gray-600 hover:bg-gray-700 py-3 rounded-lg font-bold">Регистрация</button>
+            </div>
+            <p id="auth-error" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- Конфигурация ---
+        const API_URL = ''; // Пусто, так как мы на том же домене
+        let token = localStorage.getItem('pony_token');
+        let currentUsername = localStorage.getItem('pony_username') || '';
+        let socket = null;
+
+        // --- Логика авторизации ---
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            
+            const res = await fetch(`${API_URL}${endpoint}`, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : null
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Ошибка');
+            return data;
+        }
+
+        async function login() {
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const data = await apiCall('/api/auth/login', 'POST', { email, password });
+                saveAuth(data);
+            } catch (e) { showError(e.message); }
+        }
+
+        async function register() {
+            try {
+                const email = document.getElementById('email').value;
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const data = await apiCall('/api/auth/register', 'POST', { email, username, password });
+                saveAuth(data);
+            } catch (e) { showError(e.message); }
+        }
+
+        function saveAuth(data) {
+            token = data.token;
+            currentUsername = data.user.username;
+            localStorage.setItem('pony_token', token);
+            localStorage.setItem('pony_username', currentUsername);
+            document.getElementById('auth-modal').classList.add('hidden');
+            initGame();
+        }
+
+        function logout() {
+            localStorage.removeItem('pony_token');
+            localStorage.removeItem('pony_username');
+            location.reload();
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('auth-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        // --- Игровая логика ---
+        async function updateState() {
+            try {
+                const user = await apiCall('/api/clicker/state');
+                document.getElementById('balance').textContent = user.balance;
+                document.getElementById('clicks').textContent = user.total_clicks;
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('pony-btn').addEventListener('click', async (e) => {
+            // Визуальный отклик
+            const btn = e.target;
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 100);
+
+            try {
+                const res = await apiCall('/api/clicker/click', 'POST');
+                document.getElementById('balance').textContent = res.balance;
+                // Локально обновляем клики для отзывчивости
+                let c = parseInt(document.getElementById('clicks').textContent) + 1;
+                document.getElementById('clicks').textContent = c;
+            } catch (e) { console.error(e); }
+        });
+
+        async function openCase(caseId) {
+            try {
+                const res = await apiCall(`/api/cases/open/${caseId}`, 'POST');
+                document.getElementById('balance').textContent = res.balance;
+                alert(`Вы выбили: ${res.pony_id} (${res.rarity}) за ${res.price} 🪙!`);
+            } catch (e) { alert(e.message); }
+        }
+
+        // --- WebSockets (Онлайн, Дропы, Чат) ---
+        function connectWS() {
+            socket = io({
+                auth: { token: token }
+            });
+
+            socket.on('connect', () => console.log('WS Connected'));
+            
+            socket.on('online', (data) => {
+                document.getElementById('online-count').textContent = data.count;
+            });
+
+            socket.on('drop', (data) => {
+                const feed = document.getElementById('drop-feed');
+                const emptyMsg = feed.querySelector('.italic');
+                if (emptyMsg) emptyMsg.remove();
+
+                const div = document.createElement('div');
+                div.className = 'drop-item bg-gray-900 p-2 rounded border border-gray-700 flex justify-between items-center text-sm';
+                div.innerHTML = `
+                    <span class="font-bold text-purple-400">${data.username}</span>
+                    <span>выбил <b>${data.pony}</b></span>
+                    <span class="text-yellow-400">${data.price} 🪙</span>
+                `;
+                feed.prepend(div);
+                if (feed.children.length > 20) feed.lastChild.remove();
+            });
+        }
+
+        // --- Инициализация ---
+        function initGame() {
+            document.getElementById('auth-modal').classList.add('hidden');
+            updateState();
+            connectWS();
+            // Обновляем пассивный доход каждые 5 секунд
+            setInterval(updateState, 5000); 
+        }
+
+        if (token) {
+            initGame();
+        }
+    </script>
+</body>
+</html>
