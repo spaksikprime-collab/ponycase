@@ -11,16 +11,13 @@
     <style>
         :root { --bg: #0b1120; --card: #1e293b; --accent: #8b5cf6; }
         body { background-color: var(--bg); color: #f8fafc; font-family: 'Montserrat', sans-serif; overflow-x: hidden; }
-        
-        /* Скрытие скроллбара */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-
+        
         /* Рулетка */
-        .roulette-container { width: 100%; overflow: hidden; position: relative; padding: 20px 0; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        .roulette-container { width: 100%; overflow: hidden; position: relative; padding: 20px 0; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; }
         .roulette-strip { display: flex; gap: 10px; will-change: transform; }
-        .roulette-item { min-width: 120px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e293b; border-radius: 8px; border: 2px solid transparent; position: relative; }
+        .roulette-item { min-width: 100px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e293b; border-radius: 8px; border: 2px solid transparent; }
         .roulette-center-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; }
         
         /* Апгрейд Стрелка */
@@ -34,10 +31,9 @@
         .page { display: none; }
         .page.active { display: block; animation: slideDown 0.4s ease-out; }
         
-        /* Кнопки */
-        .btn-neon { transition: all 0.2s; }
-        .btn-neon:active { transform: scale(0.95); }
-        .btn-neon:hover { box-shadow: 0 0 15px var(--accent); }
+        /* Кликер */
+        .click-btn { transition: transform 0.1s; user-select: none; }
+        .click-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col pb-24 select-none">
@@ -46,16 +42,14 @@
     <header class="bg-[#0f172a]/90 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex justify-between items-center border-b border-gray-800 shadow-xl">
         <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
         <div class="flex items-center gap-3">
-            <div class="bg-gray-900 px-4 py-1.5 rounded-lg border border-yellow-500/30 flex items-center gap-2 shadow-[0_0_10px_rgba(234,179,8,0.1)]">
+            <div class="bg-gray-900 px-4 py-1.5 rounded-lg border border-yellow-500/30 flex items-center gap-2">
                 <span id="balance" class="text-yellow-400 font-bold text-lg">0</span> <span class="text-yellow-500">🪙</span>
             </div>
         </div>
     </header>
 
     <!-- LIVE ДРОПЫ -->
-    <div class="bg-[#111827] border-b border-gray-800 py-3 overflow-hidden relative shadow-lg">
-        <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#111827] to-transparent z-10"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#111827] to-transparent z-10"></div>
+    <div class="bg-[#111827] border-b border-gray-800 py-2 overflow-hidden relative shadow-lg">
         <div id="live-drops" class="flex gap-3 whitespace-nowrap px-4 items-center">
             <span class="text-gray-500 text-sm italic">Ожидание дропов...</span>
         </div>
@@ -70,6 +64,20 @@
             <div id="cases-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
+        <!-- КЛИКЕР -->
+        <div id="page-clicker" class="page">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="w-2 h-6 bg-yellow-500 rounded"></span> Кликер</h2>
+            <div class="flex flex-col items-center justify-center">
+                <div class="text-4xl mb-8 click-btn cursor-pointer" id="pony-click" onclick="doClick()">🦄</div>
+                <p class="text-gray-400 mb-4">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
+                
+                <div class="w-full max-w-md bg-[#1e293b] p-4 rounded-xl border border-gray-700">
+                    <h3 class="font-bold mb-3 text-center">Апгрейды</h3>
+                    <div id="upgrades-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- АПГРЕЙД -->
         <div id="page-upgrade" class="page">
             <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="w-2 h-6 bg-green-500 rounded"></span> Апгрейд</h2>
@@ -82,20 +90,25 @@
                 </div>
 
                 <div class="w-full flex flex-col md:flex-row gap-4 mb-6">
-                    <select id="upg-item" class="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-700 text-white outline-none focus:border-green-500 transition">
+                    <select id="upg-item" class="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-700 text-white outline-none">
                         <option value="">Выбери предмет</option>
                     </select>
-                    <input type="number" id="upg-target" placeholder="Желаемая цена (🪙)" class="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-700 text-white outline-none focus:border-green-500 transition">
+                    <input type="number" id="upg-target" placeholder="Цена (🪙)" class="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-700 text-white outline-none">
                 </div>
-                <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(34,197,94,0.3)] btn-neon">Апгрейднуть</button>
+                <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-4 rounded-xl font-bold text-lg shadow-lg">Апгрейднуть</button>
             </div>
         </div>
 
         <!-- ПРОФИЛЬ -->
         <div id="page-profile" class="page">
+            <div class="bg-[#1e293b] p-4 rounded-xl border border-gray-700 mb-6 flex justify-around text-center">
+                <div><div class="text-gray-400 text-xs">Всего кликов</div><div id="stat-clicks" class="font-bold text-lg text-yellow-400">0</div></div>
+                <div><div class="text-gray-400 text-xs">Кейсов открыто</div><div id="stat-cases" class="font-bold text-lg text-purple-400">0</div></div>
+            </div>
+
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold flex items-center gap-2"><span class="w-2 h-6 bg-blue-500 rounded"></span> Инвентарь</h2>
-                <button onclick="sellAll()" class="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500 hover:text-white px-4 py-2 rounded-lg font-bold transition btn-neon">Продать Всё</button>
+                <button onclick="sellAll()" class="bg-red-500/20 text-red-400 border border-red-500/50 px-4 py-2 rounded-lg font-bold">Продать Всё</button>
             </div>
             <div id="inventory-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
         </div>
@@ -104,28 +117,21 @@
 
     <!-- BOTTOM NAV -->
     <nav class="fixed bottom-0 w-full bg-[#0f172a]/95 backdrop-blur-md border-t border-gray-800 flex justify-around py-3 z-40">
-        <button onclick="switchTab('cases')" class="text-gray-400 hover:text-purple-400 flex flex-col items-center transition btn-neon">
-            <span class="text-2xl">📦</span><span class="text-xs font-bold mt-1">Кейсы</span>
-        </button>
-        <button onclick="switchTab('upgrade')" class="text-gray-400 hover:text-green-400 flex flex-col items-center transition btn-neon">
-            <span class="text-2xl">📈</span><span class="text-xs font-bold mt-1">Апгрейд</span>
-        </button>
-        <button onclick="switchTab('profile')" class="text-gray-400 hover:text-blue-400 flex flex-col items-center transition btn-neon">
-            <span class="text-2xl">👤</span><span class="text-xs font-bold mt-1">Профиль</span>
-        </button>
+        <button onclick="switchTab('cases')" class="text-gray-400 hover:text-purple-400 flex flex-col items-center"><span class="text-2xl">📦</span><span class="text-xs font-bold mt-1">Кейсы</span></button>
+        <button onclick="switchTab('clicker')" class="text-gray-400 hover:text-yellow-400 flex flex-col items-center"><span class="text-2xl">🦄</span><span class="text-xs font-bold mt-1">Кликер</span></button>
+        <button onclick="switchTab('upgrade')" class="text-gray-400 hover:text-green-400 flex flex-col items-center"><span class="text-2xl">📈</span><span class="text-xs font-bold mt-1">Апгрейд</span></button>
+        <button onclick="switchTab('profile')" class="text-gray-400 hover:text-blue-400 flex flex-col items-center"><span class="text-2xl">👤</span><span class="text-xs font-bold mt-1">Профиль</span></button>
     </nav>
 
     <!-- МОДАЛКА КЕЙСА -->
     <div id="modal" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-[#1e293b] p-6 rounded-2xl w-full max-w-2xl relative border border-gray-700 shadow-2xl">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+        <div class="bg-[#1e293b] p-6 rounded-2xl w-full max-w-2xl relative border border-gray-700 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-center">Содержимое кейса</h3>
             
-            <h3 id="modal-title" class="text-2xl font-bold mb-4 text-center">Название кейса</h3>
-            
-            <!-- Превью дропа -->
+            <!-- Сетка превью -->
             <div id="preview-content" class="mb-6">
-                <p class="text-center text-gray-400 mb-4 text-sm">Возможные предметы:</p>
-                <div id="preview-grid" class="grid grid-cols-3 gap-2 text-center text-xs"></div>
+                <div id="preview-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
             </div>
 
             <!-- Рулетка -->
@@ -137,7 +143,7 @@
                 <p id="roulette-result" class="text-center text-xl font-bold mb-4 h-8"></p>
             </div>
 
-            <button id="open-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 py-4 rounded-xl font-bold text-lg shadow-[0_0_20px_rgba(168,85,247,0.4)] btn-neon">Открыть за <span id="modal-price">0</span> 🪙</button>
+            <button id="open-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-4 rounded-xl font-bold text-lg mt-4 shadow-lg">Открыть за <span id="modal-price">0</span> 🪙</button>
         </div>
     </div>
 
@@ -145,19 +151,18 @@
     <div id="auth-modal" class="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[60] backdrop-blur-md">
         <div class="bg-[#1e293b] p-8 rounded-2xl border border-purple-500/50 w-full max-w-sm shadow-2xl text-center">
             <h2 class="text-3xl font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">PonyCase</h2>
-            <input type="email" id="auth-email" placeholder="Email" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none focus:border-purple-500 transition">
-            <input type="text" id="auth-user" placeholder="Никнейм (при регистрации)" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none focus:border-purple-500 transition">
-            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-6 text-white outline-none focus:border-purple-500 transition">
+            <input type="email" id="auth-email" placeholder="Email" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none">
+            <input type="text" id="auth-user" placeholder="Никнейм (при регистрации)" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none">
+            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg mb-6 text-white outline-none">
             <div class="flex gap-3">
-                <button onclick="doLogin()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-bold transition">Вход</button>
-                <button onclick="doRegister()" class="flex-1 bg-purple-600 hover:bg-purple-500 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(168,85,247,0.5)] transition">Регистрация</button>
+                <button onclick="doLogin()" class="flex-1 bg-gray-700 py-3 rounded-lg font-bold">Вход</button>
+                <button onclick="doRegister()" class="flex-1 bg-purple-600 py-3 rounded-lg font-bold">Регистрация</button>
             </div>
             <p id="auth-err" class="text-red-500 text-sm mt-4 hidden"></p>
         </div>
     </div>
 
     <script>
-        // --- Звуки ---
         const sounds = {
             click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
             win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
@@ -167,9 +172,7 @@
         function playSound(name, loop = false) {
             const s = sounds[name];
             if(!s) return;
-            s.currentTime = 0;
-            s.loop = loop;
-            s.volume = 0.5;
+            s.currentTime = 0; s.loop = loop; s.volume = 0.5;
             s.play().catch(e=>console.log("Audio error", e));
         }
 
@@ -177,12 +180,9 @@
         let token = localStorage.getItem('pony_token');
         let socket = null;
         let currentCaseId = null;
+        let upgradeLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
 
-        // --- Авторизация ---
-        if(token) {
-            document.getElementById('auth-modal').classList.add('hidden');
-            initGame();
-        }
+        if(token) { document.getElementById('auth-modal').classList.add('hidden'); initGame(); }
 
         async function api(endpoint, method='GET', body=null) {
             const headers = { 'Content-Type': 'application/json' };
@@ -199,8 +199,9 @@
                 const username = document.getElementById('auth-user').value;
                 const password = document.getElementById('auth-pass').value;
                 const data = await api('/api/auth/register', 'POST', { email, username, password });
-                saveAuth(data);
-            } catch(e) { showAuthError(e.message); }
+                localStorage.setItem('pony_token', data.token);
+                location.reload();
+            } catch(e) { document.getElementById('auth-err').textContent = e.message; document.getElementById('auth-err').classList.remove('hidden'); }
         }
 
         async function doLogin() {
@@ -208,41 +209,31 @@
                 const email = document.getElementById('auth-email').value;
                 const password = document.getElementById('auth-pass').value;
                 const data = await api('/api/auth/login', 'POST', { email, password });
-                saveAuth(data);
-            } catch(e) { showAuthError(e.message); }
+                localStorage.setItem('pony_token', data.token);
+                location.reload();
+            } catch(e) { document.getElementById('auth-err').textContent = e.message; document.getElementById('auth-err').classList.remove('hidden'); }
         }
 
-        function saveAuth(data) {
-            token = data.token;
-            localStorage.setItem('pony_token', token);
-            document.getElementById('auth-modal').classList.add('hidden');
-            initGame();
-        }
-
-        function showAuthError(msg) {
-            const el = document.getElementById('auth-err');
-            el.textContent = msg;
-            el.classList.remove('hidden');
-        }
-
-        // --- Инициализация ---
         async function initGame() {
             try {
                 const user = await api('/api/clicker/state');
                 updateBalance(user.balance);
+                document.getElementById('click-count').textContent = user.total_clicks;
+                upgradeLevels = { click_power: user.click_power, auto_rate: user.auto_rate, multiplier: user.multiplier };
+                
                 loadCases();
+                renderUpgrades();
                 
                 socket = io({ auth: { token } });
                 socket.on('drop', (data) => {
                     const live = document.getElementById('live-drops');
                     const empty = live.querySelector('.italic');
                     if(empty) empty.remove();
-                    
                     const el = document.createElement('div');
-                    el.className = 'drop-anim bg-gray-800 px-3 py-1.5 rounded-lg text-sm border border-gray-700 flex items-center gap-2';
-                    el.innerHTML = `<span class="text-purple-400 font-bold">${data.username}</span> выбил <span class="font-bold" style="color:${data.color}">${data.pony}</span> <span class="text-yellow-400">${data.price}🪙</span>`;
+                    el.className = 'drop-anim bg-gray-800 px-3 py-1.5 rounded-lg text-xs border border-gray-700 flex items-center gap-2';
+                    el.innerHTML = `<span class="text-purple-400 font-bold">${data.username}</span> выбил <span style="color:${data.color}">${data.pony}</span> <span class="text-yellow-400">${data.price}🪙</span>`;
                     live.prepend(el);
-                    if(live.children.length > 15) live.lastChild.remove();
+                    if(live.children.length > 10) live.lastChild.remove();
                 });
             } catch(e) {
                 localStorage.removeItem('pony_token');
@@ -260,23 +251,23 @@
             if(tab === 'upgrade') loadUpgradeItems();
         }
 
-        // --- Кейсы ---
+        // --- КЕЙСЫ ---
         async function loadCases() {
             const cases = await api('/api/cases/list');
             const grid = document.getElementById('cases-grid');
             grid.innerHTML = '';
             cases.forEach(c => {
                 grid.innerHTML += `
-                    <div onclick="previewCase('${c.id}')" class="bg-[#1e293b] p-5 rounded-xl flex flex-col items-center cursor-pointer transform hover:-translate-y-2 transition duration-300 border-b-4 border-purple-600 shadow-lg hover:shadow-purple-500/20">
-                        <span class="text-5xl mb-3 drop-shadow-lg">📦</span>
-                        <span class="font-bold text-lg">${c.name}</span>
-                        <span class="text-yellow-400 font-bold mt-2 bg-gray-900/50 px-3 py-1 rounded-full">${c.price} 🪙</span>
+                    <div onclick="previewCase('${c.id}', ${c.price})" class="bg-[#1e293b] p-4 rounded-xl flex flex-col items-center cursor-pointer transform hover:-translate-y-1 transition border-b-4 border-purple-600">
+                        <span class="text-5xl mb-2">📦</span>
+                        <span class="font-bold">${c.name}</span>
+                        <span class="text-yellow-400 font-bold mt-2 bg-gray-900 px-3 py-1 rounded-full text-sm">${c.price} 🪙</span>
                     </div>
                 `;
             });
         }
 
-        function previewCase(id) {
+        async function previewCase(id, price) {
             playSound('click');
             currentCaseId = id;
             const modal = document.getElementById('modal');
@@ -285,28 +276,31 @@
             document.getElementById('roulette-content').classList.add('hidden');
             document.getElementById('roulette-result').textContent = '';
             
-            document.getElementById('modal-title').textContent = "Возможные дропы";
-            document.getElementById('preview-grid').innerHTML = `
-                <div class="bg-gray-800 p-2 rounded border border-gray-600"><span class="text-gray-400">Обычная</span></div>
-                <div class="bg-gray-800 p-2 rounded border border-blue-500"><span class="text-blue-400">Редкая</span></div>
-                <div class="bg-gray-800 p-2 rounded border border-purple-500"><span class="text-purple-400">Эпик</span></div>
-                <div class="bg-gray-800 p-2 rounded border border-yellow-500"><span class="text-yellow-400">Легенда</span></div>
-                <div class="bg-gray-800 p-2 rounded border border-red-500"><span class="text-red-400">Мифик</span></div>
-                <div class="bg-gray-800 p-2 rounded border border-pink-500"><span class="text-pink-400">Божеств.</span></div>
-            `;
-            const prices = { starter: 100, royal: 1000, celestial: 25000 };
-            document.getElementById('modal-price').textContent = prices[id];
+            document.getElementById('modal-price').textContent = price;
             document.getElementById('open-btn').onclick = () => spinCase(id);
+            
+            // Загружаем превью
+            const previewItems = await api(`/api/cases/preview/${id}`);
+            const grid = document.getElementById('preview-grid');
+            grid.innerHTML = '';
+            previewItems.forEach(item => {
+                grid.innerHTML += `
+                    <div class="bg-gray-800 p-2 rounded-lg border-l-4 flex justify-between items-center" style="border-color: ${item.color}">
+                        <div>
+                            <div class="text-xs font-bold text-white">${item.name}</div>
+                            <div class="text-[10px] text-gray-400 uppercase">${item.rarity}</div>
+                        </div>
+                        <div class="text-yellow-400 text-xs font-bold">${item.price}🪙</div>
+                    </div>
+                `;
+            });
         }
 
-        function closeModal() {
-            document.getElementById('modal').classList.add('hidden');
-        }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
         async function spinCase(caseId) {
             const btn = document.getElementById('open-btn');
-            btn.disabled = true;
-            btn.innerHTML = 'Крутим...';
+            btn.disabled = true; btn.innerHTML = 'Крутим...';
             playSound('spin', true);
 
             try {
@@ -317,78 +311,99 @@
                 document.getElementById('roulette-content').classList.remove('hidden');
                 
                 const strip = document.getElementById('roulette-strip');
-                strip.style.transition = 'none';
-                strip.style.transform = 'translateX(0)';
+                strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
                 strip.innerHTML = '';
 
-                // Генерация ленты
-                for(let i=0; i<60; i++) {
-                    const isWin = i === 55; 
-                    const name = isWin ? res.pony_id : "Pony";
-                    const price = isWin ? res.price : Math.floor(Math.random() * 500);
-                    const color = isWin ? res.color : "#9ca3af";
-                    
+                for(let i=0; i<50; i++) {
+                    const isWin = i === 45; 
+                    const color = isWin ? res.color : "#4b5563";
                     strip.innerHTML += `
-                        <div class="roulette-item" style="border-color: ${color}; box-shadow: inset 0 0 20px ${color}33;">
-                            <div class="text-xs text-center px-1 font-bold text-gray-200">${name}</div>
-                            <div class="text-sm mt-2 font-bold" style="color: ${color}">${price}🪙</div>
+                        <div class="roulette-item" style="border-color: ${color}">
+                            <div class="text-[10px] text-center font-bold text-gray-200">${isWin ? res.pony_id : "???"}</div>
                         </div>
                     `;
                 }
 
                 setTimeout(() => {
-                    strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                    const itemWidth = 130; // 120px + 10px gap
-                    const containerWidth = strip.parentElement.offsetWidth;
-                    const offset = (55 * itemWidth) - (containerWidth / 2) + (itemWidth / 2);
+                    strip.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    const offset = (45 * 110) - (strip.parentElement.offsetWidth / 2) + 55;
                     strip.style.transform = `translateX(-${offset}px)`;
 
                     setTimeout(() => {
-                        playSound('spin', false); // stop spin sound
+                        playSound('spin', false);
                         const resultEl = document.getElementById('roulette-result');
                         resultEl.style.color = res.color;
                         resultEl.textContent = `Выпало: ${res.pony_id} (${res.price}🪙)`;
                         
-                        // Если дроп дорогой - конфетти и звук победы
                         if(['epic', 'legendary', 'mythic', 'celestial'].includes(res.rarity)) {
                             playSound('win');
-                            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-                        } else {
-                            playSound('click');
+                            confetti({ particleCount: 100, spread: 70 });
                         }
-
-                        btn.disabled = false;
-                        btn.innerHTML = 'Открыть еще раз';
-                    }, 6000);
+                        btn.disabled = false; btn.innerHTML = 'Открыть еще раз';
+                    }, 5200);
                 }, 50);
-
-            } catch(e) {
-                alert(e.message);
-                btn.disabled = false;
-                btn.innerHTML = 'Открыть';
-                playSound('spin', false);
-            }
+            } catch(e) { alert(e.message); btn.disabled = false; btn.innerHTML = 'Открыть'; playSound('spin', false); }
         }
 
-        // --- Профиль ---
+        // --- КЛИКЕР ---
+        async function doClick() {
+            playSound('click');
+            try {
+                const res = await api('/api/clicker/click', 'POST');
+                updateBalance(res.balance);
+                let c = parseInt(document.getElementById('click-count').textContent) + 1;
+                document.getElementById('click-count').textContent = c;
+            } catch(e) {}
+        }
+
+        function renderUpgrades() {
+            const list = document.getElementById('upgrades-list');
+            list.innerHTML = `
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div><div class="font-bold text-sm">Сила клика</div><div class="text-xs text-gray-400">Ур. ${upgradeLevels.click_power}</div></div>
+                    <button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div><div class="font-bold text-sm">Автоклик</div><div class="text-xs text-gray-400">Ур. ${Math.round(upgradeLevels.auto_rate * 2)}</div></div>
+                    <button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div><div class="font-bold text-sm">Множитель</div><div class="text-xs text-gray-400">Ур. ${Math.round((upgradeLevels.multiplier - 1) * 4)}</div></div>
+                    <button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
+                </div>
+            `;
+        }
+
+        async function buyUpgrade(key) {
+            playSound('click');
+            try {
+                const res = await api(`/api/clicker/buy/${key}`, 'POST');
+                updateBalance(res.user.balance);
+                upgradeLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier };
+                renderUpgrades();
+            } catch(e) { alert(e.message); }
+        }
+
+        // --- ПРОФИЛЬ ---
         async function loadProfile() {
             const data = await api('/api/user/profile');
             updateBalance(data.user.balance);
+            document.getElementById('stat-clicks').textContent = data.stats.total_clicks;
+            document.getElementById('stat-cases').textContent = data.stats.cases_opened;
             
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = '';
             if(data.inventory.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Инвентарь пуст. Иди открой кейс!</div>';
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Инвентарь пуст</div>';
                 return;
             }
-
             data.inventory.forEach(item => {
                 grid.innerHTML += `
-                    <div class="bg-[#1e293b] p-3 rounded-xl flex flex-col items-center justify-between border-t-2 shadow-lg" style="border-color: ${item.color}">
-                        <span class="text-sm text-center font-bold mb-1">${item.name}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full mb-2" style="background:${item.color}33; color:${item.color}">${item.rarity.toUpperCase()}</span>
-                        <span class="text-yellow-400 text-sm mb-3 font-bold">${item.price} 🪙</span>
-                        <button onclick="sellItem(${item.id})" class="bg-gray-800 hover:bg-red-600 w-full py-1.5 rounded text-xs font-bold transition">Продать</button>
+                    <div class="bg-[#1e293b] p-3 rounded-xl border-t-2" style="border-color: ${item.color}">
+                        <div class="text-xs text-center font-bold mb-1">${item.name}</div>
+                        <div class="text-[10px] text-center text-gray-400 mb-2">${item.rarity}</div>
+                        <div class="text-yellow-400 text-sm text-center mb-2 font-bold">${item.price} 🪙</div>
+                        <button onclick="sellItem(${item.id})" class="bg-gray-800 hover:bg-red-600 w-full py-1 rounded text-xs font-bold transition">Продать</button>
                     </div>
                 `;
             });
@@ -398,8 +413,7 @@
             playSound('click');
             try {
                 const res = await api(`/api/user/inventory/sell/${id}`, 'POST');
-                updateBalance(res.balance);
-                loadProfile();
+                updateBalance(res.balance); loadProfile();
             } catch(e) { alert(e.message); }
         }
 
@@ -408,33 +422,29 @@
             playSound('click');
             try {
                 const res = await api('/api/user/inventory/sell_all', 'POST');
-                updateBalance(res.balance);
-                loadProfile();
+                updateBalance(res.balance); loadProfile();
             } catch(e) { alert(e.message); }
         }
 
-        // --- Апгрейд ---
+        // --- АПГРЕЙД ---
         async function loadUpgradeItems() {
             const data = await api('/api/user/profile');
             const select = document.getElementById('upg-item');
             select.innerHTML = '<option value="">Выбери предмет</option>';
             data.inventory.forEach(i => {
-                select.innerHTML += `<option value="${i.id}">${i.name} (${i.price}🪙)</option>`;
+                select.innerHTML += `<option value="${i.id}" data-price="${i.price}">${i.name} (${i.price}🪙)</option>`;
             });
         }
 
-        // Обновление колеса при вводе цели
         document.getElementById('upg-target').addEventListener('input', (e) => {
             const targetPrice = parseInt(e.target.value);
-            const itemId = document.getElementById('upg-item').value;
+            const select = document.getElementById('upg-item');
+            const itemId = select.value;
             if(!targetPrice || !itemId) return;
             
-            const select = document.getElementById('upg-item');
-            const itemPrice = parseInt(select.options[select.selectedIndex].text.match(/\((.*?)🪙\)/)[1]);
-            
+            const itemPrice = parseInt(select.options[select.selectedIndex].getAttribute('data-price'));
             let chance = (itemPrice / targetPrice) * 100;
-            if(chance > 90) chance = 90;
-            if(chance < 1) chance = 1;
+            if(chance > 90) chance = 90; if(chance < 1) chance = 1;
             
             document.getElementById('upg-wheel').style.setProperty('--chance', `${chance}%`);
             document.getElementById('upg-chance-text').textContent = `${Math.round(chance)}%`;
@@ -443,47 +453,28 @@
         async function doUpgrade() {
             const itemId = document.getElementById('upg-item').value;
             const target = document.getElementById('upg-target').value;
-            if(!itemId || !target) return alert("Заполни все поля");
+            if(!itemId || !target) return alert("Заполни поля");
             
             const arrow = document.getElementById('upg-arrow');
-            arrow.style.transition = 'none';
-            arrow.style.transform = 'translateX(-50%) rotate(0deg)';
+            arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)';
             playSound('spin', true);
             
             try {
                 const res = await api('/api/upgrade/play', 'POST', { item_id: parseInt(itemId), target_price: parseInt(target) });
                 
-                // Крутим стрелку
                 setTimeout(() => {
                     arrow.style.transition = 'transform 3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-                    // Если выиграл - ставим стрелку в зеленую зону (0 градусов - это верх, зеленая зона от chance до 100)
-                    // Если проиграл - в красную зону (0 до chance)
-                    let targetDeg = 0;
-                    if(res.win) targetDeg = 3600 + (res.chance / 2); // В зеленую зону
-                    else targetDeg = 3600 + res.chance + ((100 - res.chance) / 2); // В красную зону
-                    
+                    let targetDeg = res.win ? 3600 + (res.chance / 2) : 3600 + res.chance + ((100 - res.chance) / 2);
                     arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`;
                     
                     setTimeout(() => {
                         playSound('spin', false);
-                        if(res.win) {
-                            playSound('win');
-                            confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 } });
-                            alert(`ПОБЕДА! Шанс был ${res.chance}%`);
-                        } else {
-                            playSound('lose');
-                            alert(`Проигрыш... Шанс был ${res.chance}%`);
-                        }
-                        loadUpgradeItems();
-                        loadProfile(); // обновить баланс
+                        if(res.win) { playSound('win'); confetti({ particleCount: 100 }); alert(`ПОБЕДА! Шанс: ${res.chance}%`); }
+                        else { playSound('lose'); alert(`Проигрыш... Шанс: ${res.chance}%`); }
+                        loadUpgradeItems(); loadProfile();
                     }, 3000);
-
                 }, 100);
-                
-            } catch(e) { 
-                alert(e.message); 
-                playSound('spin', false);
-            }
+            } catch(e) { alert(e.message); playSound('spin', false); }
         }
     </script>
 </body>
