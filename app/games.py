@@ -1,19 +1,24 @@
 import hmac, hashlib, secrets, random
 
-PONY_NAMES = [
-    "Twilight Sparkle", "Rainbow Dash", "Pinkie Pie", "Rarity",
-    "Fluttershy", "Applejack", "Princess Celestia", "Princess Luna",
-    "Cadance", "Queen Chrysalis", "King Sombra", "Starlight Glimmer"
-]
+# База пони для превью
+PONY_DB = {
+    "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
+    "uncommon": ["Apple Bloom", "Sweetie Belle", "Scootaloo", "Babs Seed", "Silver Spoon", "Diamond Tiara"],
+    "rare": ["Princess Cadance", "Shining Armor", "Starlight Glimmer", "Sunset Shimmer", "Trixie", "Discord"],
+    "epic": ["Princess Celestia", "Princess Luna", "Queen Chrysalis", "King Sombra", "Cozy Glow", "Lord Tirek"],
+    "legendary": ["Nightmare Moon", "Daybreaker", "Flurry Heart", "Grogar", "The Pony of Shadows"],
+    "mythic": ["Cosmic Entity", "Golden Hooves", "Shadow Pony", "Eternal Chaos"],
+    "celestial": ["The Creator", "Goddess of Sun", "Goddess of Moon", "Alpha Pony"]
+}
 
 RARITIES = [
-    ("common",    500_000, "Обычная",     1, "#9ca3af"), # Серый
-    ("uncommon",  250_000, "Необычная",   3, "#4ade80"), # Зеленый
-    ("rare",      150_000, "Редкая",      10, "#60a5fa"), # Синий
-    ("epic",       70_000, "Эпическая",   50, "#c084fc"), # Фиолетовый
-    ("legendary",  25_000, "Легендарная", 250, "#facc15"), # Золотой
-    ("mythic",      4_500, "Мифическая",  2000, "#f87171"), # Красный
-    ("celestial",     500, "Божественная", 50000, "#f43f5e"), # Розовый неон
+    ("common",    500_000, "Обычная",     1, "#9ca3af"), 
+    ("uncommon",  250_000, "Необычная",   3, "#4ade80"), 
+    ("rare",      150_000, "Редкая",      10, "#60a5fa"), 
+    ("epic",       70_000, "Эпическая",   50, "#c084fc"), 
+    ("legendary",  25_000, "Легендарная", 250, "#facc15"), 
+    ("mythic",      4_500, "Мифическая",  2000, "#f87171"), 
+    ("celestial",     500, "Божественная", 50000, "#f43f5e"), 
 ]
 RARITY_BY_ID = {r[0]: r for r in RARITIES}
 
@@ -47,8 +52,22 @@ def pick_rarity(case_id: str, ticket: int) -> str:
 
 def pick_pony(rarity: str) -> tuple[str, int, str]:
     base_mult = RARITY_BY_ID[rarity][3]
-    pony_name = random.choice(PONY_NAMES)
-    full_name = f"{pony_name}"
+    pony_name = random.choice(PONY_DB.get(rarity, ["Unknown Pony"]))
     price = int(100 * base_mult * random.uniform(0.8, 1.2))
     color = RARITY_BY_ID[rarity][4]
-    return full_name, price, color
+    return pony_name, price, color
+
+# Функция для генерации превью кейса
+def get_case_preview(case_id: str) -> list:
+    weights = CASES[case_id]["weights"]
+    preview = []
+    for rarity, weight in weights.items():
+        # Берем пару случайных пони из этой редкости для превью
+        ponies = random.sample(PONY_DB.get(rarity, ["Unknown"]), min(2, len(PONY_DB.get(rarity, []))))
+        for p in ponies:
+            base_mult = RARITY_BY_ID[rarity][3]
+            price = int(100 * base_mult * random.uniform(0.8, 1.2))
+            color = RARITY_BY_ID[rarity][4]
+            preview.append({"name": p, "price": price, "rarity": rarity, "color": color})
+    # Сортируем по цене
+    return sorted(preview, key=lambda x: x["price"], reverse=True)
