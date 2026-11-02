@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Boolean, Text
 from .db import Base
 
 class User(Base):
@@ -7,8 +7,8 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(32), unique=True, index=True, nullable=False)
     email = Column(String(128), unique=True, index=True, nullable=False)
-    password_hash = Column(String(256), nullable=False)
-    avatar = Column(String(256), default="")
+    password_hash = Column(String(256), nullable=True) # Может быть пустым, если вход через Google
+    avatar = Column(Text, default="🦄") # Тут будет ссылка или эмодзи
     balance = Column(BigInteger, default=100, nullable=False)
     total_clicks = Column(BigInteger, default=0)
     click_power = Column(Integer, default=1)
@@ -17,6 +17,8 @@ class User(Base):
     prestige = Column(Integer, default=0)
     nonce = Column(BigInteger, default=0)
     is_admin = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    verification_code = Column(String(10), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_passive_tick = Column(DateTime, default=datetime.datetime.utcnow)
 
