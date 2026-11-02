@@ -15,11 +15,8 @@ class User(Base):
     multiplier = Column(Float, default=1.0)
     nonce = Column(BigInteger, default=0)
     last_bonus = Column(DateTime, nullable=True)
-    
-    # НОВЫЕ ПОЛЯ ДЛЯ ЛУЧШЕГО ДРОПА
     best_drop_price = Column(BigInteger, default=0)
     best_drop_name = Column(String(64), nullable=True)
-
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_passive_tick = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -45,4 +42,15 @@ class CaseOpen(Base):
     client_seed = Column(String(64), nullable=False)
     nonce = Column(BigInteger, nullable=False)
     ticket = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+# НОВАЯ ТАБЛИЦА ДЛЯ ИСТОРИИ
+class GameHistory(Base):
+    __tablename__ = "game_history"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    game_type = Column(String(32), nullable=False) # 'case' или 'upgrade'
+    item_name = Column(String(64), nullable=False)
+    price = Column(BigInteger, default=0)
+    result_text = Column(String(128), nullable=True) # Например "Проигрыш" или "Кейс: Стартовый"
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
