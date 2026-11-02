@@ -1,4 +1,7 @@
-import hmac, hashlib, secrets, random
+import hmac
+import hashlib
+import secrets
+import random
 
 PONY_DB = {
     "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
@@ -19,6 +22,7 @@ RARITIES = [
     ("mythic",      4_500, "Мифическая",  2000, "#f87171"), 
     ("celestial",     500, "Божественная", 50000, "#f43f5e"), 
 ]
+
 RARITY_BY_ID = {r[0]: r for r in RARITIES}
 
 CASES = {
@@ -68,20 +72,27 @@ def pick_pony(rarity: str) -> tuple[str, int, str]:
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
 
-# ОБНОВЛЕНО: Теперь возвращает шанс
 def get_case_preview(case_id: str) -> list:
     weights = CASES[case_id]["weights"]
     total_weight = sum(weights.values())
     preview = []
+    
     for rarity, weight in weights.items():
         chance = (weight / total_weight) * 100
         ponies = random.sample(PONY_DB.get(rarity, ["Unknown"]), min(2, len(PONY_DB.get(rarity, []))))
+        
         for p in ponies:
             base_mult = RARITY_BY_ID[rarity][3]
             price = int(100 * base_mult * random.uniform(0.8, 1.2))
             color = RARITY_BY_ID[rarity][4]
-            
-            # Делим шанс на количество показываемых пони этой редкости
             item_chance = chance / len(ponies) 
-            preview.append({"name": p, "price": price, "rarity": rarity, "color": color, "chance": item_chance})
+            
+            preview.append({
+                "name": p, 
+                "price": price, 
+                "rarity": rarity, 
+                "color": color, 
+                "chance": item_chance
+            })
+            
     return sorted(preview, key=lambda x: x["price"], reverse=True)
