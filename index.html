@@ -4,62 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PonyCase | Premium</title>
+    
+    <!-- Подключение стилей и скриптов -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
     <style>
-        body { background-color: #12161f; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); background-attachment: fixed; }
+        /* Основные стили */
+        body { 
+            background-color: #12161f; 
+            color: #fff; 
+            font-family: 'Montserrat', sans-serif; 
+            overflow-x: hidden; 
+            background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); 
+            background-attachment: fixed; 
+        }
         
-        @media (max-width: 1024px) { body { padding-bottom: 70px; } }
+        @media (max-width: 1024px) { 
+            body { padding-bottom: 70px; } 
+        }
 
-        .glass { background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-        .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .glass { 
+            background: rgba(26, 32, 44, 0.7); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255,255,255,0.05); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); 
+        }
+        
+        .page { display: none; } 
+        .page.active { display: block; animation: fadeIn 0.2s; }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; } 
+            to { opacity: 1; } 
+        }
 
-        /* ПК Навигация */
-        .desktop-nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: bold; color: #9ca3af; transition: 0.2s; cursor: pointer; font-size: 14px; background: transparent; border: none; }
+        /* Навигация */
+        .desktop-nav-btn { 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            color: #9ca3af; 
+            transition: 0.2s; 
+            cursor: pointer; 
+            font-size: 14px; 
+            background: transparent; 
+            border: none; 
+        }
+        
         .desktop-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
         .desktop-nav-btn.active { color: #fff; background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
-
-        /* ФИКС РУЛЕТКИ (Жесткая ширина и высота) */
-        .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; }
-        .roulette-strip { display: flex; gap: 8px; will-change: transform; }
-        .roulette-item { 
-            width: 80px; min-width: 80px; max-width: 80px; flex-shrink: 0;
-            height: 90px; background: #12161f; border-radius: 6px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            border: 2px solid transparent; overflow: hidden; 
+        
+        .nav-btn { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            color: #9ca3af; 
+            font-size: 10px; 
+            font-weight: bold; 
+            width: 20%; 
+            transition: 0.2s; 
         }
-        .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
+        
+        .nav-btn.active { color: #a855f7; }
+
+        /* Рулетка */
+        .roulette-wrapper { 
+            overflow: hidden; 
+            position: relative; 
+            background: #1A202C; 
+            border-radius: 8px; 
+            border: 1px solid #2d3748; 
+            padding: 10px 0; 
+            margin-bottom: 10px; 
+        }
+        
+        .roulette-strip { display: flex; gap: 8px; will-change: transform; }
+        
+        .roulette-item { 
+            width: 80px; 
+            min-width: 80px; 
+            max-width: 80px; 
+            height: 90px; 
+            background: #12161f; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            border: 2px solid transparent; 
+            overflow: hidden; 
+        }
+        
+        .roulette-line { 
+            position: absolute; 
+            left: 50%; 
+            top: 0; 
+            bottom: 0; 
+            width: 3px; 
+            background: #22c55e; 
+            z-index: 10; 
+            transform: translateX(-50%); 
+            box-shadow: 0 0 10px #22c55e; 
+        }
 
         /* Апгрейд */
         .upg-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
         @media (min-width: 768px) { .upg-container { flex-direction: row; justify-content: center; } }
-        .upg-box { background: #1A202C; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; text-align: center; width: 100%; max-width: 250px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
+        
+        .upg-box { 
+            background: #1A202C; 
+            border: 1px solid #2d3748; 
+            border-radius: 12px; 
+            padding: 20px; 
+            text-align: center; 
+            width: 100%; 
+            max-width: 250px; 
+            min-height: 150px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+        }
         
         .upg-wheel-container { position: relative; width: 240px; height: 240px; margin: 0 auto; }
         .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #1A202C; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .upg-arrow { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 36px; z-index: 20; will-change: transform; transform-origin: 50% 136px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
+        .upg-arrow { 
+            position: absolute; 
+            top: -16px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 36px; 
+            z-index: 20; 
+            will-change: transform; 
+            transform-origin: 50% 136px; 
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); 
+        }
 
         /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 320px; margin: 0 auto; }
-        .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; border: 1px solid #2d3748; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.5); transition: 0.1s; }
+        
+        .mine-cell { 
+            aspect-ratio: 1; 
+            background: #1A202C; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 24px; 
+            cursor: pointer; 
+            border: 1px solid #2d3748; 
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.5); 
+            transition: 0.1s; 
+        }
+        
         .mine-cell:active { transform: scale(0.95); box-shadow: none; }
         .mine-cell.opened { background: #064e3b; border-color: #10b981; box-shadow: inset 0 0 15px rgba(16,185,129,0.5); }
         .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; box-shadow: inset 0 0 15px rgba(239,68,68,0.5); }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
+        
+        @keyframes shake { 
+            0%, 100% { transform: translateX(0); } 
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 
+            20%, 40%, 60%, 80% { transform: translateX(5px); } 
+        }
+        
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* Мобильная навигация */
-        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 10px; font-weight: bold; width: 20%; transition: 0.2s; }
-        .nav-btn.active { color: #a855f7; }
+        /* Уведомления */
+        #toast-container { 
+            position: fixed; 
+            top: 70px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 9999; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            width: 90%; 
+            max-width: 350px; 
+            pointer-events: none; 
+        }
         
-        /* Тосты */
-        #toast-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
-        .toast { background: rgba(26, 32, 44, 0.95); border-left: 4px solid #8b5cf6; padding: 10px 15px; border-radius: 8px; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); animation: slideDown 0.3s forwards; text-align: center; }
-        .toast.win { border-color: #22c55e; } .toast.lose { border-color: #ef4444; }
-        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .toast { 
+            background: rgba(26, 32, 44, 0.95); 
+            border-left: 4px solid #8b5cf6; 
+            padding: 10px 15px; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+            animation: slideDown 0.3s forwards; 
+            text-align: center; 
+        }
+        
+        .toast.win { border-color: #22c55e; } 
+        .toast.lose { border-color: #ef4444; }
+        
+        @keyframes slideDown { 
+            from { transform: translateY(-20px); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col" id="main-body">
@@ -70,15 +216,16 @@
     <header class="glass sticky top-0 z-40 px-4 py-3 border-b border-gray-800">
         <div class="max-w-[1400px] mx-auto flex justify-between items-center">
             
-            <div class="flex items-center gap-8">
+            <div class="flex items-center gap-6">
                 <h1 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
                 
-                <div class="hidden lg:flex gap-2">
+                <div class="hidden lg:flex gap-1">
                     <button onclick="switchTab('cases')" id="nav-cases" class="desktop-nav-btn active">Кейсы</button>
                     <button onclick="switchTab('clicker')" id="nav-clicker" class="desktop-nav-btn">Кликер</button>
                     <button onclick="switchTab('battles')" id="nav-battles" class="desktop-nav-btn">Батлы</button>
                     <button onclick="switchTab('upgrade')" id="nav-upgrade" class="desktop-nav-btn">Апгрейд</button>
                     <button onclick="switchTab('mines')" id="nav-mines" class="desktop-nav-btn">Мины</button>
+                    <button onclick="switchTab('history')" id="nav-history" class="desktop-nav-btn">История</button>
                 </div>
             </div>
             
@@ -110,26 +257,21 @@
         <!-- ЛЕВАЯ КОЛОНКА -->
         <div class="flex-1 min-w-0">
             
-            <!-- СПИСОК КЕЙСОВ -->
+            <!-- ВКЛАДКА: КЕЙСЫ -->
             <div id="page-cases" class="page active">
                 <h2 class="text-2xl font-black mb-4">Кейсы</h2>
                 <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
             </div>
 
-            <!-- СТРАНИЦА КОНКРЕТНОГО КЕЙСА -->
+            <!-- ВКЛАДКА: ДЕТАЛИ КЕЙСА -->
             <div id="page-case-detail" class="page">
-                <button onclick="switchTab('cases')" class="text-gray-400 hover:text-white mb-4 flex items-center gap-1 text-sm font-bold transition">
-                    <span class="text-xl">&larr;</span> Назад к кейсам
-                </button>
-                
+                <button onclick="switchTab('cases')" class="text-gray-400 hover:text-white mb-4 text-sm font-bold">&larr; Назад к кейсам</button>
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-1/3 flex flex-col items-center">
-                        <div class="glass p-6 rounded-2xl w-full text-center relative overflow-hidden">
-                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
+                    <div class="w-full md:w-1/3">
+                        <div class="glass p-6 rounded-2xl text-center">
                             <div class="text-7xl mb-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">📦</div>
                             <h3 id="cd-name" class="text-xl font-black mb-2">Название</h3>
                             <div class="text-yellow-400 font-bold mb-6" id="cd-price">0 🪙</div>
-                            
                             <div class="flex flex-col gap-2">
                                 <select id="cd-count" class="w-full bg-[#12161f] p-2 rounded-lg text-white border border-gray-700 font-bold text-sm text-center outline-none">
                                     <option value="1">Открыть x1</option>
@@ -138,7 +280,7 @@
                                     <option value="5">Открыть x5</option>
                                     <option value="10">Открыть x10</option>
                                 </select>
-                                <button onclick="startCaseSpin()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-[1.02] transition">ОТКРЫТЬ</button>
+                                <button onclick="startCaseSpin()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(168,85,247,0.4)]">ОТКРЫТЬ</button>
                                 <label class="flex items-center justify-center gap-2 mt-2 cursor-pointer">
                                     <input type="checkbox" id="cd-fast" class="w-4 h-4 accent-purple-500">
                                     <span class="text-xs text-gray-400">Быстрое открытие</span>
@@ -146,10 +288,9 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="w-full md:w-2/3">
                         <div class="flex justify-between items-center mb-3">
-                            <h4 class="font-bold text-lg">Содержимое</h4>
+                            <h4 class="font-bold text-lg">Содержимое (Шансы)</h4>
                             <select id="cd-filter" class="bg-gray-900 text-xs text-white border border-gray-700 rounded-lg p-1.5 outline-none" onchange="filterCaseItems()">
                                 <option value="all">Все</option>
                                 <option value="common">Обычные</option>
@@ -165,20 +306,20 @@
                 </div>
             </div>
 
-            <!-- КЛИКЕР -->
+            <!-- ВКЛАДКА: КЛИКЕР -->
             <div id="page-clicker" class="page">
                 <h2 class="text-2xl font-black mb-6 text-center">Кликер</h2>
                 <div class="glass p-6 rounded-2xl flex flex-col items-center max-w-lg mx-auto">
                     <div class="text-9xl mb-6 cursor-pointer select-none transition-transform active:scale-90" onclick="doClick()">🦄</div>
                     <p class="text-sm text-gray-400 mb-6">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
                     <div class="w-full bg-[#12161f] p-4 rounded-xl border border-gray-800">
-                        <h3 class="font-bold text-sm mb-3 text-center">Апгрейды</h3>
+                        <h3 class="font-bold text-sm mb-3 text-center">Апгрейды кликера</h3>
                         <div id="upgrades-list" class="flex flex-col gap-2"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- БАТЛЫ -->
+            <!-- ВКЛАДКА: БАТЛЫ -->
             <div id="page-battles" class="page">
                 <div class="flex gap-2 mb-4 max-w-md">
                     <button onclick="switchBattleTab('jackpot')" class="flex-1 bg-yellow-600 text-black py-2 rounded-lg font-bold text-sm">ДЖЕКПОТ</button>
@@ -187,10 +328,9 @@
                 
                 <div id="battle-jackpot" class="max-w-2xl">
                     <div class="glass p-6 rounded-2xl text-center mb-6">
-                        <p class="text-xs text-gray-400 mb-1 uppercase font-bold">Банк</p>
+                        <p class="text-xs text-gray-400 mb-1 uppercase font-bold">Общий банк</p>
                         <div class="text-4xl font-black text-yellow-400 mb-2" id="jp-total">0 🪙</div>
                         <div id="jp-timer" class="hidden text-lg font-black text-red-500 mb-2 animate-pulse">15s</div>
-                        
                         <div class="w-48 h-48 mx-auto relative mb-4">
                             <div class="w-full h-full rounded-full border-4 border-gray-800 bg-[#12161f] overflow-hidden" id="jp-wheel">
                                 <div class="absolute inset-0 flex items-center justify-center z-10">
@@ -201,7 +341,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="flex gap-2 mb-2 max-w-xs mx-auto">
                             <input type="number" id="jp-bet" placeholder="Сумма" class="flex-1 bg-[#12161f] p-2 rounded-lg text-center border border-gray-700 text-white font-bold text-sm outline-none">
                             <button onclick="betJackpot()" class="bg-yellow-600 px-4 py-2 rounded-lg font-black text-sm">СТАВКА</button>
@@ -220,7 +359,7 @@
                 </div>
             </div>
 
-            <!-- АПГРЕЙД -->
+            <!-- ВКЛАДКА: АПГРЕЙД -->
             <div id="page-upgrade" class="page">
                 <div class="glass p-4 md:p-8 rounded-2xl max-w-4xl mx-auto">
                     <div class="upg-container">
@@ -229,7 +368,6 @@
                             <div id="upg-my-item" class="text-sm font-bold text-white mb-1">-</div>
                             <div id="upg-my-price" class="text-xs text-yellow-400 font-bold">0 🪙</div>
                         </div>
-
                         <div class="flex flex-col items-center">
                             <div class="upg-wheel-container mb-4">
                                 <div class="upg-arrow" id="upg-arrow">🔻</div>
@@ -245,29 +383,25 @@
                                 <button onclick="setUpgMult(10)" class="bg-gray-800 text-xs py-1 px-3 rounded border border-gray-700">x10</button>
                             </div>
                         </div>
-
                         <div class="upg-box border-green-500/50">
                             <div class="text-[10px] text-green-400 font-bold mb-2 uppercase">Цель</div>
                             <div id="upg-target-item" class="text-sm font-bold text-green-400 mb-1">Любой</div>
                             <div id="upg-target-price" class="text-xs text-yellow-400 font-bold">0 🪙</div>
                         </div>
                     </div>
-
                     <div class="max-w-lg mx-auto mt-6">
                         <select id="upg-select" class="w-full bg-[#12161f] p-3 rounded-lg mb-3 text-sm text-white border border-gray-700 outline-none" onchange="updateUpgradeUI()"></select>
-                        
                         <div class="bg-[#12161f] p-3 rounded-lg border border-gray-700 mb-4 flex items-center gap-3">
                             <span class="text-xs text-gray-400">Буст:</span>
                             <input type="range" id="upg-boost" min="0" max="10000" step="100" value="0" class="flex-1 accent-green-500" oninput="updateUpgradeUI()">
                             <span id="upg-boost-val" class="text-green-400 font-bold text-sm">0 🪙</span>
                         </div>
-
-                        <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-3 rounded-xl font-black text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
+                        <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-3 rounded-xl font-black text-lg">АПГРЕЙДНУТЬ</button>
                     </div>
                 </div>
             </div>
 
-            <!-- МИНЫ -->
+            <!-- ВКЛАДКА: МИНЫ -->
             <div id="page-mines" class="page">
                 <div class="glass p-6 md:p-8 rounded-2xl text-center max-w-2xl mx-auto">
                     <div id="mines-setup" class="max-w-xs mx-auto">
@@ -290,7 +424,15 @@
                 </div>
             </div>
 
-            <!-- ПРОФИЛЬ -->
+            <!-- ВКЛАДКА: ИСТОРИЯ -->
+            <div id="page-history" class="page">
+                <h2 class="text-2xl font-black mb-4">История игр</h2>
+                <div class="glass p-4 rounded-2xl">
+                    <div id="history-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+
+            <!-- ВКЛАДКА: ПРОФИЛЬ -->
             <div id="page-profile" class="page">
                 <div class="glass p-6 rounded-2xl text-center mb-6 relative max-w-2xl mx-auto">
                     <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
@@ -301,21 +443,15 @@
                         Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
                     </label>
                     <h2 class="text-2xl font-black mb-4" id="p-name">Loading...</h2>
-                    
                     <div class="flex justify-center gap-4 bg-[#12161f] p-4 rounded-xl max-w-md mx-auto mb-4 border border-gray-800">
                         <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Клики</div><div id="p-clicks" class="font-black text-lg text-yellow-400">0</div></div>
                         <div class="w-px bg-gray-700"></div>
                         <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Кейсы</div><div id="p-cases" class="font-black text-lg text-purple-400">0</div></div>
                     </div>
-                    
                     <div class="flex justify-center gap-4 max-w-md mx-auto text-left text-xs">
                         <div class="flex-1 bg-[#12161f] p-3 rounded-xl border border-gray-800">
                             <div class="text-gray-500 mb-1">Лучший дроп</div>
                             <div id="p-best-drop" class="font-bold text-green-400 truncate">Нет</div>
-                        </div>
-                        <div class="flex-1 bg-[#12161f] p-3 rounded-xl border border-gray-800">
-                            <div class="text-gray-500 mb-1">Любимый кейс</div>
-                            <div id="p-fav-case" class="font-bold text-purple-400 truncate">Нет</div>
                         </div>
                     </div>
                 </div>
@@ -328,12 +464,10 @@
             </div>
         </div>
 
-        <!-- ПРАВАЯ КОЛОНКА (ТОЛЬКО ДЛЯ ПК: ЧАТ) -->
+        <!-- ПРАВАЯ КОЛОНКА (ЧАТ) -->
         <aside class="hidden lg:flex flex-col w-80 flex-shrink-0 h-[calc(100vh-140px)] sticky top-[90px]">
             <div class="glass rounded-2xl flex flex-col h-full overflow-hidden border border-gray-700">
-                <div class="bg-purple-900/40 p-3 text-sm font-bold border-b border-gray-700 flex justify-between items-center">
-                    <span>💬 Чат</span>
-                </div>
+                <div class="bg-purple-900/40 p-3 text-sm font-bold border-b border-gray-700">💬 Чат</div>
                 <div id="chat-messages-pc" class="flex-1 p-3 overflow-y-auto bg-black/30"></div>
                 <div class="flex border-t border-gray-700 bg-gray-900/90 p-2">
                     <input type="text" id="chat-input-pc" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('pc')">
@@ -350,6 +484,7 @@
         <button onclick="switchTab('battles')" class="nav-btn" id="m-nav-battles"><span class="text-xl">⚔️</span>Батлы</button>
         <button onclick="switchTab('upgrade')" class="nav-btn" id="m-nav-upgrade"><span class="text-xl">📈</span>Апгрейд</button>
         <button onclick="switchTab('mines')" class="nav-btn" id="m-nav-mines"><span class="text-xl">💣</span>Мины</button>
+        <button onclick="switchTab('history')" class="nav-btn" id="m-nav-history"><span class="text-xl">📜</span>Ист.</button>
     </nav>
 
     <!-- МОБИЛЬНЫЙ ЧАТ -->
@@ -357,8 +492,7 @@
     <div id="chat-box-mobile" class="fixed inset-0 bg-black/90 z-[90] hidden flex-col lg:hidden p-4">
         <div class="bg-[#12161f] rounded-2xl flex flex-col w-full h-full max-w-md mx-auto border border-gray-700 overflow-hidden">
             <div class="bg-purple-900/50 p-3 text-sm font-bold flex justify-between items-center border-b border-gray-700">
-                <span>💬 Чат</span>
-                <button onclick="toggleMobileChat()" class="text-2xl leading-none">&times;</button>
+                <span>💬 Чат</span><button onclick="toggleMobileChat()" class="text-2xl leading-none">&times;</button>
             </div>
             <div id="chat-messages-mob" class="flex-1 p-3 overflow-y-auto bg-black/20"></div>
             <div class="flex border-t border-gray-700 bg-gray-800 p-2">
@@ -368,9 +502,9 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА АВТОРИЗАЦИИ -->
+    <!-- МОДАЛКИ -->
     <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100] hidden">
-        <div class="glass p-6 rounded-2xl w-full max-w-sm relative">
+        <div class="glass p-6 rounded-2xl w-full max-w-sm">
             <h2 class="text-xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">ВХОД</h2>
             <input type="text" id="a-user" placeholder="Логин" class="w-full bg-[#12161f] p-3 rounded-lg mb-2 text-white border border-gray-700 outline-none text-sm">
             <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-[#12161f] p-3 rounded-lg mb-4 text-white border border-gray-700 outline-none text-sm">
@@ -378,54 +512,47 @@
                 <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-xs">ВХОД</button>
                 <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2.5 rounded-lg font-bold text-xs">РЕГА</button>
             </div>
-            <p id="a-err" class="text-red-500 text-[10px] text-center mt-2 hidden"></p>
         </div>
     </div>
 
-    <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ -->
+    <!-- КАСТОМНЫЙ CONFIRM -->
     <div id="modal-confirm" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-[110] backdrop-blur-md">
         <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center border border-red-500/30">
-            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl">⚠️</span>
-            </div>
+            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-3xl">⚠️</span></div>
             <h3 class="text-xl font-black mb-2 text-white" id="confirm-title">Вы уверены?</h3>
             <p class="text-sm text-gray-300 mb-6" id="confirm-text">Действие нельзя отменить.</p>
             <div class="flex gap-3">
-                <button onclick="closeConfirm()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold text-sm transition">Отмена</button>
-                <button id="confirm-btn" onclick="executeConfirm()" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(239,68,68,0.4)] transition">Да</button>
+                <button onclick="closeConfirm()" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-sm">Отмена</button>
+                <button id="confirm-btn" onclick="executeConfirm()" class="flex-1 bg-red-600 py-2.5 rounded-lg font-bold text-sm shadow-lg">Да</button>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА РУЛЕТКИ -->
-    <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md overflow-y-auto">
-        <div class="w-full max-w-4xl my-auto">
+    <!-- РУЛЕТКА -->
+    <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md">
+        <div class="w-full max-w-4xl">
             <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
             
-            <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto mb-4"></div>
+            <div id="spin-container" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto mb-4"></div>
             
             <div id="spin-results" class="hidden flex-col items-center mb-6 w-full max-w-2xl mx-auto">
-                
-                <div class="bg-[#1A202C] px-6 py-2 rounded-full border border-purple-500/50 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)] flex items-center gap-2">
-                    <span class="text-gray-400 text-sm">Общая стоимость:</span>
-                    <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
+                <div class="bg-[#1A202C] px-6 py-2 rounded-full border border-purple-500/50 mb-4 text-center">
+                    <span class="text-gray-400 text-sm">Сумма:</span> <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
                 </div>
-
                 <div id="results-grid" class="flex flex-wrap justify-center gap-3 w-full"></div>
-                
                 <div class="flex gap-3 mt-6 w-full max-w-md">
-                    <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 hover:bg-red-500 px-4 py-3 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(239,68,68,0.3)] transition">ПРОДАТЬ ВСЁ</button>
-                    <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl font-black text-sm border border-gray-500 transition">ЗАБРАТЬ</button>
+                    <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 px-4 py-3 rounded-xl font-black text-sm">ПРОДАТЬ ВСЁ</button>
+                    <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 px-4 py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
                 </div>
             </div>
-
+            
             <div class="text-center">
-                <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold border border-gray-600 hidden hover:bg-gray-700 transition">ЗАКРЫТЬ</button>
+                <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold hidden">ЗАКРЫТЬ</button>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА ПРОФИЛЯ ИГРОКА -->
+    <!-- ПРОФИЛЬ ИГРОКА -->
     <div id="modal-player" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-[80] backdrop-blur-sm">
         <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center">
             <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-3 right-4 text-xl text-gray-400 hover:text-white">&times;</button>
@@ -438,18 +565,15 @@
                 <div><div class="text-gray-400 text-[10px]">Клики</div><div id="mp-clicks" class="font-bold text-yellow-400">0</div></div>
                 <div><div class="text-gray-400 text-[10px]">Кейсы</div><div id="mp-cases" class="font-bold text-purple-400">0</div></div>
             </div>
-            <div class="bg-[#12161f] p-3 rounded-xl text-xs mb-2 text-left">
+            <div class="bg-[#12161f] p-3 rounded-xl text-xs text-left">
                 <div class="text-gray-400 text-[10px]">Лучший дроп:</div>
                 <div id="mp-best" class="font-bold text-green-400 truncate">Нет</div>
-            </div>
-            <div class="bg-[#12161f] p-3 rounded-xl text-xs text-left">
-                <div class="text-gray-400 text-[10px]">Любимый кейс:</div>
-                <div id="mp-fav" class="font-bold text-purple-400 truncate">Нет</div>
             </div>
         </div>
     </div>
 
     <script>
+        // --- ЗВУКИ ---
         const sfx = {
             spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
             win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
@@ -457,58 +581,85 @@
             click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
             safe: new Audio('https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3')
         };
+        
         let spinAudioInstance = null;
-
+        
         function playSfx(n) { 
             if(!sfx[n]) return; 
-            try { sfx[n].currentTime = 0; sfx[n].play().catch(()=>{}); } catch(e) {}
+            try { 
+                sfx[n].currentTime = 0; 
+                sfx[n].play().catch(()=>{}); 
+            } catch(e) {} 
         }
-        function startSpinSfx() {
-            if(spinAudioInstance) { spinAudioInstance.pause(); }
-            spinAudioInstance = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
-            spinAudioInstance.loop = true;
-            spinAudioInstance.volume = 0.3;
-            spinAudioInstance.play().catch(()=>{});
+        
+        function startSpinSfx() { 
+            if(spinAudioInstance) spinAudioInstance.pause(); 
+            spinAudioInstance = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'); 
+            spinAudioInstance.loop = true; 
+            spinAudioInstance.volume = 0.3; 
+            spinAudioInstance.play().catch(()=>{}); 
         }
-        function stopSpinSfx() {
-            if(spinAudioInstance) { spinAudioInstance.pause(); spinAudioInstance.currentTime = 0; }
+        
+        function stopSpinSfx() { 
+            if(spinAudioInstance) { 
+                spinAudioInstance.pause(); 
+                spinAudioInstance.currentTime = 0; 
+            } 
         }
 
+        // --- УВЕДОМЛЕНИЯ ---
         let lastToastTime = 0;
         function showToast(msg, type='info') { 
-            const now = Date.now(); if(now - lastToastTime < 500) return; lastToastTime = now; 
+            const now = Date.now(); 
+            if(now - lastToastTime < 500) return; 
+            lastToastTime = now; 
             const c = document.getElementById('toast-container'); 
-            const d = document.createElement('div'); d.className = `toast ${type}`; d.textContent = msg; 
-            c.appendChild(d); setTimeout(() => d.remove(), 3000); 
+            const d = document.createElement('div'); 
+            d.className = `toast ${type}`; 
+            d.textContent = msg; 
+            c.appendChild(d); 
+            setTimeout(() => d.remove(), 3000); 
         }
 
+        // --- КАСТОМНЫЙ CONFIRM ---
         let confirmCallback = null;
-        function showConfirm(title, text, btnText, callback) {
-            document.getElementById('confirm-title').textContent = title;
-            document.getElementById('confirm-text').textContent = text;
-            document.getElementById('confirm-btn').textContent = btnText;
-            confirmCallback = callback;
-            document.getElementById('modal-confirm').classList.remove('hidden');
+        function showConfirm(title, text, btnText, callback) { 
+            document.getElementById('confirm-title').textContent = title; 
+            document.getElementById('confirm-text').textContent = text; 
+            document.getElementById('confirm-btn').textContent = btnText; 
+            confirmCallback = callback; 
+            document.getElementById('modal-confirm').classList.remove('hidden'); 
         }
-        function closeConfirm() {
-            document.getElementById('modal-confirm').classList.add('hidden');
-            confirmCallback = null;
+        function closeConfirm() { 
+            document.getElementById('modal-confirm').classList.add('hidden'); 
+            confirmCallback = null; 
         }
-        function executeConfirm() {
-            if(confirmCallback) confirmCallback();
-            closeConfirm();
+        function executeConfirm() { 
+            if(confirmCallback) confirmCallback(); 
+            closeConfirm(); 
         }
 
+        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
         const API = '';
         let token = localStorage.getItem('pony_token');
-        let user = null, socket = null, inv = [];
-        let upgMult = 2, casesData = [], jpTimerInterval = null;
-        let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
+        let user = null;
+        let socket = null;
+        let inv = [];
         let currentCase = null;
         let currentCaseData = [];
         let currentDrops = [];
+        let upgMult = 2;
+        let casesData = [];
+        let jpTimerInterval = null;
+        let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
 
-        if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } else { document.getElementById('auth-modal').classList.remove('hidden'); }
+        // --- АВТОРИЗАЦИЯ ---
+        if(token) { 
+            document.getElementById('auth-modal').classList.add('hidden'); 
+            init(); 
+        } else { 
+            document.getElementById('auth-modal').classList.remove('hidden'); 
+        }
 
         async function req(ep, m='GET', b=null) {
             const h = { 'Content-Type': 'application/json' };
@@ -525,11 +676,13 @@
                 const p = document.getElementById('a-pass').value;
                 if(!u || !p) return;
                 const d = await req(`/api/auth/${type}`, 'POST', {username: u, password: p});
-                token = d.token; localStorage.setItem('pony_token', token);
-                document.getElementById('a-err').classList.add('hidden');
+                token = d.token; 
+                localStorage.setItem('pony_token', token);
                 document.getElementById('auth-modal').classList.add('hidden'); 
                 init();
-            } catch(e) { const err = document.getElementById('a-err'); err.textContent = e.message; err.classList.remove('hidden'); }
+            } catch(e) { 
+                alert(e.message); 
+            }
         }
 
         async function init() {
@@ -540,151 +693,123 @@
                 upgLevels = { click_power: user.click_power, auto_rate: user.auto_rate, multiplier: user.multiplier };
                 
                 if(user.avatar && user.avatar.startsWith('data:')) {
-                    document.getElementById('header-avatar').src = user.avatar;
-                    document.getElementById('header-avatar').classList.remove('hidden');
+                    document.getElementById('header-avatar').src = user.avatar; 
+                    document.getElementById('header-avatar').classList.remove('hidden'); 
                     document.getElementById('header-emoji').classList.add('hidden');
-                } else {
-                    document.getElementById('header-emoji').textContent = user.avatar || '👤';
                 }
-
-                loadCases();
+                
+                loadCases(); 
                 renderUpgrades();
                 
                 if(!socket) {
                     socket = io({ auth: { token } });
+                    
                     socket.on('online', d => document.getElementById('online-count').textContent = d.count);
+                    
                     socket.on('drop', d => {
-                        const live = document.getElementById('live-drops');
+                        const live = document.getElementById('live-drops'); 
                         if(live.querySelector('.italic')) live.innerHTML = '';
-                        const el = document.createElement('div');
-                        el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer hover:bg-gray-700 transition';
+                        const el = document.createElement('div'); 
+                        el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer';
                         el.onclick = () => showPlayerProfile(d.username);
                         let avHtml = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` : `<span class="text-[10px]">${d.avatar}</span>`;
                         el.innerHTML = `${avHtml} <b class="text-purple-400 text-[10px]">${d.username}</b> выбил <b style="color:${d.color}" class="text-[10px]">${d.pony}</b>`;
-                        live.prepend(el);
+                        live.prepend(el); 
                         if(live.children.length > 10) live.lastChild.remove();
                     });
-                    socket.on('chat', d => {
-                        renderChatMsg('chat-messages-pc', d);
-                        renderChatMsg('chat-messages-mob', d);
+                    
+                    socket.on('chat', d => { 
+                        renderChatMsg('chat-messages-pc', d); 
+                        renderChatMsg('chat-messages-mob', d); 
                     });
+                    
                     socket.on('jackpot_update', d => updateJackpotUI(d));
+                    
                     socket.on('jackpot_finish', d => {
                         document.getElementById('jp-winner').textContent = d.winner.username;
-                        playSfx('win'); confetti();
+                        playSfx('win'); 
+                        confetti(); 
                         showToast(`Джекпот: ${d.winner.username}!`, 'win');
                         setTimeout(() => {
-                            document.getElementById('jp-winner').textContent = '???';
-                            document.getElementById('jp-players').innerHTML = '';
+                            document.getElementById('jp-winner').textContent = '???'; 
+                            document.getElementById('jp-players').innerHTML = ''; 
                             document.getElementById('jp-total').textContent = '0 🪙';
                             document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-16 h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-xs font-bold" id="jp-winner">???</span></div></div>`;
                         }, 5000);
                     });
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                console.error(e); 
+            }
         }
 
-        function updateBal(v) { if (v !== undefined && v !== null) { document.getElementById('balance').textContent = v; if(user) user.balance = v; } }
+        function updateBal(v) { 
+            if (v !== undefined && v !== null) { 
+                document.getElementById('balance').textContent = v; 
+                if(user) user.balance = v; 
+            } 
+        }
         
         function switchTab(t) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
             
             document.querySelectorAll('.desktop-nav-btn').forEach(b => b.classList.remove('active'));
-            const pcBtn = document.getElementById(`nav-${t}`);
+            const pcBtn = document.getElementById(`nav-${t}`); 
             if(pcBtn) pcBtn.classList.add('active');
-
+            
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const mobBtn = document.getElementById(`m-nav-${t}`);
+            const mobBtn = document.getElementById(`m-nav-${t}`); 
             if(mobBtn) mobBtn.classList.add('active');
 
             if(t==='profile') loadProfile();
             if(t==='upgrade') loadUpgrade();
             if(t==='battles') { loadJackpot(); load1v1List(); }
+            if(t==='history') loadHistory();
         }
 
-        function switchBattleTab(t) {
-            document.getElementById('battle-jackpot').classList.add('hidden');
-            document.getElementById('battle-1v1').classList.add('hidden');
-            document.getElementById(`battle-${t}`).classList.remove('hidden');
-            if(t === '1v1') load1v1List();
+        function switchBattleTab(t) { 
+            document.getElementById('battle-jackpot').classList.add('hidden'); 
+            document.getElementById('battle-1v1').classList.add('hidden'); 
+            document.getElementById(`battle-${t}`).classList.remove('hidden'); 
+            if(t === '1v1') load1v1List(); 
         }
-
+        
         function toggleMobileChat() { 
-            const c = document.getElementById('chat-box-mobile');
-            c.classList.toggle('hidden'); c.classList.toggle('flex');
+            const c = document.getElementById('chat-box-mobile'); 
+            c.classList.toggle('hidden'); 
+            c.classList.toggle('flex'); 
         }
-
+        
         function renderChatMsg(boxId, d) {
-            const box = document.getElementById(boxId);
+            const box = document.getElementById(boxId); 
             if(!box) return;
-            const msg = document.createElement('div');
+            const msg = document.createElement('div'); 
             msg.className = 'text-xs mb-2 flex gap-2 items-start';
             let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-6 h-6 rounded-full object-cover cursor-pointer" onclick="showPlayerProfile('${d.username}')">` : `<span class="text-sm cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.avatar}</span>`;
             msg.innerHTML = `${av} <div class="break-all"><span class="text-purple-400 font-bold cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`;
-            box.appendChild(msg);
-            if(box.children.length > 40) box.firstChild.remove();
+            box.appendChild(msg); 
+            if(box.children.length > 40) box.firstChild.remove(); 
             box.scrollTop = box.scrollHeight;
         }
-
-        function sendChat(platform) {
-            let inp = document.getElementById(`chat-input-${platform}`);
+        
+        function sendChat(platform) { 
+            let inp = document.getElementById(`chat-input-${platform}`); 
             if(inp.value && socket && user) { 
                 socket.emit('chat', {username: user.username, avatar: user.avatar, text: inp.value}); 
                 inp.value = ''; 
-            }
-        }
-
-        async function claimBonus() { try { const r = await req('/api/user/bonus','POST'); updateBal(r.balance); playSfx('win'); showToast('Бонус! +500 🪙', 'win'); } catch(e) { showToast(e.message, 'lose'); } }
-
-        async function doClick() {
-            playSfx('click');
-            try {
-                const res = await req('/api/clicker/click', 'POST', {count: 1});
-                updateBal(res.balance);
-                let c = parseInt(document.getElementById('click-count').textContent) + 1;
-                document.getElementById('click-count').textContent = c;
-            } catch(e) { showToast(e.message, 'lose'); }
+            } 
         }
         
-        function renderUpgrades() {
-            const list = document.getElementById('upgrades-list');
-            list.innerHTML = `
-                <div class="flex justify-between items-center bg-gray-800 p-2 md:p-3 rounded-lg"><div><div class="font-bold text-sm">Сила клика</div><div class="text-xs text-gray-400">Ур. ${upgLevels.click_power}</div></div><button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button></div>
-                <div class="flex justify-between items-center bg-gray-800 p-2 md:p-3 rounded-lg"><div><div class="font-bold text-sm">Автоклик</div><div class="text-xs text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div><button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button></div>
-                <div class="flex justify-between items-center bg-gray-800 p-2 md:p-3 rounded-lg"><div><div class="font-bold text-sm">Множитель</div><div class="text-xs text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div><button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button></div>
-            `;
-        }
-
-        async function buyUpgrade(key) {
-            playSfx('click');
-            try {
-                const res = await req(`/api/clicker/buy`, 'POST', {key: key});
-                updateBal(res.user.balance);
-                upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier };
-                renderUpgrades();
-            } catch(e) { showToast(e.message, 'lose'); }
-        }
-
-        async function showPlayerProfile(username) {
-            try {
-                const u = await req(`/api/user/public/by_name/${username}`);
-                document.getElementById('mp-name').textContent = u.username;
-                document.getElementById('mp-clicks').textContent = u.total_clicks;
-                document.getElementById('mp-cases').textContent = u.cases_opened;
-                document.getElementById('mp-best').textContent = u.best_drop ? `${u.best_drop.name} (${u.best_drop.price}🪙)` : 'Нет';
-                document.getElementById('mp-fav').textContent = u.fav_case;
-                if(u.avatar && u.avatar.startsWith('data:')) {
-                    document.getElementById('mp-avatar').src = u.avatar;
-                    document.getElementById('mp-avatar').classList.remove('hidden');
-                    document.getElementById('mp-emoji').classList.add('hidden');
-                } else {
-                    document.getElementById('mp-emoji').textContent = u.avatar || '🦄';
-                    document.getElementById('mp-avatar').classList.add('hidden');
-                    document.getElementById('mp-emoji').classList.remove('hidden');
-                }
-                document.getElementById('modal-player').classList.remove('hidden');
-            } catch(e) { showToast("Ошибка загрузки профиля", 'lose'); }
+        async function claimBonus() { 
+            try { 
+                const r = await req('/api/user/bonus','POST'); 
+                updateBal(r.balance); 
+                playSfx('win'); 
+                showToast('Бонус! +500 🪙', 'win'); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
         }
 
         // --- КЕЙСЫ ---
@@ -698,132 +823,110 @@
                         <span class="text-yellow-400 text-[10px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span>
                     </div>`).join('');
                 document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join('');
-            } catch(e) { showToast("Ошибка загрузки кейсов", 'lose'); }
+            } catch(e) { 
+                showToast("Ошибка кейсов", 'lose'); 
+            }
         }
 
         async function openCaseDetail(id) {
-            const c = casesData.find(x => x.id === id);
+            const c = casesData.find(x => x.id === id); 
             if(!c) return;
             currentCase = id;
-            
-            document.getElementById('page-cases').classList.remove('active');
+            document.getElementById('page-cases').classList.remove('active'); 
             document.getElementById('page-case-detail').classList.add('active');
-            
-            document.getElementById('cd-name').textContent = c.name;
+            document.getElementById('cd-name').textContent = c.name; 
             document.getElementById('cd-price').textContent = c.price + ' 🪙';
-            document.getElementById('cd-filter').value = 'all';
+            document.getElementById('cd-filter').value = 'all'; 
             document.getElementById('cd-items-grid').innerHTML = '<div class="text-gray-400 text-sm">Загрузка...</div>';
-            
-            try {
-                currentCaseData = await req(`/api/cases/preview/${id}`);
-                if(!Array.isArray(currentCaseData)) currentCaseData = [];
-                filterCaseItems();
-            } catch(e) {
-                document.getElementById('cd-items-grid').innerHTML = '<div class="text-red-400 text-sm">Ошибка загрузки содержимого</div>';
+            try { 
+                currentCaseData = await req(`/api/cases/preview/${id}`); 
+                filterCaseItems(); 
+            } catch(e) { 
+                document.getElementById('cd-items-grid').innerHTML = 'Ошибка'; 
             }
         }
 
         function filterCaseItems() {
             const filter = document.getElementById('cd-filter').value;
-            const grid = document.getElementById('cd-items-grid');
-            if(!currentCaseData || currentCaseData.length === 0) {
-                grid.innerHTML = '<div class="text-gray-400 text-sm">Нет предметов</div>';
-                return;
-            }
             const filtered = currentCaseData.filter(item => filter === 'all' || item.rarity === filter);
-            
-            if(filtered.length === 0) {
-                grid.innerHTML = '<div class="text-gray-400 text-sm">Нет предметов с такой редкостью</div>';
-                return;
-            }
-
-            grid.innerHTML = filtered.map(d => `
+            document.getElementById('cd-items-grid').innerHTML = filtered.map(d => `
                 <div class="bg-[#1A202C] p-2 md:p-3 rounded-lg border-l-2 md:border-l-4 text-[10px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}">
                     <span class="font-bold mb-1">${d.name}</span>
                     <span class="text-yellow-400 font-bold">${d.price}🪙</span>
+                    <span class="text-green-400 text-[10px] mt-1 font-bold">Шанс: ${d.chance.toFixed(2)}%</span>
                 </div>`).join('');
         }
 
         async function startCaseSpin() {
-            const btn = document.getElementById('spin-close-btn');
+            const btn = document.getElementById('spin-close-btn'); 
             btn.classList.add('hidden');
-            document.getElementById('spin-results').classList.add('hidden');
+            document.getElementById('spin-results').classList.add('hidden'); 
             document.getElementById('spin-results').classList.remove('flex');
             
-            const isFast = document.getElementById('cd-fast').checked;
+            const isFast = document.getElementById('cd-fast').checked; 
             const count = parseInt(document.getElementById('cd-count').value);
-            
-            const container = document.getElementById('spin-container');
-            container.innerHTML = '';
+            const container = document.getElementById('spin-container'); 
+            container.innerHTML = ''; 
             container.classList.remove('hidden');
             
-            const pool = currentCaseData.length > 0 ? currentCaseData : [{name: 'Pony', color: '#fff'}];
-
-            document.getElementById('modal-spin').classList.remove('hidden');
+            document.getElementById('modal-spin').classList.remove('hidden'); 
             document.getElementById('spin-title').textContent = "Открываем кейс...";
             
             try {
                 const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count});
-                updateBal(res.balance);
+                updateBal(res.balance); 
                 currentDrops = res.results;
                 
-                if(!res.results || res.results.length === 0) throw new Error("Пустой результат");
-
-                if (isFast) {
-                    playSfx('win'); confetti();
-                    document.getElementById('spin-title').textContent = "Твои дропы!";
-                    document.getElementById('spin-container').classList.add('hidden');
-                    showSpinResults(res.results);
+                if (isFast) { 
+                    playSfx('win'); 
+                    confetti(); 
+                    document.getElementById('spin-container').classList.add('hidden'); 
+                    showSpinResults(res.results); 
                 } else {
                     startSpinSfx();
+                    let fullHtml = ''; 
+                    const pool = currentCaseData;
                     
-                    let fullHtml = '';
                     for(let i=0; i<count; i++) {
                         fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
                     }
                     container.innerHTML = fullHtml;
-
+                    
                     let promises = [];
+                    
                     for(let i=0; i<count; i++) {
-                        const strip = document.getElementById(`row-${i}-strip`);
-                        
+                        const strip = document.getElementById(`row-${i}-strip`); 
                         let html = '';
+                        
                         for(let j=0; j<50; j++) {
                             const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)];
-                            const name = item ? (item.pony_id || item.name) : '???';
-                            const color = item ? item.color : '#333';
-                            
-                            // Жестко фиксируем размеры, чтобы текст не растягивал
-                            html += `<div class="roulette-item" style="border-color:${color}">
-                                        <span style="color: white; font-size: 10px; font-weight: bold; text-align: center; word-break: break-word; padding: 0 2px;">${name}</span>
-                                     </div>`;
+                            html += `<div class="roulette-item" style="border-color:${item.color}"><div style="color:white; font-size:10px; font-weight:bold; padding:0 2px;">${item.pony_id || item.name}</div></div>`;
                         }
-                        strip.innerHTML = html;
                         
+                        strip.innerHTML = html;
                         strip.style.transition = 'none'; 
                         strip.style.transform = 'translate3d(0, 0, 0)';
-
+                        
                         promises.push(new Promise(resolve => {
-                            setTimeout(() => {
-                                // ИСПРАВЛЕНО: clientWidth вместо offsetWidth (исключает скроллбар)
-                                const containerWidth = strip.parentElement.clientWidth;
-                                const itemWidth = 80;
-                                const gap = 8;
-                                // Центрируем ровно 45-й элемент (индекс 45)
-                                const offset = (45 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2);
-                                
-                                strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                                strip.style.transform = `translate3d(-${offset}px, 0, 0)`;
-                                setTimeout(resolve, 6200);
-                            }, 100);
+                            requestAnimationFrame(() => { 
+                                requestAnimationFrame(() => {
+                                    const containerWidth = strip.parentElement.clientWidth; 
+                                    const itemWidth = 80, gap = 8;
+                                    const offset = (45 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2);
+                                    strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
+                                    strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
+                                    setTimeout(resolve, 6200);
+                                }); 
+                            });
                         }));
                     }
                     
-                    Promise.all(promises).then(() => {
-                        stopSpinSfx(); playSfx('win'); confetti();
-                        document.getElementById('spin-title').textContent = "Твои дропы!";
-                        document.getElementById('spin-container').classList.add('hidden');
-                        showSpinResults(res.results);
+                    Promise.all(promises).then(() => { 
+                        stopSpinSfx(); 
+                        playSfx('win'); 
+                        confetti(); 
+                        document.getElementById('spin-container').classList.add('hidden'); 
+                        showSpinResults(res.results); 
                     });
                 }
             } catch(e) { 
@@ -834,128 +937,170 @@
         }
 
         function showSpinResults(results) {
-            const grid = document.getElementById('results-grid');
-            let totalValue = 0;
-
-            grid.innerHTML = results.map((item, index) => {
-                totalValue += item.price;
+            let total = 0;
+            document.getElementById('results-grid').innerHTML = results.map((item, index) => {
+                total += item.price;
                 return `
                 <div class="glass p-3 rounded-xl flex flex-col items-center min-w-[120px] border-t-2" style="border-color:${item.color}">
                     <div class="text-xs font-bold mb-1 text-center text-white">${item.pony_id}</div>
                     <div class="text-yellow-400 font-bold mb-3">${item.price} 🪙</div>
                     <div class="flex gap-1 w-full" id="drop-actions-${index}">
-                        <button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 hover:text-white transition">Продать</button>
-                        <button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 hover:text-white transition">Забрать</button>
+                        <button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 transition">Продать</button>
+                        <button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 transition">Забрать</button>
                     </div>
                 </div>`;
             }).join('');
-
-            document.getElementById('total-drops-value').textContent = totalValue + ' 🪙';
-            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${totalValue} 🪙`;
             
-            document.getElementById('spin-results').classList.remove('hidden');
+            document.getElementById('total-drops-value').textContent = total + ' 🪙'; 
+            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${total} 🪙`;
+            document.getElementById('spin-results').classList.remove('hidden'); 
             document.getElementById('spin-results').classList.add('flex');
         }
 
         async function sellDropItem(id, price, index) {
-            try {
-                await req(`/api/user/inventory/sell/${id}`, 'POST');
-                updateBal(user.balance + price);
-                const actions = document.getElementById(`drop-actions-${index}`);
-                actions.innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`;
-                playSfx('win');
-                
-                const state = await req('/api/clicker/state');
-                updateBal(state.balance);
-                
-                recalcTotalDrops();
-            } catch(e) { showToast(e.message, 'lose'); }
+            try { 
+                await req(`/api/user/inventory/sell/${id}`, 'POST'); 
+                updateBal(user.balance + price); 
+                document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`; 
+                playSfx('win'); 
+                const state = await req('/api/clicker/state'); 
+                updateBal(state.balance); 
+                recalcTotalDrops(); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            }
         }
-
-        function keepDropItem(index) {
-            const actions = document.getElementById(`drop-actions-${index}`);
-            actions.innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`;
-            playSfx('click');
-            recalcTotalDrops();
+        
+        function keepDropItem(index) { 
+            document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; 
+            playSfx('click'); 
+            recalcTotalDrops(); 
         }
-
+        
         function recalcTotalDrops() {
-            let newTotal = 0;
-            currentDrops.forEach((item, idx) => {
-                const actions = document.getElementById(`drop-actions-${idx}`);
-                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) {
-                    newTotal += item.price;
-                }
+            let newTotal = 0; 
+            currentDrops.forEach((item, idx) => { 
+                const actions = document.getElementById(`drop-actions-${idx}`); 
+                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) newTotal += item.price; 
             });
             document.getElementById('total-drops-value').textContent = newTotal + ' 🪙';
-            
-            if(newTotal > 0) {
-                document.getElementById('btn-sell-all-drops').style.display = 'block';
-                document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`;
-            } else {
-                document.getElementById('btn-sell-all-drops').style.display = 'none';
+            if(newTotal > 0) document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`; 
+            else document.getElementById('btn-sell-all-drops').style.display = 'none';
+        }
+        
+        function sellAllDrops() {
+            let totalValue = 0; 
+            currentDrops.forEach((item, idx) => { 
+                const actions = document.getElementById(`drop-actions-${idx}`); 
+                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) totalValue += item.price; 
+            });
+            if(totalValue === 0) return; 
+            showConfirm("Продать все дропы?", `Вы получите ${totalValue} 🪙.`, "Продать", async () => {
+                for (let i = 0; i < currentDrops.length; i++) { 
+                    const actions = document.getElementById(`drop-actions-${i}`); 
+                    if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) { 
+                        try { 
+                            await req(`/api/user/inventory/sell/${currentDrops[i].id}`, 'POST'); 
+                            actions.innerHTML = `<div class="text-xs text-gray-400 text-center">Продано</div>`; 
+                        } catch(e) {} 
+                    } 
+                }
+                const state = await req('/api/clicker/state'); 
+                updateBal(state.balance); 
+                closeSpinModal(); 
+                recalcTotalDrops();
+            });
+        }
+        
+        function closeSpinModal() { 
+            document.getElementById('modal-spin').classList.add('hidden'); 
+        }
+
+        // --- ИСТОРИЯ ---
+        async function loadHistory() {
+            try {
+                const hist = await req('/api/user/history');
+                if(hist.length === 0) { 
+                    document.getElementById('history-list').innerHTML = '<div class="text-center text-gray-500 py-4">История пуста</div>'; 
+                    return; 
+                }
+                document.getElementById('history-list').innerHTML = hist.map(h => `
+                    <div class="flex justify-between items-center bg-[#1A202C] p-3 rounded-lg text-sm border-l-4 ${h.game === 'Кейс' ? 'border-purple-500' : 'border-green-500'}">
+                        <div>
+                            <div class="font-bold text-white">${h.item}</div>
+                            <div class="text-xs text-gray-400">${h.result} • ${h.date}</div>
+                        </div>
+                        <div class="font-black ${h.game === 'Кейс' ? 'text-purple-400' : 'text-green-400'}">${h.price > 0 ? `+${h.price} 🪙` : 'Сгорел'}</div>
+                    </div>`).join('');
+            } catch(e) { 
+                showToast("Ошибка истории", 'lose'); 
             }
         }
 
-        function sellAllDrops() {
-            let totalValue = 0;
-            currentDrops.forEach((item, idx) => {
-                const actions = document.getElementById(`drop-actions-${idx}`);
-                if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) {
-                    totalValue += item.price;
-                }
-            });
-
-            if(totalValue === 0) return showToast("Нечего продавать", 'lose');
-
-            showConfirm("Продать все дропы?", `Вы получите ${totalValue} 🪙 за все выпавшие предметы.`, "Продать", async () => {
-                let totalGained = 0;
-                for (let i = 0; i < currentDrops.length; i++) {
-                    const item = currentDrops[i];
-                    const actions = document.getElementById(`drop-actions-${i}`);
-                    if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) {
-                        try {
-                            await req(`/api/user/inventory/sell/${item.id}`, 'POST');
-                            totalGained += item.price;
-                            actions.innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`;
-                        } catch(e) {}
-                    }
-                }
-                const state = await req('/api/clicker/state');
-                updateBal(state.balance);
-                showToast(`Продано на ${totalGained} 🪙!`, 'win');
-                recalcTotalDrops();
-            });
+        // --- КЛИКЕР ---
+        async function doClick() {
+            playSfx('click');
+            try { 
+                const res = await req('/api/clicker/click', 'POST', {count: 1}); 
+                updateBal(res.balance); 
+                document.getElementById('click-count').textContent = parseInt(document.getElementById('click-count').textContent)+1; 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            }
         }
-
-        function closeSpinModal() {
-            document.getElementById('modal-spin').classList.add('hidden');
-            document.getElementById('spin-container').innerHTML = '';
-            document.getElementById('spin-container').classList.remove('hidden');
-            document.getElementById('spin-results').classList.add('hidden');
-            document.getElementById('spin-results').classList.remove('flex');
+        
+        function renderUpgrades() {
+            document.getElementById('upgrades-list').innerHTML = `
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg">
+                    <div>
+                        <div class="font-bold text-sm">Сила клика</div>
+                        <div class="text-xs text-gray-400">Ур. ${upgLevels.click_power}</div>
+                    </div>
+                    <button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg">
+                    <div>
+                        <div class="font-bold text-sm">Автоклик</div>
+                        <div class="text-xs text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div>
+                    </div>
+                    <button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg">
+                    <div>
+                        <div class="font-bold text-sm">Множитель</div>
+                        <div class="text-xs text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div>
+                    </div>
+                    <button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button>
+                </div>
+            `;
+        }
+        
+        async function buyUpgrade(key) { 
+            playSfx('click'); 
+            try { 
+                const res = await req(`/api/clicker/buy`, 'POST', {key: key}); 
+                updateBal(res.user.balance); 
+                upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier }; 
+                renderUpgrades(); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
         }
 
         // --- ПРОФИЛЬ ---
         async function loadProfile() {
             try {
-                const d = await req('/api/user/profile');
+                const d = await req('/api/user/profile'); 
                 updateBal(d.user.balance);
-                document.getElementById('p-name').textContent = d.user.username;
-                document.getElementById('p-clicks').textContent = d.stats.total_clicks;
+                document.getElementById('p-name').textContent = d.user.username; 
+                document.getElementById('p-clicks').textContent = d.stats.total_clicks; 
                 document.getElementById('p-cases').textContent = d.stats.cases_opened;
-                
                 document.getElementById('p-best-drop').textContent = d.best_drop ? `${d.best_drop.name} (${d.best_drop.price}🪙)` : 'Нет';
-                document.getElementById('p-fav-case').textContent = d.fav_case;
-
                 inv = d.inventory;
-                
-                if(d.user.avatar && d.user.avatar.startsWith('data:')) {
-                    document.getElementById('p-avatar').src = d.user.avatar;
-                    document.getElementById('p-avatar').classList.remove('hidden');
-                    document.getElementById('p-emoji').classList.add('hidden');
-                } else {
-                    document.getElementById('p-emoji').textContent = d.user.avatar || '🦄';
+                if(d.user.avatar && d.user.avatar.startsWith('data:')) { 
+                    document.getElementById('p-avatar').src = d.user.avatar; 
+                    document.getElementById('p-avatar').classList.remove('hidden'); 
+                    document.getElementById('p-emoji').classList.add('hidden'); 
                 }
                 document.getElementById('inv-grid').innerHTML = inv.map(i => `
                     <div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[10px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}">
@@ -963,221 +1108,302 @@
                         <div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div>
                         <button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button>
                     </div>`).join('');
-            } catch(e) { showToast("Ошибка профиля", 'lose'); }
+            } catch(e) { 
+                showToast("Ошибка профиля", 'lose'); 
+            }
         }
-        async function sell(id) { try { await req(`/api/user/inventory/sell/${id}`,'POST'); loadProfile(); } catch(e) { showToast(e.message, 'lose'); } }
         
-        function sellAll() {
-            showConfirm("Продать инвентарь?", "Вы продадите ВСЕ предметы из инвентаря. Это действие нельзя отменить.", "Продать всё", async () => {
+        async function sell(id) { 
+            try { 
+                await req(`/api/user/inventory/sell/${id}`,'POST'); 
+                loadProfile(); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
+        }
+        
+        function sellAll() { 
+            showConfirm("Продать инвентарь?", "Вы продадите ВСЕ предметы.", "Продать всё", async () => { 
                 try { 
                     await req('/api/user/inventory/sell_all','POST'); 
                     loadProfile(); 
                     showToast("Инвентарь продан", 'win'); 
-                } catch(e) { showToast(e.message, 'lose'); }
-            });
+                } catch(e) { 
+                    showToast(e.message, 'lose'); 
+                } 
+            }); 
         }
         
         async function uploadAvatar(input) {
-            const file = input.files[0]; if(!file) return;
-            const fd = new FormData(); fd.append("file", file);
-            try {
-                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
-                const d = await res.json();
-                if(!res.ok) throw new Error(d.detail);
-                document.getElementById('p-avatar').src = d.avatar;
-                document.getElementById('p-avatar').classList.remove('hidden');
-                document.getElementById('p-emoji').classList.add('hidden');
-                document.getElementById('header-avatar').src = d.avatar;
-                document.getElementById('header-avatar').classList.remove('hidden');
-                document.getElementById('header-emoji').classList.add('hidden');
-                showToast('Аватарка обновлена!', 'win');
-            } catch(e) { showToast(e.message, 'lose'); }
+            const file = input.files[0]; 
+            if(!file) return; 
+            const fd = new FormData(); 
+            fd.append("file", file);
+            try { 
+                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); 
+                const d = await res.json(); 
+                if(!res.ok) throw new Error(d.detail); 
+                document.getElementById('p-avatar').src = d.avatar; 
+                document.getElementById('p-avatar').classList.remove('hidden'); 
+                document.getElementById('p-emoji').classList.add('hidden'); 
+                document.getElementById('header-avatar').src = d.avatar; 
+                document.getElementById('header-avatar').classList.remove('hidden'); 
+                document.getElementById('header-emoji').classList.add('hidden'); 
+                showToast('Аватарка обновлена!', 'win'); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            }
+        }
+        
+        async function showPlayerProfile(username) {
+            try { 
+                const u = await req(`/api/user/public/by_name/${username}`); 
+                document.getElementById('mp-name').textContent = u.username; 
+                document.getElementById('mp-clicks').textContent = u.total_clicks; 
+                document.getElementById('mp-cases').textContent = u.cases_opened; 
+                document.getElementById('mp-best').textContent = u.best_drop ? `${u.best_drop.name} (${u.best_drop.price}🪙)` : 'Нет'; 
+                if(u.avatar && u.avatar.startsWith('data:')) { 
+                    document.getElementById('mp-avatar').src = u.avatar; 
+                    document.getElementById('mp-avatar').classList.remove('hidden'); 
+                    document.getElementById('mp-emoji').classList.add('hidden'); 
+                } else { 
+                    document.getElementById('mp-emoji').textContent = u.avatar || '🦄'; 
+                    document.getElementById('mp-avatar').classList.add('hidden'); 
+                    document.getElementById('mp-emoji').classList.remove('hidden'); 
+                } 
+                document.getElementById('modal-player').classList.remove('hidden'); 
+            } catch(e) { 
+                showToast("Ошибка профиля", 'lose'); 
+            }
         }
 
         // --- АПГРЕЙД ---
-        async function loadUpgrade() {
-            await loadProfile();
-            const sel = document.getElementById('upg-select');
-            sel.innerHTML = '<option value="">Выбери предмет...</option>' + inv.map(i => `<option value="${i.id}" data-price="${i.price}" data-name="${i.name}">${i.name} (${i.price}🪙)</option>`).join('');
+        async function loadUpgrade() { 
+            await loadProfile(); 
+            document.getElementById('upg-select').innerHTML = '<option value="">Выбери предмет...</option>' + inv.map(i => `<option value="${i.id}" data-price="${i.price}" data-name="${i.name}">${i.name} (${i.price}🪙)</option>`).join(''); 
         }
         
-        function setUpgMult(m) {
-            upgMult = m; updateUpgradeUI();
-            document.querySelectorAll('#page-upgrade button').forEach(b => b.classList.remove('bg-green-600', 'border-green-500'));
-            event.target.classList.add('bg-green-600', 'border-green-500');
+        function setUpgMult(m) { 
+            upgMult = m; 
+            updateUpgradeUI(); 
+            document.querySelectorAll('#page-upgrade button').forEach(b => b.classList.remove('bg-green-600', 'border-green-500')); 
+            event.target.classList.add('bg-green-600', 'border-green-500'); 
         }
-
+        
         function updateUpgradeUI() {
-            const sel = document.getElementById('upg-select');
-            const opt = sel.options[sel.selectedIndex];
+            const sel = document.getElementById('upg-select'); 
+            const opt = sel.options[sel.selectedIndex]; 
             if(!opt || !opt.value) return;
-            
-            const price = parseInt(opt.getAttribute('data-price'));
-            const targetPrice = Math.floor(price * upgMult);
+            const price = parseInt(opt.getAttribute('data-price')); 
+            const targetPrice = Math.floor(price * upgMult); 
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
-            
-            document.getElementById('upg-boost-val').textContent = boost + ' 🪙';
-            document.getElementById('upg-my-item').textContent = opt.getAttribute('data-name');
-            document.getElementById('upg-my-price').textContent = (price + boost) + ' 🪙';
-            document.getElementById('upg-target-item').textContent = `Любой`;
+            document.getElementById('upg-boost-val').textContent = boost + ' 🪙'; 
+            document.getElementById('upg-my-item').textContent = opt.getAttribute('data-name'); 
+            document.getElementById('upg-my-price').textContent = (price + boost) + ' 🪙'; 
             document.getElementById('upg-target-price').textContent = targetPrice + ' 🪙';
-            
-            let chance = ((price + boost) / targetPrice) * 100;
-            if(chance > 95) chance = 95;
-            
-            document.getElementById('upg-chance').textContent = chance.toFixed(1) + '%';
+            let chance = ((price + boost) / targetPrice) * 100; 
+            if(chance > 95) chance = 95; 
+            document.getElementById('upg-chance').textContent = chance.toFixed(1) + '%'; 
             document.getElementById('upg-wheel').style.background = `conic-gradient(#10b981 0% ${chance}%, #f43f5e ${chance}% 100%)`;
         }
-
+        
         async function doUpgrade() {
-            const id = document.getElementById('upg-select').value;
-            if(!id) return showToast("Выбери предмет", 'lose');
-            const opt = document.getElementById('upg-select').options[document.getElementById('upg-select').selectedIndex];
-            const price = parseInt(opt.getAttribute('data-price'));
-            const targetPrice = Math.floor(price * upgMult);
+            const id = document.getElementById('upg-select').value; 
+            if(!id) return; 
+            const opt = document.getElementById('upg-select').options[document.getElementById('upg-select').selectedIndex]; 
+            const price = parseInt(opt.getAttribute('data-price')); 
+            const targetPrice = Math.floor(price * upgMult); 
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
-            
-            const arrow = document.getElementById('upg-arrow');
-            arrow.style.transition = 'none';
-            arrow.style.transform = 'translateX(-50%) rotate(0deg)';
-            
+            const arrow = document.getElementById('upg-arrow'); 
+            arrow.style.transition = 'none'; 
+            arrow.style.transform = 'translateX(-50%) rotate(0deg)'; 
             startSpinSfx();
-            
-            try {
-                const res = await req('/api/upgrade/play', 'POST', { item_id: parseInt(id), target_price: targetPrice, target_name: `Upgraded Pony`, boost: boost });
-                updateBal(res.balance);
-                
-                const greenDeg = (res.chance / 100) * 360;
-                let targetDeg = 0;
-                if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
-                else targetDeg = 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
-
+            try { 
+                const res = await req('/api/upgrade/play', 'POST', { item_id: parseInt(id), target_price: targetPrice, target_name: `Upgraded Pony`, boost: boost }); 
+                updateBal(res.balance); 
+                const greenDeg = (res.chance / 100) * 360; 
+                let targetDeg = res.win ? 3600 + (Math.random() * (greenDeg - 10) + 5) : 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
                 void arrow.offsetWidth; 
-
-                setTimeout(() => {
-                    arrow.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                    arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`;
-                    
-                    setTimeout(() => {
-                        stopSpinSfx();
-                        if(res.win) { playSfx('win'); confetti(); showToast(`ПОБЕДА!`, 'win'); }
-                        else { playSfx('lose'); showToast(`Проигрыш...`, 'lose'); }
-                        loadUpgrade(); loadProfile(); 
-                    }, 5200);
-                }, 50);
-            } catch(e) { stopSpinSfx(); showToast(e.message, 'lose'); }
+                setTimeout(() => { 
+                    arrow.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
+                    arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`; 
+                    setTimeout(() => { 
+                        stopSpinSfx(); 
+                        if(res.win) { 
+                            playSfx('win'); 
+                            confetti(); 
+                            showToast(`ПОБЕДА!`, 'win'); 
+                        } else { 
+                            playSfx('lose'); 
+                            showToast(`Проигрыш`, 'lose'); 
+                        } 
+                        loadUpgrade(); 
+                        loadProfile(); 
+                    }, 5200); 
+                }, 50); 
+            } catch(e) { 
+                stopSpinSfx(); 
+                showToast(e.message, 'lose'); 
+            }
         }
 
         // --- МИНЫ ---
         let mId = null;
         async function startMines() {
-            const bet = parseInt(document.getElementById('mines-bet').value);
+            const bet = parseInt(document.getElementById('mines-bet').value); 
             const mines = parseInt(document.getElementById('mines-count').value);
-            try {
-                const r = await req('/api/mines/start', 'POST', {bet, mines});
-                updateBal(r.balance); mId = r.game_id;
-                document.getElementById('mines-setup').classList.add('hidden');
-                document.getElementById('mines-game').classList.remove('hidden');
-                document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join('');
-            } catch(e) { showToast(e.message, 'lose'); }
+            try { 
+                const r = await req('/api/mines/start', 'POST', {bet, mines}); 
+                updateBal(r.balance); 
+                mId = r.game_id; 
+                document.getElementById('mines-setup').classList.add('hidden'); 
+                document.getElementById('mines-game').classList.remove('hidden'); 
+                document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join(''); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            }
         }
         
         async function clickMine(i) {
-            try {
-                const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i});
+            try { 
+                const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i}); 
                 const c = document.getElementById(`mc-${i}`);
-                
-                if(r.status === 'boom') {
-                    c.classList.add('boom'); c.textContent = '💥';
-                    r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣');
+                if(r.status === 'boom') { 
+                    c.classList.add('boom'); 
+                    c.textContent = '💥'; 
+                    r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣'); 
                     playSfx('lose'); 
-                    
-                    document.getElementById('main-body').classList.add('shake');
+                    document.getElementById('main-body').classList.add('shake'); 
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
-                    
-                    setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500);
-                    setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000);
-                } else if (r.status === 'ok') {
-                    c.classList.add('opened'); c.textContent = '💎';
+                    setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500); 
+                    setTimeout(() => { 
+                        document.getElementById('mines-setup').classList.remove('hidden'); 
+                        document.getElementById('mines-game').classList.add('hidden'); 
+                    }, 2000);
+                } else if (r.status === 'ok') { 
+                    c.classList.add('opened'); 
+                    c.textContent = '💎'; 
                     playSfx('safe'); 
-                    document.getElementById('mines-multi').textContent = r.multiplier + 'x';
-                    document.getElementById('mines-profit').textContent = r.next_win + ' 🪙';
+                    document.getElementById('mines-multi').textContent = r.multiplier + 'x'; 
+                    document.getElementById('mines-profit').textContent = r.next_win + ' 🪙'; 
                 }
-            } catch(e) { showToast(e.message, 'lose'); }
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            }
         }
         
-        async function cashoutMines() {
-            try {
-                const r = await req('/api/mines/cashout', 'POST', {game_id: mId});
-                updateBal(r.balance); playSfx('win'); showToast(`Забрано ${r.amount}🪙!`, 'win');
-                document.getElementById('mines-setup').classList.remove('hidden');
-                document.getElementById('mines-game').classList.add('hidden');
-            } catch(e) { showToast(e.message, 'lose'); }
+        async function cashoutMines() { 
+            try { 
+                const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); 
+                updateBal(r.balance); 
+                playSfx('win'); 
+                showToast(`Забрано ${r.amount}🪙!`, 'win'); 
+                document.getElementById('mines-setup').classList.remove('hidden'); 
+                document.getElementById('mines-game').classList.add('hidden'); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
         }
 
         // --- ДЖЕКПОТ ---
-        async function loadJackpot() {
-            try {
-                const list = await req('/api/battles/active');
-                if(list.length > 0) updateJackpotUI(list[0]);
-            } catch(e) {}
+        async function loadJackpot() { 
+            try { 
+                const list = await req('/api/battles/active'); 
+                if(list.length > 0) updateJackpotUI(list[0]); 
+            } catch(e) {} 
         }
         
         function updateJackpotUI(j) {
-            document.getElementById('jp-total').textContent = j.total + ' 🪙';
+            document.getElementById('jp-total').textContent = j.total + ' 🪙'; 
             const timerEl = document.getElementById('jp-timer');
-            if(j.status === 'countdown') {
-                timerEl.classList.remove('hidden');
-                if(jpTimerInterval) clearInterval(jpTimerInterval);
-                jpTimerInterval = setInterval(() => {
-                    let left = Math.max(0, Math.ceil(j.end_time - Date.now()/1000));
-                    timerEl.textContent = `⏳ ${left}s`;
-                    if(left <= 0) { clearInterval(jpTimerInterval); timerEl.textContent = 'КРУТИТСЯ!'; }
-                }, 1000);
-            } else if (j.status === 'spinning') {
-                timerEl.classList.remove('hidden'); timerEl.textContent = 'КРУТИТСЯ!';
-            } else { timerEl.classList.add('hidden'); if(jpTimerInterval) clearInterval(jpTimerInterval); }
-
-            let total = j.players.reduce((s,p) => s+p.amount, 0) || 1;
-            let deg = 0; let html = ''; let playersHtml = '';
+            if(j.status === 'countdown') { 
+                timerEl.classList.remove('hidden'); 
+                if(jpTimerInterval) clearInterval(jpTimerInterval); 
+                jpTimerInterval = setInterval(() => { 
+                    let left = Math.max(0, Math.ceil(j.end_time - Date.now()/1000)); 
+                    timerEl.textContent = `⏳ ${left}s`; 
+                    if(left <= 0) { 
+                        clearInterval(jpTimerInterval); 
+                        timerEl.textContent = 'КРУТИТСЯ!'; 
+                    } 
+                }, 1000); 
+            }
+            else if (j.status === 'spinning') { 
+                timerEl.classList.remove('hidden'); 
+                timerEl.textContent = 'КРУТИТСЯ!'; 
+            } else { 
+                timerEl.classList.add('hidden'); 
+                if(jpTimerInterval) clearInterval(jpTimerInterval); 
+            }
+            let total = j.players.reduce((s,p) => s+p.amount, 0) || 1; 
+            let deg = 0; 
+            let html = ''; 
+            let playersHtml = ''; 
             const colors = ['#8b5cf6', '#ef4444', '#3b82f6', '#22c55e', '#eab308'];
-            j.players.forEach((p, idx) => {
-                let slice = (p.amount / total) * 360;
-                let percent = ((p.amount / total) * 100).toFixed(1);
-                let color = colors[idx % colors.length];
-                html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, ${color} ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`;
-                playersHtml += `<div class="flex justify-between bg-[#1A202C] p-2 rounded border border-gray-700 mb-1"><span class="font-bold text-white text-[10px]"><span style="color:${color}">●</span> ${p.username}</span><span class="text-yellow-400 font-bold text-[10px]">${p.amount}🪙 (${percent}%)</span></div>`;
-                deg += slice;
+            j.players.forEach((p, idx) => { 
+                let slice = (p.amount / total) * 360; 
+                let percent = ((p.amount / total) * 100).toFixed(1); 
+                let color = colors[idx % colors.length]; 
+                html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, ${color} ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`; 
+                playersHtml += `<div class="flex justify-between bg-[#1A202C] p-2 rounded border border-gray-700 mb-1"><span class="font-bold text-white text-[10px]"><span style="color:${color}">●</span> ${p.username}</span><span class="text-yellow-400 font-bold text-[10px]">${p.amount}🪙 (${percent}%)</span></div>`; 
+                deg += slice; 
             });
             document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-16 h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-xs font-bold" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div></div>` + html;
             document.getElementById('jp-players').innerHTML = playersHtml;
         }
         
-        async function betJackpot() {
-            const amt = parseInt(document.getElementById('jp-bet').value);
-            if(!amt || amt < 100) return showToast("Мин. 100", 'lose');
-            try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); }
+        async function betJackpot() { 
+            const amt = parseInt(document.getElementById('jp-bet').value); 
+            if(!amt || amt < 100) return showToast("Мин. 100", 'lose'); 
+            try { 
+                const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); 
+                updateBal(r.balance); 
+                showToast(`Ставка ${amt}🪙!`); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
         }
 
         // --- БАТЛ 1v1 ---
-        async function create1v1() {
-            const caseId = document.getElementById('b-case').value;
-            try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); }
+        async function create1v1() { 
+            const caseId = document.getElementById('b-case').value; 
+            try { 
+                const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); 
+                updateBal(r.balance); 
+                showToast('Лобби создано!'); 
+                load1v1List(); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
         }
         
         async function load1v1List() {
-            try {
-                const list = await req('/api/battles/1v1/active');
-                const c = document.getElementById('battles-list');
-                if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-xs py-4">Нет лобби</div>'; return; }
+            try { 
+                const list = await req('/api/battles/1v1/active'); 
+                const c = document.getElementById('battles-list'); 
+                if(list.length === 0) { 
+                    c.innerHTML = '<div class="text-center text-gray-500 text-xs py-4">Нет лобби</div>'; 
+                    return; 
+                } 
                 c.innerHTML = list.map(b => `
                     <div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 border-purple-500 mb-2">
-                        <div><div class="font-bold text-xs">Кейс: ${b.case_id}</div><div class="text-[10px] text-gray-400">От: ${b.creator}</div></div>
+                        <div>
+                            <div class="font-bold text-xs">Кейс: ${b.case_id}</div>
+                            <div class="text-[10px] text-gray-400">От: ${b.creator}</div>
+                        </div>
                         <button onclick="join1v1('${b.id}')" class="bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-bold">ВОЙТИ</button>
-                    </div>`).join('');
+                    </div>`).join(''); 
             } catch(e) {}
         }
-        async function join1v1(id) { try { await req(`/api/battles/1v1/join/${id}`, 'POST'); showToast('Вы в батле!'); } catch(e) { showToast(e.message, 'lose'); } }
+        
+        async function join1v1(id) { 
+            try { 
+                await req(`/api/battles/1v1/join/${id}`, 'POST'); 
+                showToast('Вы в батле!'); 
+            } catch(e) { 
+                showToast(e.message, 'lose'); 
+            } 
+        }
     </script>
 </body>
 </html>
