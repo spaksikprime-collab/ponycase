@@ -30,30 +30,25 @@
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
         .shake { animation: shake 0.5s; animation-iteration-count: 1; }
 
-        /* Рулетка */
         .roulette-box { overflow: hidden; position: relative; background: #0B0E14; border-radius: 12px; border: 1px solid #2d3748; padding: 20px 0; }
         .roulette-strip { display: flex; gap: 12px; will-change: transform; }
         .roulette-item { min-width: 100px; height: 110px; background: #1A202C; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #ef4444; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px #ef4444; }
 
-        /* Апгрейд - новые цвета */
         .upg-wheel-container { position: relative; width: 220px; height: 220px; margin: 0 auto; }
         .upg-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
         .upg-arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 32px; z-index: 20; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); transform-origin: 50% 125px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
 
-        /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 340px; margin: 0 auto; }
         .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; transition: 0.2s; border: 1px solid #2d3748; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.4); }
         .mine-cell:active { transform: scale(0.95); box-shadow: none; }
         .mine-cell.opened { background: #064e3b; border-color: #10b981; box-shadow: inset 0 0 15px #10b981; }
         .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; box-shadow: inset 0 0 15px #ef4444; }
 
-        /* Джекпот */
         .jackpot-wheel-container { position: relative; width: 240px; height: 240px; margin: 0 auto; }
-        .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; background: #0B0E14; overflow: hidden; position: relative; box-shadow: 0 0 40px rgba(234, 179, 8, 0.15); }
+        .jackpot-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; background: #0B0E14; overflow: hidden; position: relative; box-shadow: 0 0 40px rgba(234, 179, 8, 0.15); transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
         .jackpot-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: #1A202C; border-radius: 50%; border: 3px solid #eab308; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 
-        /* Тосты */
         #toast-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; }
         .toast { background: rgba(26, 32, 44, 0.95); border-left: 4px solid #8b5cf6; padding: 12px 20px; border-radius: 8px; color: white; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5); animation: slideDown 0.3s forwards; text-align: center; }
         .toast.win { border-color: #22c55e; }
@@ -79,7 +74,6 @@
         </div>
     </header>
 
-    <!-- ЧАТ -->
     <div id="chat-box" class="fixed top-[70px] right-2 w-[90%] max-w-[320px] h-[400px] glass rounded-2xl flex-col z-[60] hidden shadow-2xl">
         <div class="bg-purple-900/50 p-3 text-sm font-bold border-b border-gray-700 flex justify-between items-center rounded-t-2xl">
             <span>💬 Общий чат</span>
@@ -116,7 +110,10 @@
             <div id="battle-jackpot">
                 <div class="glass p-6 rounded-3xl text-center mb-6 relative overflow-hidden">
                     <p class="text-sm text-gray-400 mb-2 uppercase tracking-widest font-bold">Общий банк</p>
-                    <div class="text-5xl font-black text-yellow-400 mb-6 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" id="jp-total">0 🪙</div>
+                    <div class="text-5xl font-black text-yellow-400 mb-2 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" id="jp-total">0 🪙</div>
+                    
+                    <!-- Таймер -->
+                    <div id="jp-timer" class="hidden text-2xl font-black text-red-500 mb-4 animate-pulse">15s</div>
                     
                     <div class="jackpot-wheel-container mb-6">
                         <div class="jackpot-wheel" id="jp-wheel">
@@ -131,7 +128,6 @@
                         <input type="number" id="jp-bet" placeholder="Сумма" class="flex-1 bg-gray-900/80 p-4 rounded-xl text-center border border-gray-700 text-white font-bold text-lg outline-none focus:border-yellow-500">
                         <button onclick="betJackpot()" class="bg-yellow-600 hover:bg-yellow-500 px-6 py-4 rounded-xl font-black shadow-[0_0_15px_rgba(234,179,8,0.4)] transition">СТАВКА</button>
                     </div>
-                    <button onclick="startJackpot()" class="w-full bg-gradient-to-r from-red-600 to-pink-600 py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(239,68,68,0.4)] transition">ЗАПУСТИТЬ (ВЛАДЕЛЕЦ)</button>
                 </div>
                 <div id="jp-players" class="flex flex-col gap-2"></div>
             </div>
@@ -153,7 +149,6 @@
             <div class="glass p-6 rounded-3xl flex flex-col items-center relative">
                 <div class="upg-wheel-container mb-6">
                     <div class="upg-arrow" id="upg-arrow">🔻</div>
-                    <!-- Цвета поменял на более приятные (изумрудный и розовый) -->
                     <div class="upg-wheel" id="upg-wheel" style="background: conic-gradient(#10b981 0% 50%, #f43f5e 50% 100%);"></div>
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <span class="text-4xl font-black text-white drop-shadow-md" id="upg-chance">50%</span>
@@ -294,9 +289,9 @@
         const API = '';
         let token = localStorage.getItem('pony_token');
         let user = null, socket = null, inv = [], currentCase = null;
-        let jpId = null, jpPlayers = [];
         let upgMult = 2;
         let casesData = [];
+        let jpTimerInterval = null;
 
         if(token) { 
             document.getElementById('auth-modal').classList.add('hidden'); 
@@ -358,10 +353,13 @@
                     });
 
                     socket.on('jackpot_update', d => { 
-                        jpId = d.id; document.getElementById('jp-total').textContent = d.total + ' 🪙';
-                        jpPlayers = d.players;
-                        renderJpWheel();
-                        document.getElementById('jp-players').innerHTML = d.players.map(p => `<div class="flex justify-between bg-gray-800/80 p-3 rounded-xl text-sm border border-gray-700"><span class="font-bold text-white">${p.avatar} ${p.username}</span><span class="text-yellow-400 font-bold">${p.amount}🪙</span></div>`).join('');
+                        updateJackpotUI(d);
+                    });
+
+                    socket.on('jackpot_finish', d => {
+                        document.getElementById('jp-winner').textContent = d.winner.username;
+                        playSfx('win'); confetti();
+                        showToast(`Победитель джекпота: ${d.winner.username}!`, 'win');
                     });
 
                     socket.on('case_battle_finish', d => {
@@ -519,7 +517,6 @@
             
             const chance = (price / targetPrice) * 100;
             document.getElementById('upg-chance').textContent = chance.toFixed(1) + '%';
-            // Мягкие цвета
             document.getElementById('upg-wheel').style.background = `conic-gradient(#10b981 0% ${chance}%, #f43f5e ${chance}% 100%)`;
         }
         async function doUpgrade() {
@@ -605,33 +602,65 @@
         async function loadJackpot() {
             const list = await req('/api/battles/active');
             if(list.length > 0) {
-                jpId = list[0].id; jpPlayers = list[0].players;
-                document.getElementById('jp-total').textContent = list[0].total + ' 🪙';
-                renderJpWheel();
-                document.getElementById('jp-players').innerHTML = list[0].players.map(p => `<div class="flex justify-between bg-gray-800/80 p-3 rounded-xl text-sm border border-gray-700"><span class="font-bold text-white">${p.avatar} ${p.username}</span><span class="text-yellow-400 font-bold">${p.amount}🪙</span></div>`).join('');
-            } else {
-                const r = await req('/api/battles/create', 'POST');
-                jpId = r.id;
+                updateJackpotUI(list[0]);
             }
         }
-        function renderJpWheel() {
-            let total = jpPlayers.reduce((s,p) => s+p.amount, 0) || 1;
-            let deg = 0; let html = '';
+
+        function updateJackpotUI(j) {
+            document.getElementById('jp-total').textContent = j.total + ' 🪙';
+            
+            const timerEl = document.getElementById('jp-timer');
+            if(j.status === 'countdown') {
+                timerEl.classList.remove('hidden');
+                if(jpTimerInterval) clearInterval(jpTimerInterval);
+                jpTimerInterval = setInterval(() => {
+                    let now = Date.now() / 1000;
+                    let left = Math.max(0, Math.ceil(j.end_time - now));
+                    timerEl.textContent = `⏳ ${left} сек...`;
+                    if(left <= 0) {
+                        clearInterval(jpTimerInterval);
+                        timerEl.textContent = 'Крутится!';
+                    }
+                }, 1000);
+            } else if (j.status === 'spinning') {
+                timerEl.classList.remove('hidden');
+                timerEl.textContent = 'КРУТИТСЯ!';
+            } else if (j.status === 'waiting') {
+                timerEl.classList.add('hidden');
+                if(jpTimerInterval) clearInterval(jpTimerInterval);
+            }
+
+            // Рисуем колесо
+            let total = j.players.reduce((s,p) => s+p.amount, 0) || 1;
+            let deg = 0; let html = ''; let playersHtml = '';
             const colors = ['#8b5cf6', '#ef4444', '#3b82f6', '#22c55e', '#eab308'];
-            jpPlayers.forEach((p, idx) => {
+            
+            j.players.forEach((p, idx) => {
                 let slice = (p.amount / total) * 360;
+                let percent = ((p.amount / total) * 100).toFixed(1);
                 let color = colors[idx % colors.length];
+                
                 html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, ${color} ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`;
+                playersHtml += `<div class="flex justify-between bg-gray-800/80 p-3 rounded-xl text-sm border border-gray-700">
+                                    <span class="font-bold text-white flex items-center gap-2"><span style="color:${color}">●</span> ${p.avatar} ${p.username}</span>
+                                    <span class="text-right"><span class="text-yellow-400 font-bold">${p.amount}🪙</span> <span class="text-gray-400 text-xs">(${percent}%)</span></span>
+                                </div>`;
                 deg += slice;
             });
-            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-xs text-gray-400">Победитель</span><span class="font-bold text-sm" id="jp-winner">???</span></div>` + html;
+            
+            document.getElementById('jp-wheel').innerHTML = `<div class="jackpot-center"><span class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Победитель</span><span class="font-bold text-sm text-white" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div>` + html;
+            document.getElementById('jp-players').innerHTML = playersHtml;
         }
+
         async function betJackpot() {
             const amt = parseInt(document.getElementById('jp-bet').value);
-            try { const r = await req(`/api/battles/bet/${jpId}`, 'POST', {amount: amt}); updateBal(r.balance); loadJackpot(); showToast(`Ставка ${amt}🪙 принята!`); } catch(e) { showToast(e.message, 'lose'); }
-        }
-        async function startJackpot() {
-            try { await req(`/api/battles/start/${jpId}`, 'POST'); } catch(e) { showToast(e.message, 'lose'); }
+            if(!amt || amt < 100) return showToast("Мин. ставка 100", 'lose');
+            try { 
+                const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); 
+                updateBal(r.balance); 
+                showToast(`Ставка ${amt}🪙 принята!`); 
+                // Сервер сам пришлет обновление через socket
+            } catch(e) { showToast(e.message, 'lose'); }
         }
 
         // --- БАТЛ 1v1 ---
@@ -666,7 +695,6 @@
             try {
                 await req(`/api/battles/1v1/join/${id}`, 'POST');
                 showToast('Вы вошли в батл!');
-                // Тут можно добавить анимацию прокрутки (сложно в рамках одного экрана, поэтому просто ждем результата по сокету)
             } catch(e) { showToast(e.message, 'lose'); }
         }
     </script>
