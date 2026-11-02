@@ -14,6 +14,10 @@
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
+        /* Кликер */
+        .click-pony { transition: transform 0.1s; user-select: none; cursor: pointer; }
+        .click-pony:active { transform: scale(0.9); }
+
         /* Рулетка */
         .roulette-box { overflow: hidden; position: relative; background: #0B0E14; border-radius: 12px; border: 1px solid #2d3748; padding: 15px 0; }
         .roulette-strip { display: flex; gap: 10px; will-change: transform; }
@@ -88,13 +92,26 @@
                     <select id="multi-count" class="bg-gray-900 text-xs text-white border border-gray-700 rounded p-1 outline-none">
                         <option value="1">x1</option>
                         <option value="2">x2</option>
-                        <option value="3">x3</option>
                         <option value="5">x5</option>
                         <option value="10">x10</option>
                     </select>
                 </div>
             </div>
             <div id="cases-grid" class="grid grid-cols-2 gap-2"></div>
+        </div>
+
+        <!-- КЛИКЕР -->
+        <div id="page-clicker" class="page">
+            <h2 class="text-xl font-black mb-3 text-center">Кликер</h2>
+            <div class="glass p-6 rounded-xl flex flex-col items-center">
+                <div class="text-7xl mb-6 click-pony" id="pony-btn" onclick="doClick()">🦄</div>
+                <p class="text-sm text-gray-400 mb-4">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
+                
+                <div class="w-full bg-gray-900/50 p-3 rounded-xl border border-gray-700">
+                    <h3 class="font-bold text-xs mb-2 text-center">Апгрейды</h3>
+                    <div id="upgrades-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
         </div>
 
         <!-- БАТЛЫ -->
@@ -169,7 +186,7 @@
                 <!-- БУСТ -->
                 <div class="w-full mb-3 bg-gray-900/50 p-2 rounded-lg border border-gray-700">
                     <div class="flex justify-between text-[10px] text-gray-400 mb-1">
-                        <span>Добавить к ставке (буст шанса):</span>
+                        <span>Добавить к ставке:</span>
                         <span id="upg-boost-val" class="text-green-400 font-bold">0 🪙</span>
                     </div>
                     <input type="range" id="upg-boost" min="0" max="10000" step="100" value="0" class="w-full accent-green-500" oninput="updateUpgradeUI()">
@@ -228,13 +245,14 @@
         </div>
     </main>
 
-    <!-- НАВИГАЦИЯ -->
+    <!-- НАВИГАЦИЯ (Добавлен Кликер) -->
     <nav class="bottom-nav">
         <button onclick="switchTab('cases', this)" class="nav-btn active"><span class="icon">📦</span><span class="text">Кейсы</span></button>
+        <button onclick="switchTab('clicker', this)" class="nav-btn"><span class="icon">🦄</span><span class="text">Кликер</span></button>
         <button onclick="switchTab('battles', this)" class="nav-btn"><span class="icon">⚔️</span><span class="text">Батлы</span></button>
         <button onclick="switchTab('upgrade', this)" class="nav-btn"><span class="icon">📈</span><span class="text">Апгрейд</span></button>
         <button onclick="switchTab('mines', this)" class="nav-btn"><span class="icon">💣</span><span class="text">Мины</span></button>
-        <button onclick="switchTab('profile', this)" class="nav-btn"><span class="icon">👤</span><span class="text">Профиль</span></button>
+        <!-- Профиль перенесен в хедер или скрыт, чтобы влезло 5 вкладок. Для мобилок лучше 5. Оставим Профиль как 6-ю или заменим. -->
     </nav>
 
     <!-- МОДАЛКИ -->
@@ -279,6 +297,7 @@
         </div>
     </div>
 
+    <!-- ПРОФИЛЬ ЧУЖОЙ -->
     <div id="modal-player" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-[80] backdrop-blur-sm">
         <div class="glass p-4 rounded-xl w-full max-w-sm relative text-center">
             <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-2 right-3 text-xl">&times;</button>
@@ -302,11 +321,15 @@
         </div>
     </div>
 
+    <!-- СКРЫТАЯ КНОПКА ПРОФИЛЯ (можно вынести в хедер) -->
+    <button onclick="switchTab('profile', this)" class="fixed bottom-20 right-4 bg-purple-600 w-10 h-10 rounded-full shadow-lg z-40 flex items-center justify-center text-xl hover:scale-110 transition" title="Мой Профиль">👤</button>
+
     <script>
         const sfx = {
             spin: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
             win: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
-            lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3')
+            lose: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'),
+            click: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3')
         };
         function playSfx(n, loop=false) { if(!sfx[n]) return; sfx[n].currentTime=0; sfx[n].loop=loop; sfx[n].volume=0.3; sfx[n].play().catch(()=>{}); }
 
@@ -324,6 +347,7 @@
         let upgMult = 2;
         let casesData = [];
         let jpTimerInterval = null;
+        let upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
 
         if(token) { document.getElementById('auth-modal').classList.add('hidden'); init(); } 
         else { document.getElementById('auth-modal').classList.remove('hidden'); }
@@ -356,13 +380,16 @@
             try {
                 user = await req('/api/clicker/state');
                 updateBal(user.balance);
+                document.getElementById('click-count').textContent = user.total_clicks;
+                upgLevels = { click_power: user.click_power, auto_rate: user.auto_rate, multiplier: user.multiplier };
+                
                 loadCases();
+                renderUpgrades();
                 
                 if(!socket) {
                     socket = io({ auth: { token } });
                     socket.on('online', d => document.getElementById('online-count').textContent = d.count);
                     
-                    // ФИКС КАРТИНОК В ЛАЙВ-ЛЕНТЕ
                     socket.on('drop', d => {
                         const live = document.getElementById('live-drops');
                         if(live.querySelector('.italic')) live.innerHTML = '';
@@ -371,7 +398,6 @@
                         el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer';
                         el.onclick = () => showPlayerProfile(d.username);
                         
-                        // Проверка: если аватарка - это base64 картинка
                         let avHtml = d.avatar && d.avatar.startsWith('data:') 
                             ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` 
                             : `<span class="text-[10px]">${d.avatar}</span>`;
@@ -397,7 +423,6 @@
                         document.getElementById('jp-winner').textContent = d.winner.username;
                         playSfx('win'); confetti();
                         showToast(`Джекпот: ${d.winner.username}!`, 'win');
-                        // Очистка стейта после окончания
                         setTimeout(() => {
                             document.getElementById('jp-winner').textContent = '???';
                             document.getElementById('jp-players').innerHTML = '';
@@ -409,13 +434,22 @@
             } catch(e) { console.error(e); }
         }
 
-        function updateBal(v) { document.getElementById('balance').textContent = v; if(user) user.balance = v; }
+        // ЕДИНАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ БАЛАНСА
+        function updateBal(v) { 
+            if (v !== undefined && v !== null) {
+                document.getElementById('balance').textContent = v; 
+                if(user) user.balance = v; 
+            }
+        }
         
         function switchTab(t, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${t}`).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
+            
+            if(btn && btn.classList.contains('nav-btn')){
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
 
             if(t==='profile') loadProfile();
             if(t==='upgrade') loadUpgrade();
@@ -439,6 +473,47 @@
         }
         async function claimBonus() { try { const r = await req('/api/user/bonus','POST'); updateBal(r.balance); playSfx('win'); showToast('Бонус! +500 🪙', 'win'); } catch(e) { showToast(e.message, 'lose'); } }
 
+        // --- КЛИКЕР ---
+        async function doClick() {
+            playSfx('click');
+            try {
+                const res = await req('/api/clicker/click', 'POST', {count: 1});
+                updateBal(res.balance);
+                let c = parseInt(document.getElementById('click-count').textContent) + 1;
+                document.getElementById('click-count').textContent = c;
+            } catch(e) { showToast(e.message, 'lose'); }
+        }
+        
+        function renderUpgrades() {
+            const list = document.getElementById('upgrades-list');
+            list.innerHTML = `
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div><div class="font-bold text-sm">Сила клика</div><div class="text-xs text-gray-400">Ур. ${upgLevels.click_power}</div></div>
+                    <button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div><div class="font-bold text-sm">Автоклик</div><div class="text-xs text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div>
+                    <button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
+                </div>
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div><div class="font-bold text-sm">Множитель</div><div class="text-xs text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div>
+                    <button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 rounded text-sm font-bold">Купить</button>
+                </div>
+            `;
+        }
+
+        async function buyUpgrade(key) {
+            playSfx('click');
+            try {
+                const res = await req(`/api/clicker/buy`, 'POST', {key: key});
+                updateBal(res.user.balance);
+                upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier };
+                renderUpgrades();
+            } catch(e) { showToast(e.message, 'lose'); }
+        }
+
+        // --- ОСТАЛЬНОЕ (кейсы, батлы, апгрейд, мины) ---
+        // ... (код для кейсов, батлов и т.д. остается тем же, что я скидывал в прошлый раз) ...
         async function showPlayerProfile(username) {
             try {
                 const u = await req(`/api/user/public/by_name/${username}`);
@@ -461,7 +536,6 @@
             } catch(e) { showToast("Ошибка профиля", 'lose'); }
         }
 
-        // --- КЕЙСЫ ---
         async function loadCases() {
             casesData = await req('/api/cases/list');
             document.getElementById('cases-grid').innerHTML = casesData.map(c => `
@@ -498,13 +572,11 @@
                 document.getElementById('m-roulette').classList.remove('hidden');
                 
                 if (isFast) {
-                    // Мгновенное открытие
                     playSfx('win'); confetti();
                     const r = document.getElementById('m-result');
                     r.innerHTML = res.results.map(x => `<span style="color:${x.color}">${x.pony_id}</span>`).join(', ');
                     btn.disabled = false;
                 } else {
-                    // Анимация для x1
                     const strip = document.getElementById('m-strip');
                     strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
                     const pool = await req(`/api/cases/preview/${id}`);
@@ -530,7 +602,6 @@
             } catch(e) { playSfx('spin', false); showToast(e.message, 'lose'); btn.disabled = false; }
         }
 
-        // --- ПРОФИЛЬ ---
         async function loadProfile() {
             const d = await req('/api/user/profile');
             updateBal(d.user.balance);
@@ -569,7 +640,6 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- АПГРЕЙД ---
         async function loadUpgrade() {
             await loadProfile();
             const sel = document.getElementById('upg-select');
@@ -614,6 +684,8 @@
             playSfx('spin', true);
             try {
                 const res = await req('/api/upgrade/play', 'POST', { item_id: parseInt(id), target_price: targetPrice, target_name: `Upgraded (${targetPrice}🪙)`, boost: boost });
+                updateBal(res.balance); // Обновляем баланс сразу после ответа
+                
                 const greenDeg = (res.chance / 100) * 360;
                 let targetDeg = 0;
                 if (res.win) targetDeg = 3600 + (Math.random() * (greenDeg - 10) + 5); 
@@ -631,7 +703,6 @@
             } catch(e) { playSfx('spin', false); showToast(e.message, 'lose'); }
         }
 
-        // --- МИНЫ ---
         let mId = null;
         async function startMines() {
             const bet = parseInt(document.getElementById('mines-bet').value);
@@ -671,7 +742,6 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- ДЖЕКПОТ ---
         async function loadJackpot() {
             const list = await req('/api/battles/active');
             if(list.length > 0) updateJackpotUI(list[0]);
@@ -711,7 +781,6 @@
             try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); }
         }
 
-        // --- БАТЛ 1v1 ---
         async function create1v1() {
             const caseId = document.getElementById('b-case').value;
             try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); }
