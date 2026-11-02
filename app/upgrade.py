@@ -15,7 +15,6 @@ class UpgradeRequest(BaseModel):
     target_price: int
     target_name: str
 
-# ВАЖНО: сделали функцию async
 @router.post("/play")
 async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
     item = db.get(InventoryItem, data.item_id)
@@ -28,9 +27,10 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
     chance = (item.price / data.target_price) * 100
     if chance > 95: chance = 95.0
 
-    apply_passive(user)
-    user.nonce += 1
+    # ИСПРАВЛЕНО ЗДЕСЬ:
+    apply_passive(user, db)
     
+    user.nonce += 1
     ticket = roll_ticket(gen_seed(), gen_seed(), user.nonce)
     roll_pct = round((ticket % 10000) / 100.0, 2) 
     
@@ -41,7 +41,6 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
         new_item = InventoryItem(user_id=user.id, pony_id=data.target_name, rarity="upgraded", price=data.target_price, color="#facc15")
         db.add(new_item)
         db.commit()
-        # Отправляем в Live-ленту
         await broadcast_drop(user.username, user.avatar, data.target_name, data.target_price, "#facc15", "Апгрейд")
     else:
         db.delete(item)
