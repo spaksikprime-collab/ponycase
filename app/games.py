@@ -21,7 +21,6 @@ RARITIES = [
 ]
 RARITY_BY_ID = {r[0]: r for r in RARITIES}
 
-# 8 КЕЙСОВ
 CASES = {
     "starter":   {"name": "Стартовый",   "price": 100,
                   "weights": {"common": 650, "uncommon": 250, "rare": 80, "epic": 18, "legendary": 2}},
@@ -39,6 +38,8 @@ CASES = {
                   "weights": {"rare": 200, "epic": 400, "legendary": 300, "mythic": 95, "celestial": 5}},
     "god":       {"name": "Божественный","price": 50000,
                   "weights": {"epic": 400, "legendary": 300, "mythic": 200, "celestial": 100}},
+    "void":      {"name": "Пустота",     "price": 100000,
+                  "weights": {"epic": 200, "legendary": 400, "mythic": 300, "celestial": 100}},
 }
 
 def gen_seed() -> str:
@@ -67,14 +68,20 @@ def pick_pony(rarity: str) -> tuple[str, int, str]:
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
 
+# ОБНОВЛЕНО: Теперь возвращает шанс
 def get_case_preview(case_id: str) -> list:
     weights = CASES[case_id]["weights"]
+    total_weight = sum(weights.values())
     preview = []
-    for rarity in weights.keys():
+    for rarity, weight in weights.items():
+        chance = (weight / total_weight) * 100
         ponies = random.sample(PONY_DB.get(rarity, ["Unknown"]), min(2, len(PONY_DB.get(rarity, []))))
         for p in ponies:
             base_mult = RARITY_BY_ID[rarity][3]
             price = int(100 * base_mult * random.uniform(0.8, 1.2))
             color = RARITY_BY_ID[rarity][4]
-            preview.append({"name": p, "price": price, "rarity": rarity, "color": color})
+            
+            # Делим шанс на количество показываемых пони этой редкости
+            item_chance = chance / len(ponies) 
+            preview.append({"name": p, "price": price, "rarity": rarity, "color": color, "chance": item_chance})
     return sorted(preview, key=lambda x: x["price"], reverse=True)
