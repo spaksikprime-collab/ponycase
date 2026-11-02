@@ -18,48 +18,51 @@ class UpgradeRequest(BaseModel):
 
 @router.post("/play")
 async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    # Ищем предмет в инвентаре
+    # 1. Ищем предмет в инвентаре пользователя
     item = db.get(InventoryItem, data.item_id)
     if not item or item.user_id != user.id: 
-        raise HTTPException(404, "Предмет не найден")
+        raise HTTPException(404, "Предмет не найден в вашем инвентаре")
     
-    # Проверка целевой цены
+    # 2. Проверяем, что целевая цена больше, чем текущая + буст
     if data.target_price <= (item.price + data.boost):
-        raise HTTPException(400, "Целевая цена должна быть выше")
+        raise HTTPException(400, "Целевая цена должна быть выше вашей ставки")
 
     apply_passive(user, db)
     
-    # Списание буста
+    # 3. Списание буста с баланса (если игрок его добавил)
     if data.boost > 0:
         if user.balance < data.boost: 
             raise HTTPException(400, "Недостаточно средств для буста")
         user.balance -= data.boost
     
-    # Расчет шанса
+    # 4. Расчет шанса
     total_bet_value = item.price + data.boost
     chance = (total_bet_value / data.target_price) * 100
     
-    if chance > 95: 
+    # Максимальный шанс 95%, чтобы не было 100% гарантии
+    if chance > 95.0: 
         chance = 95.0
 
+    # 5. Честный ролл
     user.nonce += 1
     ticket = roll_ticket(gen_seed(), gen_seed(), user.nonce)
     roll_pct = round((ticket % 10000) / 100.0, 2) 
     
     win = roll_pct <= chance
     
+    # 6. Обработка результата
     try:
         if win:
-            # Удаляем старый предмет
+            # УДАЛЯЕМ старый предмет
             db.delete(item)
             
-            # Выдаем новый
+            # СОЗДАЕМ новый улучшенный предмет
             new_item = InventoryItem(
                 user_id=user.id, 
                 pony_id=data.target_name, 
                 rarity="upgraded", 
                 price=data.target_price, 
-                color="#facc15"
+                color="#facc15" # Золотой цвет для апгрейдов
             )
             db.add(new_item)
             
@@ -68,34 +71,49 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
                 user.best_drop_price = data.target_price
                 user.best_drop_name = data.target_name
             
-            # Запись в историю
+            # Запись в историю (Победа)
             db.add(GameHistory(
                 user_id=user.id, 
                 game_type="Апгрейд", 
                 item_name=data.target_name, 
                 price=data.target_price, 
-                result_text="Победа"
+                result_text=f"Победа (Шанс: {chance}%)"
             ))
             
             db.commit()
-            await broadcast_drop(user.username, user.avatar, data.target_name, data.target_price, "#facc15", "Апгрейд")
+            
+            # Отправляем в Live-ленту
+            await broadcast_drop(
+                user.username, 
+                user.avatar, 
+                data.target_name, 
+                data.target_price, 
+                "#facc15", 
+                "Апгрейд"
+            )
             
         else:
-            # Предмет сгорает
+            # ПРОИГРЫШ: предмет сгорает
             db.delete(item)
             
-            # Запись в историю
+            # Запись в историю (Проигрыш)
             db.add(GameHistory(
                 user_id=user.id, 
                 game_type="Апгрейд", 
                 item_name=item.pony_id, 
                 price=0, 
-                result_text="Проигрыш (сгорел)"
+                result_text=f"Проигрыш (Шанс: {chance}%)"
             ))
+            
             db.commit()
             
     except Exception as e:
         db.rollback()
-        raise HTTPException(500, "Ошибка. Предмет и баланс восстановлены.")
+        raise HTTPException(500, "Ошибка при апгрейде. Предмет и баланс восстановлены.")
 
-    return {"win": win, "chance": round(chance, 2), "balance": user.balance}
+    # 7. Возвращаем результат на фронтенд (чтобы он знал, куда крутить стрелку)
+    return {
+        "win": win, 
+        "chance": round(chance, 2), 
+        "balance": user.balance
+    }
