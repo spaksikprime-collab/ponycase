@@ -11,46 +11,42 @@ from .games import RARITY_BY_ID, CASES
 
 router = APIRouter()
 
-def get_profile_data(user_id: int, db: Session):
-    user = db.get(User, user_id)
-    if not user: return None
-    inventory = db.query(InventoryItem).filter(InventoryItem.user_id == user.id).all()
-    opened_cases = db.query(CaseOpen).filter(CaseOpen.user_id == user.id).count()
-    
-    # Лучший дроп
-    best_drop = db.query(InventoryItem).filter(InventoryItem.user_id == user.id).order_by(InventoryItem.price.desc()).first()
-    
-    # Любимый кейс
-    fav_case_query = db.query(CaseOpen.case_id, func.count(CaseOpen.case_id)).filter(CaseOpen.user_id == user.id).group_by(CaseOpen.case_id).order_by(func.count(CaseOpen.case_id).desc()).first()
-    fav_case_name = "Нет"
-    if fav_case_query and fav_case_query[0] in CASES:
-        fav_case_name = CASES[fav_case_query[0]]["name"]
-
-    return {
-        "user": public_user(user),
-        "stats": {"total_clicks": user.total_clicks, "cases_opened": opened_cases},
-        "best_drop": {"name": best_drop.pony_id, "price": best_drop.price} if best_drop else None,
-        "fav_case": fav_case_name,
-        "inventory": [{"id": i.id, "name": i.pony_id, "rarity": i.rarity, "price": i.price, "color": i.color} for i in inventory]
-    }
+def get_fav_case(user_id: int, db: Session):
+    fav = db.query(CaseOpen.case_id, func.count(CaseOpen.case_id)).filter(CaseOpen.user_id == user_id).group_by(CaseOpen.case_id).order_by(func.count(CaseOpen.case_id).desc()).first()
+    if fav and fav[0] in CASES: return CASES[fav[0]]["name"]
+    return "Нет"
 
 @router.get("/profile")
 def get_my_profile(user: User = Depends(current_user), db: Session = Depends(get_db)):
     apply_passive(user, db)
-    return get_profile_data(user.id, db)
+    inventory = db.query(InventoryItem).filter(InventoryItem.user_id == user.id).all()
+    opened_cases = db.query(CaseOpen).filter(CaseOpen.user_id == user.id).count()
+    
+    best_drop = {"name": user.best_drop_name, "price": user.best_drop_price} if user.best_drop_price > 0 else None
+
+    return {
+        "user": public_user(user),
+        "stats": {"total_clicks": user.total_clicks, "cases_opened": opened_cases},
+        "best_drop": best_drop,
+        "fav_case": get_fav_case(user.id, db),
+        "inventory": [{"id": i.id, "name": i.pony_id, "rarity": i.rarity, "price": i.price, "color": i.color} for i in inventory]
+    }
 
 @router.get("/public/by_name/{username}")
 def get_public_by_name(username: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user: raise HTTPException(404, "Игрок не найден")
-    data = get_profile_data(user.id, db)
+    
+    opened_cases = db.query(CaseOpen).filter(CaseOpen.user_id == user.id).count()
+    best_drop = {"name": user.best_drop_name, "price": user.best_drop_price} if user.best_drop_price > 0 else None
+    
     return {
         "username": user.username,
         "avatar": user.avatar,
-        "total_clicks": data["stats"]["total_clicks"],
-        "cases_opened": data["stats"]["cases_opened"],
-        "best_drop": data["best_drop"],
-        "fav_case": data["fav_case"]
+        "total_clicks": user.total_clicks,
+        "cases_opened": opened_cases,
+        "best_drop": best_drop,
+        "fav_case": get_fav_case(user.id, db)
     }
 
 @router.post("/bonus")
@@ -65,7 +61,7 @@ def claim_bonus(user: User = Depends(current_user), db: Session = Depends(get_db
 @router.post("/inventory/sell/{item_id}")
 def sell_item(item_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
     item = db.get(InventoryItem, item_id)
-    if not item or item.user_id != user.id: raise HTTPException(404, "Предмет не найден")
+    if not item or item.user_id != user.id: raise HTTPException(404, "Не найден")
     apply_passive(user, db)
     user.balance += item.price
     db.delete(item); db.commit()
