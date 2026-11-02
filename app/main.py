@@ -1,7 +1,7 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 import socketio
 
 from .db import engine, Base
@@ -21,8 +21,15 @@ api = FastAPI(
     version="1.0.0"
 )
 
-# 3. Настройка CORS (чтобы браузер не блокировал запросы)
-# Если в переменных окружения CORS_ORIGINS="*", разрешаем всё.
+# Глобальный обработчик ошибок (чтобы сайт не ломался, а показывал текст ошибки)
+@api.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+    )
+
+# 3. Настройка CORS
 cors_origins = os.getenv("CORS_ORIGINS", "*")
 origins_list = ["*"] if cors_origins == "*" else [o.strip() for o in cors_origins.split(",")]
 
@@ -47,10 +54,9 @@ def health():
 # 6. Раздача главной страницы сайта (index.html)
 @api.get("/", include_in_schema=False)
 def serve_frontend():
-    # Проверяем, существует ли файл в корне репозитория
     if os.path.exists("index.html"):
         return FileResponse("index.html")
-    return {"error": "Файл index.html не найден. Загрузите его в корень репозитория."}
+    return {"error": "Файл index.html не найден."}
 
-# 7. Оборачиваем FastAPI в Socket.IO (для работы чата и дропов в реальном времени)
+# 7. Оборачиваем FastAPI в Socket.IO
 app = socketio.ASGIApp(sio, other_asgi_app=api)
