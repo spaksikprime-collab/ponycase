@@ -1,162 +1,57 @@
 import os
-import re
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
 from .db import get_db
 from .models import User
 
-# Конфигурация безопасности
 SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_pony_key_123")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30 # Токен живет 30 дней
-
 router = APIRouter()
+pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer = HTTPBearer(auto_error=False)
 
-# Контекст для хеширования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Схема авторизации
-bearer_scheme = HTTPBearer(auto_error=False)
-
-
-# ==========================================
-# PYDANTIC МОДЕЛИ (Валидация входящих данных)
-# ==========================================
 class AuthIn(BaseModel):
-    username: str = Field(..., min_length=3, max_length=32)
-    password: str = Field(..., min_length=4, max_length=72) # 72 байта - лимит bcrypt
+    username: str
+    password: str
 
-    @field_validator('username')
-    def validate_username(cls, value):
-        # Разрешаем только буквы, цифры и нижнее подчеркивание
-        if not re.match(r"^[a-zA-Z0-9_]+$", value):
-            raise ValueError("Никнейм может содержать только латинские буквы, цифры и _")
-        return value.strip()
+def create_token(user_id: int) -> str:
+    payload = {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(days=30)}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-
-# ==========================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-# ==========================================
-def create_access_token(user_id: int) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {"sub": str(user_id), "exp": expire}
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme), 
-    db: Session = Depends(get_db)
-) -> User:
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Требуется авторизация"
-        )
-    
-    token = credentials.credentials
+def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer), db: Session = Depends(get_db)) -> User:
+    if not cred: raise HTTPException(401, "Нет токена")
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = int(payload.get("sub"))
-    except (JWTError, ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Недействительный токен"
-        )
-    
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Пользователь не найден"
-        )
+        user_id = int(jwt.decode(cred.credentials, SECRET_KEY, algorithms=[ALGORITHM])["sub"])
+    except JWTError: raise HTTPException(401, "Неверный токен")
+    user = db.get(User, user_id)
+    if not user: raise HTTPException(401, "Юзер не найден")
     return user
 
-
-# ==========================================
-# ЭНДПОИНТЫ АВТОРИЗАЦИИ
-# ==========================================
-@router.post("/register", summary="Регистрация нового пользователя")
+@router.post("/register")
 def register(data: AuthIn, db: Session = Depends(get_db)):
-    # 1. Проверяем, не занят ли ник
-    existing_user = db.query(User).filter(User.username == data.username).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Этот никнейм уже занят!"
-        )
+    if len(data.username.strip()) < 3:
+        raise HTTPException(400, "Никнейм должен быть от 3 символов")
+        
+    if db.query(User).filter(User.username == data.username.strip()).first():
+        raise HTTPException(400, "Этот никнейм уже занят")
     
-    # 2. Хешируем пароль
-    hashed_password = pwd_context.hash(data.password)
-    
-    # 3. Создаем пользователя (почту не передаем, так как мы ее убрали из БД)
-    new_user = User(
-        username=data.username,
-        password_hash=hashed_password
+    user = User(
+        username=data.username.strip(), 
+        password_hash=pwd.hash(data.password)
     )
-    
-    try:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-    except Exception as e:
-        db.rollback()
-        print(f"DB Error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка базы данных при создании профиля"
-        )
-    
-    # 4. Генерируем токен и отдаем данные
-    token = create_access_token(new_user.id)
-    return {
-        "token": token,
-        "user": {
-            "id": new_user.id,
-            "username": new_user.username,
-            "balance": new_user.balance,
-            "avatar": new_user.avatar
-        }
-    }
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
 
-
-@router.post("/login", summary="Вход в аккаунт")
+@router.post("/login")
 def login(data: AuthIn, db: Session = Depends(get_db)):
-    # 1. Ищем пользователя
-    user = db.query(User).filter(User.username == data.username).first()
-    
-    # 2. Проверяем пароль
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверный логин или пароль"
-        )
-        
-    try:
-        is_password_valid = pwd_context.verify(data.password, user.password_hash)
-    except Exception:
-        is_password_valid = False
-        
-    if not is_password_valid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверный логин или пароль"
-        )
-        
-    # 3. Генерируем токен и отдаем данные
-    token = create_access_token(user.id)
-    return {
-        "token": token,
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "balance": user.balance,
-            "avatar": user.avatar
-        }
-    }
+    user = db.query(User).filter(User.username == data.username.strip()).first()
+    if not user or not pwd.verify(data.password, user.password_hash):
+        raise HTTPException(401, "Неверный логин или пароль")
+    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
