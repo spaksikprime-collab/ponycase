@@ -11,7 +11,6 @@ from .games import gen_seed
 
 router = APIRouter()
 
-# Храним активные игры в памяти (сбрасывается при перезагрузке сервера)
 MINES_GAMES = {}
 
 class StartMines(BaseModel):
@@ -29,33 +28,26 @@ class Cashout(BaseModel):
 def start_mines(data: StartMines, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if data.bet < 10: 
         raise HTTPException(400, "Минимальная ставка 10 🪙")
-        
     if data.mines not in [3, 5, 10]: 
-        raise HTTPException(400, "Неверное количество мин (доступно 3, 5 или 10)")
+        raise HTTPException(400, "Неверное количество мин")
     
-    apply_passive(user, db)
+    user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+    apply_passive(user_db, db)
     
-    if user.balance < data.bet: 
+    if user_db.balance < data.bet: 
         raise HTTPException(400, "Недостаточно средств")
         
-    user.balance -= data.bet
+    user_db.balance -= data.bet
     db.commit()
     
     game_id = gen_seed()[:8]
-    # Генерируем случайные позиции для мин (от 0 до 24)
     mines_positions = set(random.sample(range(25), data.mines))
     
     MINES_GAMES[game_id] = {
-        "id": game_id, 
-        "user_id": user.id, 
-        "bet": data.bet, 
-        "mines_pos": mines_positions, 
-        "opened": set(), 
-        "active": True,
-        "mines_count": data.mines
+        "id": game_id, "user_id": user_db.id, "bet": data.bet, "mines_pos": mines_positions, "opened": set(), "active": True, "mines_count": data.mines
     }
     
-    return {"game_id": game_id, "balance": user.balance}
+    return {"game_id": game_id, "balance": user_db.balance}
 
 @router.post("/click")
 def click_cell(data: ClickCell, user: User = Depends(current_user), db: Session = Depends(get_db)):
@@ -63,37 +55,19 @@ def click_cell(data: ClickCell, user: User = Depends(current_user), db: Session 
     
     if not game or not game["active"] or game["user_id"] != user.id: 
         raise HTTPException(400, "Игра не найдена или уже завершена")
-        
     if data.cell in game["opened"]: 
         raise HTTPException(400, "Эта ячейка уже открыта")
     
-    # Попал на мину?
     if data.cell in game["mines_pos"]:
         game["active"] = False
-        
-        # Запись в историю (Проигрыш)
-        db.add(GameHistory(
-            user_id=user.id, 
-            game_type="Мины", 
-            item_name="Бомба 💥", 
-            price=0, 
-            result_text=f"Проигрыш (Ставка: {game['bet']})"
-        ))
+        db.add(GameHistory(user_id=user.id, game_type="Мины", item_name="Бомба 💥", price=0, result_text=f"Проигрыш (Ставка: {game['bet']})"))
         db.commit()
-        
-        return {
-            "status": "boom", 
-            "mines": list(game["mines_pos"])
-        }
+        return {"status": "boom", "mines": list(game["mines_pos"])}
     else:
-        # Безопасная ячейка
         game["opened"].add(data.cell)
         opened_count = len(game["opened"])
         total_safe = 25 - game["mines_count"]
         
-        # Точная математика множителя (с 5% комиссией казино)
-        # Шанс выжить = C(safe, opened) / C(25, opened)
-        # Множитель = (1 / Шанс) * 0.95
         try:
             prob = math.comb(total_safe, opened_count) / math.comb(25, opened_count)
             multiplier = round((1 / prob) * 0.95, 2)
@@ -102,31 +76,15 @@ def click_cell(data: ClickCell, user: User = Depends(current_user), db: Session 
             
         win_amount = int(game["bet"] * multiplier)
         
-        # Если открыл все безопасные ячейки - автоматический выигрыш
         if opened_count == total_safe:
             game["active"] = False
-            user.balance += win_amount
-            
-            db.add(GameHistory(
-                user_id=user.id, 
-                game_type="Мины", 
-                item_name="Джекпот 💎", 
-                price=win_amount, 
-                result_text=f"Выигрыш x{multiplier}"
-            ))
+            user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+            user_db.balance += win_amount
+            db.add(GameHistory(user_id=user.id, game_type="Мины", item_name="Джекпот 💎", price=win_amount, result_text=f"Выигрыш x{multiplier}"))
             db.commit()
+            return {"status": "win", "amount": win_amount, "balance": user_db.balance}
             
-            return {
-                "status": "win", 
-                "amount": win_amount, 
-                "balance": user.balance
-            }
-            
-        return {
-            "status": "ok", 
-            "multiplier": multiplier, 
-            "next_win": win_amount
-        }
+        return {"status": "ok", "multiplier": multiplier, "next_win": win_amount}
 
 @router.post("/cashout")
 def cashout(data: Cashout, user: User = Depends(current_user), db: Session = Depends(get_db)):
@@ -150,20 +108,10 @@ def cashout(data: Cashout, user: User = Depends(current_user), db: Session = Dep
     win_amount = int(game["bet"] * multiplier)
     
     game["active"] = False
-    user.balance += win_amount
+    user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+    user_db.balance += win_amount
     
-    # Запись в историю
-    db.add(GameHistory(
-        user_id=user.id, 
-        game_type="Мины", 
-        item_name="Забрал 💰", 
-        price=win_amount, 
-        result_text=f"Выигрыш x{multiplier}"
-    ))
+    db.add(GameHistory(user_id=user.id, game_type="Мины", item_name="Забрал 💰", price=win_amount, result_text=f"Выигрыш x{multiplier}"))
     db.commit()
     
-    return {
-        "status": "cashout", 
-        "amount": win_amount, 
-        "balance": user.balance
-    }
+    return {"status": "cashout", "amount": win_amount, "balance": user_db.balance}
