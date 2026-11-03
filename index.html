@@ -11,8 +11,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
-        body { background-color: #12161f; color: #fff; font-family: 'Montserrat', sans-serif; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); background-attachment: fixed; }
-        @media (max-width: 1024px) { body { padding-bottom: 70px; } }
+        /* УМНАЯ СИСТЕМА МАСШТАБИРОВАНИЯ */
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden; /* Запрещаем горизонтальный скролл */
+            margin: 0;
+            padding: 0;
+        }
+
+        body { 
+            background-color: #12161f; 
+            color: #fff; 
+            font-family: 'Montserrat', sans-serif; 
+            background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); 
+            background-attachment: fixed; 
+            padding-bottom: 70px; /* Отступ под мобильное меню */
+        }
 
         .glass { background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
@@ -26,14 +40,28 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 9px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
 
-        /* РУЛЕТКА КЕЙСОВ (ФИКС НАЛОЖЕНИЯ) */
-        .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; }
-        .roulette-strip { display: flex; will-change: transform; width: max-content; }
+        /* РУЛЕТКА КЕЙСОВ (ЖЕСТКАЯ ОПТИМИЗАЦИЯ) */
+        .roulette-wrapper { 
+            overflow: hidden; 
+            position: relative; 
+            background: #1A202C; 
+            border-radius: 8px; 
+            border: 1px solid #2d3748; 
+            padding: 10px 0; 
+            margin-bottom: 10px; 
+            width: 100%;
+        }
+        .roulette-strip { 
+            display: flex; 
+            will-change: transform; 
+            width: max-content; 
+            transform: translateZ(0); /* Включает аппаратное ускорение на телефонах */
+        }
         .roulette-item { 
-            flex: 0 0 80px; 
-            width: 80px; 
-            min-width: 80px;
-            height: 90px; 
+            flex: 0 0 70px; /* Чуть меньше для мобилок */
+            width: 70px; 
+            min-width: 70px;
+            height: 80px; 
             background: #12161f; 
             border-radius: 6px; 
             display: flex; 
@@ -46,26 +74,46 @@
             text-overflow: ellipsis;
             margin-right: 8px;
         }
+        @media (min-width: 768px) {
+            .roulette-item { flex: 0 0 80px; width: 80px; min-width: 80px; height: 90px; }
+        }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
 
-        /* КОЛЕСО ФОРТУНЫ */
-        .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
-        .wheel-visual { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #1A202C; box-shadow: 0 0 40px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
-        .wheel-pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 50px; z-index: 20; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
-        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: #12161f; border-radius: 50%; border: 4px solid #2d3748; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.9); }
+        /* КОЛЕСО ФОРТУНЫ (АДАПТИВНОЕ) */
+        .wheel-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 280px; /* Идеально для мобилок */
+            aspect-ratio: 1 / 1; 
+            margin: 0 auto; 
+        }
+        .wheel-visual { 
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%; 
+            border: 6px solid #1A202C; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); 
+            position: relative; 
+            overflow: hidden; 
+            transform: translateZ(0);
+        }
+        .wheel-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 40px; z-index: 20; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: #12161f; border-radius: 50%; border: 3px solid #2d3748; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.9); }
+        @media (min-width: 768px) { .wheel-container { max-width: 320px; } .wheel-center { width: 100px; height: 100px; } }
         
-        /* Апгрейд */
+        /* Апгрейд (АДАПТИВНЫЙ) */
         .upg-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
         @media (min-width: 768px) { .upg-container { flex-direction: row; justify-content: center; } }
-        .upg-box { background: #1A202C; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; text-align: center; width: 100%; max-width: 250px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
-        .upg-wheel-container { position: relative; width: 280px; height: 280px; margin: 0 auto; }
-        .upg-wheel-bg { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #1A202C; box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8); position: relative; }
-        .upg-center-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 140px; height: 140px; background: #12161f; border-radius: 50%; border: 4px solid #2d3748; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
-        .upg-arrow { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 40px; z-index: 20; will-change: transform; transform-origin: 50% 160px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.8)); }
+        .upg-box { background: #1A202C; border: 1px solid #2d3748; border-radius: 12px; padding: 15px; text-align: center; width: 100%; max-width: 250px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; }
+        .upg-wheel-container { position: relative; width: 100%; max-width: 240px; aspect-ratio: 1 / 1; margin: 0 auto; }
+        .upg-wheel-bg { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #1A202C; box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8); position: relative; transform: translateZ(0); }
+        .upg-center-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 120px; height: 120px; background: #12161f; border-radius: 50%; border: 3px solid #2d3748; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .upg-arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 20; will-change: transform; transform-origin: 50% 135px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.8)); }
+        @media (min-width: 768px) { .upg-wheel-container { max-width: 280px; } .upg-center-circle { width: 140px; height: 140px; } .upg-arrow { font-size: 40px; transform-origin: 50% 160px; } }
 
         /* Мины */
-        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 320px; margin: 0 auto; }
-        .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; border: 1px solid #2d3748; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.5); transition: 0.1s; }
+        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-width: 300px; margin: 0 auto; }
+        .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; border: 1px solid #2d3748; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.5); transition: 0.1s; }
         .mine-cell:active { transform: scale(0.95); box-shadow: none; }
         .mine-cell.opened { background: #064e3b; border-color: #10b981; box-shadow: inset 0 0 15px rgba(16,185,129,0.5); }
         .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; box-shadow: inset 0 0 15px rgba(239,68,68,0.5); }
@@ -73,7 +121,7 @@
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
         /* Уведомления */
-        #toast-container { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
+        #toast-container { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
         .toast { background: rgba(26, 32, 44, 0.95); border-left: 4px solid #8b5cf6; padding: 10px 15px; border-radius: 8px; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); animation: slideDown 0.3s forwards; text-align: center; }
         .toast.win { border-color: #22c55e; } .toast.lose { border-color: #ef4444; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -83,10 +131,9 @@
 
     <div id="toast-container"></div>
 
-    <!-- HEADER -->
-    <header class="glass sticky top-0 z-40 px-4 py-3 border-b border-gray-800">
+    <header class="glass sticky top-0 z-40 px-4 py-2 border-b border-gray-800">
         <div class="max-w-[1400px] mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4 lg:gap-6">
                 <h1 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 cursor-pointer" onclick="switchTab('cases')">PONYCASE 🦄</h1>
                 
                 <div class="hidden lg:flex gap-1">
@@ -100,14 +147,14 @@
                 </div>
             </div>
             
-            <div class="flex gap-2 md:gap-4 items-center">
-                <!-- ФИКС: Онлайн теперь виден на телефонах (убран hidden sm:block) -->
+            <div class="flex gap-2 items-center">
+                <!-- Онлайн теперь виден на всех экранах -->
                 <div class="flex items-center gap-1 text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-500/20 font-bold">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> <span id="online-count">0</span>
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> <span id="online-count">0</span>
                 </div>
                 
-                <button onclick="claimBonus()" class="bg-green-600/20 text-green-400 border border-green-500/50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition">Бонус</button>
-                <div class="bg-gray-900 px-3 py-1.5 rounded-lg border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold">0</span> 🪙</div>
+                <button onclick="claimBonus()" class="bg-green-600/20 text-green-400 border border-green-500/50 px-2 py-1 rounded-lg text-[10px] md:text-xs font-bold hover:bg-green-600 hover:text-white transition">Бонус</button>
+                <div class="bg-gray-900 px-2 py-1 rounded-lg border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold text-sm md:text-base">0</span> 🪙</div>
                 
                 <div class="w-8 h-8 rounded-full overflow-hidden border border-purple-500 cursor-pointer hover:scale-110 transition" onclick="switchTab('profile')">
                     <img id="header-avatar" class="w-full h-full object-cover hidden">
@@ -117,7 +164,7 @@
         </div>
     </header>
 
-    <div class="bg-[#12161f] border-b border-gray-800 py-2 overflow-hidden relative">
+    <div class="bg-[#12161f] border-b border-gray-800 py-1.5 overflow-hidden relative">
         <div class="max-w-[1400px] mx-auto px-4">
             <div id="live-drops" class="flex gap-2 whitespace-nowrap items-center text-xs">
                 <span class="text-gray-500 italic">Ожидание дропов...</span>
@@ -125,31 +172,31 @@
         </div>
     </div>
 
-    <main class="flex-1 w-full max-w-[1400px] mx-auto p-3 md:p-6 flex flex-col lg:flex-row gap-6">
+    <main class="flex-1 w-full max-w-[1400px] mx-auto p-2 md:p-6 flex flex-col lg:flex-row gap-6">
         
         <div class="flex-1 min-w-0">
             
             <!-- КЕЙСЫ -->
             <div id="page-cases" class="page active">
-                <h2 class="text-2xl font-black mb-4">Кейсы</h2>
-                <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+                <h2 class="text-xl md:text-2xl font-black mb-3 md:mb-4">Кейсы</h2>
+                <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3"></div>
             </div>
 
             <!-- ДЕТАЛИ КЕЙСА -->
             <div id="page-case-detail" class="page">
-                <button onclick="switchTab('cases')" class="text-gray-400 hover:text-white mb-4 text-sm font-bold">&larr; Назад к кейсам</button>
-                <div class="flex flex-col md:flex-row gap-6">
+                <button onclick="switchTab('cases')" class="text-gray-400 hover:text-white mb-3 text-sm font-bold">&larr; Назад к кейсам</button>
+                <div class="flex flex-col md:flex-row gap-4 md:gap-6">
                     <div class="w-full md:w-1/3">
-                        <div class="glass p-6 rounded-2xl text-center">
-                            <div class="text-7xl mb-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">📦</div>
-                            <h3 id="cd-name" class="text-xl font-black mb-2">Название</h3>
-                            <div class="text-yellow-400 font-bold mb-6" id="cd-price">0 🪙</div>
+                        <div class="glass p-4 md:p-6 rounded-2xl text-center">
+                            <div class="text-6xl md:text-7xl mb-3 md:mb-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">📦</div>
+                            <h3 id="cd-name" class="text-lg md:text-xl font-black mb-1 md:mb-2">Название</h3>
+                            <div class="text-yellow-400 font-bold mb-4 md:mb-6" id="cd-price">0 🪙</div>
                             <div class="flex flex-col gap-2">
                                 <select id="cd-count" class="w-full bg-[#12161f] p-2 rounded-lg text-white border border-gray-700 font-bold text-sm text-center outline-none">
                                     <option value="1">Открыть x1</option><option value="2">Открыть x2</option><option value="3">Открыть x3</option><option value="5">Открыть x5</option><option value="10">Открыть x10</option>
                                 </select>
                                 <button onclick="startCaseSpin()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(168,85,247,0.4)]">ОТКРЫТЬ</button>
-                                <label class="flex items-center justify-center gap-2 mt-2 cursor-pointer">
+                                <label class="flex items-center justify-center gap-2 mt-1 cursor-pointer">
                                     <input type="checkbox" id="cd-fast" class="w-4 h-4 accent-purple-500">
                                     <span class="text-xs text-gray-400">Быстрое открытие</span>
                                 </label>
@@ -157,65 +204,65 @@
                         </div>
                     </div>
                     <div class="w-full md:w-2/3">
-                        <div class="flex justify-between items-center mb-3">
-                            <h4 class="font-bold text-lg">Содержимое (Шансы)</h4>
+                        <div class="flex justify-between items-center mb-2 md:mb-3">
+                            <h4 class="font-bold text-base md:text-lg">Содержимое</h4>
                             <select id="cd-filter" class="bg-gray-900 text-xs text-white border border-gray-700 rounded-lg p-1.5 outline-none" onchange="filterCaseItems()">
                                 <option value="all">Все</option><option value="common">Обычные</option><option value="uncommon">Необычные</option><option value="rare">Редкие</option><option value="epic">Эпические</option><option value="legendary">Легендарные</option><option value="mythic">Мифические</option>
                             </select>
                         </div>
-                        <div id="cd-items-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[500px] overflow-y-auto pr-2"></div>
+                        <div id="cd-items-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[400px] md:max-h-[500px] overflow-y-auto pr-1"></div>
                     </div>
                 </div>
             </div>
 
             <!-- КОЛЕСО -->
             <div id="page-wheel" class="page">
-                <h2 class="text-2xl font-black mb-4 text-yellow-400">Колесо Фортуны</h2>
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <div class="w-full lg:w-1/3">
-                        <div class="glass p-5 rounded-2xl">
-                            <div class="flex justify-between items-center bg-[#12161f] p-2 rounded-lg mb-4">
+                <h2 class="text-xl md:text-2xl font-black mb-3 md:mb-4 text-yellow-400">Колесо Фортуны</h2>
+                <div class="flex flex-col lg:flex-row gap-4 md:gap-6">
+                    <div class="w-full lg:w-1/3 order-2 lg:order-1">
+                        <div class="glass p-4 rounded-2xl">
+                            <div class="flex justify-between items-center bg-[#12161f] p-2 rounded-lg mb-3">
                                 <span class="text-xs text-gray-400">Баланс: <b class="text-white" id="wheel-balance-display">0</b> 🪙</span>
                                 <span class="text-xs text-gray-400">Игроков: <b class="text-white" id="wheel-players-count">0</b></span>
                             </div>
                             <p class="text-xs text-gray-400 mb-2">Выберите цвет:</p>
-                            <div class="grid grid-cols-2 gap-2 mb-4" id="wheel-colors">
-                                <button onclick="setWheelColor('red', event)" class="wheel-color-btn bg-red-600/20 border-red-500 text-red-400 border-2 py-2 rounded-lg font-bold text-sm transition ring-4 ring-white">X2</button>
-                                <button onclick="setWheelColor('green', event)" class="wheel-color-btn bg-green-600/20 border-green-500 text-green-400 border-2 py-2 rounded-lg font-bold text-sm transition">X3</button>
-                                <button onclick="setWheelColor('blue', event)" class="wheel-color-btn bg-blue-600/20 border-blue-500 text-blue-400 border-2 py-2 rounded-lg font-bold text-sm transition">X4</button>
-                                <button onclick="setWheelColor('yellow', event)" class="wheel-color-btn bg-yellow-600/20 border-yellow-500 text-yellow-400 border-2 py-2 rounded-lg font-bold text-sm transition">X35</button>
+                            <div class="grid grid-cols-2 gap-2 mb-3" id="wheel-colors">
+                                <button onclick="setWheelColor('red', event)" class="wheel-color-btn bg-red-600/20 border-red-500 text-red-400 border-2 py-1.5 rounded-lg font-bold text-sm transition ring-4 ring-white">X2</button>
+                                <button onclick="setWheelColor('green', event)" class="wheel-color-btn bg-green-600/20 border-green-500 text-green-400 border-2 py-1.5 rounded-lg font-bold text-sm transition">X3</button>
+                                <button onclick="setWheelColor('blue', event)" class="wheel-color-btn bg-blue-600/20 border-blue-500 text-blue-400 border-2 py-1.5 rounded-lg font-bold text-sm transition">X4</button>
+                                <button onclick="setWheelColor('yellow', event)" class="wheel-color-btn bg-yellow-600/20 border-yellow-500 text-yellow-400 border-2 py-1.5 rounded-lg font-bold text-sm transition">X35</button>
                             </div>
                             <p class="text-xs text-gray-400 mb-2">Сумма ставки:</p>
-                            <div class="flex gap-2 mb-4">
+                            <div class="flex gap-2 mb-3">
                                 <input type="number" id="wheel-bet-amount" placeholder="10" class="w-full bg-[#12161f] p-2 rounded-lg text-white border border-gray-700 text-sm outline-none">
                                 <button onclick="setWheelBet(100)" class="bg-gray-800 px-3 rounded-lg text-xs font-bold">100</button>
                                 <button onclick="setWheelBet(1000)" class="bg-gray-800 px-3 rounded-lg text-xs font-bold">1K</button>
                             </div>
-                            <button onclick="placeWheelBet()" id="wheel-bet-btn" class="w-full bg-indigo-600 py-3 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(79,70,229,0.4)] transition hover:bg-indigo-500">СДЕЛАТЬ СТАВКУ</button>
+                            <button onclick="placeWheelBet()" id="wheel-bet-btn" class="w-full bg-indigo-600 py-2.5 rounded-xl font-black text-sm shadow-[0_0_15px_rgba(79,70,229,0.4)] transition hover:bg-indigo-500">СДЕЛАТЬ СТАВКУ</button>
                         </div>
                     </div>
-                    <div class="w-full lg:w-1/3 flex flex-col items-center justify-center py-6">
-                        <div class="text-3xl font-black text-white mb-2" id="wheel-timer">00:00</div>
-                        <p class="text-xs text-gray-400 mb-6 uppercase tracking-widest">До старта</p>
+                    <div class="w-full lg:w-1/3 flex flex-col items-center justify-center order-1 lg:order-2 py-2 md:py-6">
+                        <div class="text-2xl md:text-3xl font-black text-white mb-1 md:mb-2" id="wheel-timer">00:00</div>
+                        <p class="text-[10px] md:text-xs text-gray-400 mb-4 md:mb-6 uppercase tracking-widest">До старта</p>
                         <div class="wheel-container">
                             <div class="wheel-pointer">🔻</div>
                             <div class="wheel-visual" id="wheel-visual" style="background: conic-gradient(#ef4444 0% 50%, #22c55e 50% 80%, #3b82f6 80% 98%, #eab308 98% 100%);">
                                 <div class="wheel-center">
-                                    <span class="text-[10px] text-gray-400">Победитель</span>
-                                    <span class="text-sm font-bold text-white" id="wheel-winner-text">???</span>
+                                    <span class="text-[8px] md:text-[10px] text-gray-400">Победитель</span>
+                                    <span class="text-xs md:text-sm font-bold text-white" id="wheel-winner-text">???</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="w-full lg:w-1/3">
-                        <div class="glass p-4 rounded-2xl mb-4">
-                            <p class="text-xs text-gray-400 mb-2 text-center">Последние 100 раундов</p>
+                    <div class="w-full lg:w-1/3 order-3">
+                        <div class="glass p-3 md:p-4 rounded-2xl mb-3 md:mb-4">
+                            <p class="text-[10px] md:text-xs text-gray-400 mb-2 text-center">Последние 100 раундов</p>
                             <div class="flex flex-wrap gap-1 justify-center" id="wheel-history"></div>
                         </div>
-                        <div class="glass p-4 rounded-2xl">
-                            <p class="text-xs text-gray-400 mb-2">Ставки в этом раунде:</p>
-                            <div id="wheel-bets-list" class="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                                <span class="text-xs text-gray-500 text-center py-2">Пока никто не поставил</span>
+                        <div class="glass p-3 md:p-4 rounded-2xl">
+                            <p class="text-[10px] md:text-xs text-gray-400 mb-2">Ставки в этом раунде:</p>
+                            <div id="wheel-bets-list" class="flex flex-col gap-1 max-h-40 md:max-h-48 overflow-y-auto">
+                                <span class="text-[10px] text-gray-500 text-center py-2">Пока никто не поставил</span>
                             </div>
                         </div>
                     </div>
@@ -224,20 +271,20 @@
 
             <!-- ТОП -->
             <div id="page-leaderboard" class="page">
-                <h2 class="text-2xl font-black mb-6 text-yellow-400">🏆 Топ игроков</h2>
-                <div class="glass p-6 rounded-2xl max-w-2xl">
-                    <div class="flex flex-col gap-3" id="leaderboard-list"></div>
+                <h2 class="text-xl md:text-2xl font-black mb-4 text-yellow-400">🏆 Топ игроков</h2>
+                <div class="glass p-3 md:p-6 rounded-2xl max-w-2xl">
+                    <div class="flex flex-col gap-2 md:gap-3" id="leaderboard-list"></div>
                 </div>
             </div>
 
             <!-- КЛИКЕР -->
             <div id="page-clicker" class="page">
-                <h2 class="text-2xl font-black mb-6 text-center">Кликер</h2>
-                <div class="glass p-6 rounded-2xl flex flex-col items-center max-w-lg mx-auto">
-                    <div class="text-9xl mb-6 cursor-pointer select-none transition-transform active:scale-90" onclick="doClick()">🦄</div>
-                    <p class="text-sm text-gray-400 mb-6">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
-                    <div class="w-full bg-[#12161f] p-4 rounded-xl border border-gray-800">
-                        <h3 class="font-bold text-sm mb-3 text-center">Апгрейды</h3>
+                <h2 class="text-xl md:text-2xl font-black mb-4 md:mb-6 text-center">Кликер</h2>
+                <div class="glass p-4 md:p-6 rounded-2xl flex flex-col items-center max-w-lg mx-auto">
+                    <div class="text-8xl md:text-9xl mb-4 md:mb-6 cursor-pointer select-none transition-transform active:scale-90" onclick="doClick()">🦄</div>
+                    <p class="text-sm text-gray-400 mb-4 md:mb-6">Кликов: <span id="click-count" class="text-white font-bold">0</span></p>
+                    <div class="w-full bg-[#12161f] p-3 md:p-4 rounded-xl border border-gray-800">
+                        <h3 class="font-bold text-sm mb-2 md:mb-3 text-center">Апгрейды</h3>
                         <div id="upgrades-list" class="flex flex-col gap-2"></div>
                     </div>
                 </div>
@@ -245,32 +292,32 @@
 
             <!-- БАТЛЫ -->
             <div id="page-battles" class="page">
-                <div class="flex gap-2 mb-4 max-w-md">
-                    <button onclick="switchBattleTab('jackpot')" class="flex-1 bg-yellow-600 text-black py-2 rounded-lg font-bold text-sm">ДЖЕКПОТ</button>
-                    <button onclick="switchBattleTab('1v1')" class="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold border border-gray-700 text-sm">1 НА 1</button>
+                <div class="flex gap-2 mb-3 md:mb-4 max-w-md">
+                    <button onclick="switchBattleTab('jackpot')" class="flex-1 bg-yellow-600 text-black py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-sm">ДЖЕКПОТ</button>
+                    <button onclick="switchBattleTab('1v1')" class="flex-1 bg-gray-800 text-white py-1.5 md:py-2 rounded-lg font-bold border border-gray-700 text-xs md:text-sm">1 НА 1</button>
                 </div>
                 <div id="battle-jackpot" class="max-w-2xl">
-                    <div class="glass p-6 rounded-2xl text-center mb-6">
-                        <p class="text-xs text-gray-400 mb-1 uppercase font-bold">Банк</p>
-                        <div class="text-4xl font-black text-yellow-400 mb-2" id="jp-total">0 🪙</div>
-                        <div id="jp-timer" class="hidden text-lg font-black text-red-500 mb-2 animate-pulse">15s</div>
-                        <div class="w-48 h-48 mx-auto relative mb-4">
+                    <div class="glass p-4 md:p-6 rounded-2xl text-center mb-4 md:mb-6">
+                        <p class="text-[10px] md:text-xs text-gray-400 mb-1 uppercase font-bold">Банк</p>
+                        <div class="text-3xl md:text-4xl font-black text-yellow-400 mb-2" id="jp-total">0 🪙</div>
+                        <div id="jp-timer" class="hidden text-base md:text-lg font-black text-red-500 mb-2 animate-pulse">15s</div>
+                        <div class="w-40 h-40 md:w-48 md:h-48 mx-auto relative mb-4">
                             <div class="w-full h-full rounded-full border-4 border-gray-800 bg-[#12161f] overflow-hidden" id="jp-wheel">
-                                <div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-16 h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-xs font-bold" id="jp-winner">???</span></div></div>
+                                <div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-14 h-14 md:w-16 md:h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[6px] md:text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-[10px] md:text-xs font-bold" id="jp-winner">???</span></div></div>
                             </div>
                         </div>
                         <div class="flex gap-2 mb-2 max-w-xs mx-auto">
                             <input type="number" id="jp-bet" placeholder="Сумма" class="flex-1 bg-[#12161f] p-2 rounded-lg text-center border border-gray-700 text-white font-bold text-sm outline-none">
-                            <button onclick="betJackpot()" class="bg-yellow-600 px-4 py-2 rounded-lg font-black text-sm">СТАВКА</button>
+                            <button onclick="betJackpot()" class="bg-yellow-600 px-4 py-2 rounded-lg font-black text-xs md:text-sm">СТАВКА</button>
                         </div>
                     </div>
                     <div id="jp-players" class="flex flex-col gap-1"></div>
                 </div>
                 <div id="battle-1v1" class="hidden max-w-md">
-                    <div class="glass p-4 rounded-xl mb-4">
-                        <h3 class="font-bold mb-3 text-sm">Создать Батл 1 на 1</h3>
-                        <select id="b-case" class="w-full bg-[#12161f] p-3 rounded-lg mb-3 text-white border border-gray-700 text-sm"></select>
-                        <button onclick="create1v1()" class="w-full bg-purple-600 py-3 rounded-lg font-bold text-sm">СОЗДАТЬ</button>
+                    <div class="glass p-3 md:p-4 rounded-xl mb-3 md:mb-4">
+                        <h3 class="font-bold mb-2 md:mb-3 text-sm">Создать Батл 1 на 1</h3>
+                        <select id="b-case" class="w-full bg-[#12161f] p-2 md:p-3 rounded-lg mb-2 md:mb-3 text-white border border-gray-700 text-sm"></select>
+                        <button onclick="create1v1()" class="w-full bg-purple-600 py-2 md:py-3 rounded-lg font-bold text-sm">СОЗДАТЬ</button>
                     </div>
                     <div id="battles-list" class="flex flex-col gap-2"></div>
                 </div>
@@ -278,215 +325,215 @@
 
             <!-- АПГРЕЙД -->
             <div id="page-upgrade" class="page">
-                <div class="glass p-4 md:p-8 rounded-2xl max-w-4xl mx-auto">
+                <div class="glass p-3 md:p-8 rounded-2xl max-w-4xl mx-auto">
                     <div class="upg-container">
                         <div class="upg-box">
-                            <div class="text-[10px] text-gray-400 font-bold mb-2 uppercase">Твой предмет</div>
-                            <div id="upg-my-item" class="text-sm font-bold text-white mb-1">-</div>
-                            <div id="upg-my-price" class="text-xs text-yellow-400 font-bold">0 🪙</div>
+                            <div class="text-[10px] text-gray-400 font-bold mb-1 md:mb-2 uppercase">Твой предмет</div>
+                            <div id="upg-my-item" class="text-xs md:text-sm font-bold text-white mb-1">-</div>
+                            <div id="upg-my-price" class="text-[10px] md:text-xs text-yellow-400 font-bold">0 🪙</div>
                         </div>
                         <div class="flex flex-col items-center">
-                            <div class="upg-wheel-container mb-4">
+                            <div class="upg-wheel-container mb-3 md:mb-4">
                                 <div class="upg-arrow" id="upg-arrow">🔻</div>
                                 <div class="upg-wheel-bg" id="upg-wheel">
                                     <div class="upg-center-circle">
-                                        <span class="text-[10px] text-gray-400 font-bold tracking-widest mb-1">ШАНС</span>
-                                        <span class="text-4xl font-black text-white drop-shadow-md" id="upg-chance">50%</span>
+                                        <span class="text-[8px] md:text-[10px] text-gray-400 font-bold tracking-widest mb-1">ШАНС</span>
+                                        <span class="text-2xl md:text-4xl font-black text-white drop-shadow-md" id="upg-chance">50%</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex gap-1">
-                                <button onclick="setUpgMult(1.5)" class="bg-gray-800 text-xs py-1 px-3 rounded border border-gray-700">x1.5</button>
-                                <button onclick="setUpgMult(2)" class="bg-green-600 text-xs py-1 px-3 rounded border border-green-500 font-bold">x2</button>
-                                <button onclick="setUpgMult(5)" class="bg-gray-800 text-xs py-1 px-3 rounded border border-gray-700">x5</button>
-                                <button onclick="setUpgMult(10)" class="bg-gray-800 text-xs py-1 px-3 rounded border border-gray-700">x10</button>
+                                <button onclick="setUpgMult(1.5)" class="bg-gray-800 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-gray-700">x1.5</button>
+                                <button onclick="setUpgMult(2)" class="bg-green-600 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-green-500 font-bold">x2</button>
+                                <button onclick="setUpgMult(5)" class="bg-gray-800 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-gray-700">x5</button>
+                                <button onclick="setUpgMult(10)" class="bg-gray-800 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-gray-700">x10</button>
                             </div>
                         </div>
                         <div class="upg-box border-green-500/50">
-                            <div class="text-[10px] text-green-400 font-bold mb-2 uppercase">Цель</div>
-                            <div id="upg-target-item" class="text-sm font-bold text-green-400 mb-1">Любой</div>
-                            <div id="upg-target-price" class="text-xs text-yellow-400 font-bold">0 🪙</div>
+                            <div class="text-[10px] text-green-400 font-bold mb-1 md:mb-2 uppercase">Цель</div>
+                            <div id="upg-target-item" class="text-xs md:text-sm font-bold text-green-400 mb-1">Любой</div>
+                            <div id="upg-target-price" class="text-[10px] md:text-xs text-yellow-400 font-bold">0 🪙</div>
                         </div>
                     </div>
 
-                    <div class="max-w-lg mx-auto mt-6">
-                        <p class="text-xs text-gray-400 mb-2">Выбери предметы для апгрейда (можно несколько):</p>
-                        <div id="upg-mini-inv" class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-2 bg-[#12161f] rounded-lg border border-gray-700 mb-4"></div>
+                    <div class="max-w-lg mx-auto mt-4 md:mt-6">
+                        <p class="text-[10px] md:text-xs text-gray-400 mb-1 md:mb-2">Выбери предметы для апгрейда:</p>
+                        <div id="upg-mini-inv" class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 md:gap-2 max-h-32 md:max-h-40 overflow-y-auto p-1.5 md:p-2 bg-[#12161f] rounded-lg border border-gray-700 mb-3 md:mb-4"></div>
                         
-                        <div class="bg-[#12161f] p-3 rounded-lg border border-gray-700 mb-4 flex items-center gap-3">
-                            <span class="text-xs text-gray-400">Буст:</span>
+                        <div class="bg-[#12161f] p-2 md:p-3 rounded-lg border border-gray-700 mb-3 md:mb-4 flex items-center gap-2 md:gap-3">
+                            <span class="text-[10px] md:text-xs text-gray-400">Буст:</span>
                             <input type="range" id="upg-boost" min="0" max="10000" step="100" value="0" class="flex-1 accent-green-500" oninput="updateUpgradeUI()">
-                            <span id="upg-boost-val" class="text-green-400 font-bold text-sm">0 🪙</span>
+                            <span id="upg-boost-val" class="text-green-400 font-bold text-[10px] md:text-sm">0 🪙</span>
                         </div>
 
-                        <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-3 rounded-xl font-black text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
+                        <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-2.5 md:py-3 rounded-xl font-black text-sm md:text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
                     </div>
                 </div>
             </div>
 
             <!-- МИНЫ -->
             <div id="page-mines" class="page">
-                <div class="glass p-6 md:p-8 rounded-2xl text-center max-w-2xl mx-auto">
+                <div class="glass p-4 md:p-8 rounded-2xl text-center max-w-2xl mx-auto">
                     <div id="mines-setup" class="max-w-xs mx-auto">
-                        <input type="number" id="mines-bet" placeholder="Ставка" class="w-full bg-[#12161f] p-3 rounded-xl mb-3 text-center text-white font-bold border border-gray-700 outline-none">
-                        <select id="mines-count" class="w-full bg-[#12161f] p-3 rounded-xl mb-4 text-center text-white font-bold border border-gray-700 outline-none text-sm">
-                            <option value="3">3 Мины (Легко)</option><option value="5">5 Мин (Средне)</option><option value="10">10 Мин (Хардкор)</option>
+                        <input type="number" id="mines-bet" placeholder="Ставка" class="w-full bg-[#12161f] p-2 md:p-3 rounded-xl mb-2 md:mb-3 text-center text-white font-bold border border-gray-700 outline-none">
+                        <select id="mines-count" class="w-full bg-[#12161f] p-2 md:p-3 rounded-xl mb-3 md:mb-4 text-center text-white font-bold border border-gray-700 outline-none text-sm">
+                            <option value="3">3 Мины</option><option value="5">5 Мин</option><option value="10">10 Мин</option>
                         </select>
-                        <button onclick="startMines()" class="w-full bg-blue-600 py-3 rounded-xl font-black text-sm">НАЧАТЬ ИГРУ</button>
+                        <button onclick="startMines()" class="w-full bg-blue-600 py-2.5 md:py-3 rounded-xl font-black text-sm">НАЧАТЬ</button>
                     </div>
                     <div id="mines-game" class="hidden">
-                        <div class="flex justify-between items-center bg-[#12161f] p-3 rounded-xl mb-4 text-xs font-bold border border-gray-800 max-w-[320px] mx-auto">
-                            <div class="text-gray-400">Множ: <span class="text-green-400 text-lg ml-1" id="mines-multi">1.0x</span></div>
-                            <div class="text-gray-400">Забрать: <span class="text-yellow-400 text-lg ml-1" id="mines-profit">0 🪙</span></div>
+                        <div class="flex justify-between items-center bg-[#12161f] p-2 md:p-3 rounded-xl mb-3 md:mb-4 text-xs font-bold border border-gray-800 max-w-[300px] mx-auto">
+                            <div class="text-gray-400">Множ: <span class="text-green-400 text-base md:text-lg ml-1" id="mines-multi">1.0x</span></div>
+                            <div class="text-gray-400">Забрать: <span class="text-yellow-400 text-base md:text-lg ml-1" id="mines-profit">0 🪙</span></div>
                         </div>
-                        <div class="mines-grid mb-6" id="mines-grid"></div>
-                        <button onclick="cashoutMines()" class="w-full max-w-[320px] mx-auto bg-yellow-500 text-black py-3 rounded-xl font-black text-sm">ЗАБРАТЬ ВЫИГРЫШ</button>
+                        <div class="mines-grid mb-4 md:mb-6" id="mines-grid"></div>
+                        <button onclick="cashoutMines()" class="w-full max-w-[300px] mx-auto bg-yellow-500 text-black py-2.5 md:py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
                     </div>
                 </div>
             </div>
 
             <!-- ПРОФИЛЬ -->
             <div id="page-profile" class="page">
-                <div class="glass p-6 rounded-2xl text-center mb-6 relative max-w-2xl mx-auto">
-                    <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
+                <div class="glass p-4 md:p-6 rounded-2xl text-center mb-4 md:mb-6 relative max-w-2xl mx-auto">
+                    <div class="w-20 h-20 md:w-24 md:h-24 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-2 md:mb-3 bg-gray-800">
                         <img id="p-avatar" class="w-full h-full object-cover hidden">
-                        <div id="p-emoji" class="w-full h-full flex items-center justify-center text-5xl">🦄</div>
+                        <div id="p-emoji" class="w-full h-full flex items-center justify-center text-4xl md:text-5xl">🦄</div>
                     </div>
-                    <label class="text-xs bg-purple-600 px-4 py-1.5 rounded-full cursor-pointer inline-block mb-3 font-bold">
+                    <label class="text-[10px] md:text-xs bg-purple-600 px-3 md:px-4 py-1 md:py-1.5 rounded-full cursor-pointer inline-block mb-2 md:mb-3 font-bold">
                         Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
                     </label>
-                    <h2 class="text-2xl font-black mb-1" id="p-name">Loading...</h2>
-                    <p class="text-xs text-gray-500 mb-4" id="p-reg-date">Дата регистрации: ...</p>
+                    <h2 class="text-xl md:text-2xl font-black mb-1" id="p-name">Loading...</h2>
+                    <p class="text-[10px] md:text-xs text-gray-500 mb-3 md:mb-4" id="p-reg-date">Дата регистрации: ...</p>
                     
-                    <div class="flex justify-center gap-4 bg-[#12161f] p-4 rounded-xl max-w-md mx-auto mb-4 border border-gray-800">
-                        <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Клики</div><div id="p-clicks" class="font-black text-lg text-yellow-400">0</div></div>
+                    <div class="flex justify-center gap-2 md:gap-4 bg-[#12161f] p-3 md:p-4 rounded-xl max-w-md mx-auto mb-3 md:mb-4 border border-gray-800">
+                        <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Клики</div><div id="p-clicks" class="font-black text-base md:text-lg text-yellow-400">0</div></div>
                         <div class="w-px bg-gray-700"></div>
-                        <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Кейсы</div><div id="p-cases" class="font-black text-lg text-purple-400">0</div></div>
+                        <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Кейсы</div><div id="p-cases" class="font-black text-base md:text-lg text-purple-400">0</div></div>
                     </div>
-                    <div class="flex justify-center gap-4 max-w-md mx-auto text-left text-xs">
-                        <div class="flex-1 bg-[#12161f] p-3 rounded-xl border border-gray-800"><div class="text-gray-500 mb-1">Лучший дроп</div><div id="p-best-drop" class="font-bold text-green-400 truncate">Нет</div></div>
+                    <div class="flex justify-center gap-2 md:gap-4 max-w-md mx-auto text-left text-xs">
+                        <div class="flex-1 bg-[#12161f] p-2 md:p-3 rounded-xl border border-gray-800"><div class="text-gray-500 mb-1 text-[10px]">Лучший дроп</div><div id="p-best-drop" class="font-bold text-green-400 truncate text-xs">Нет</div></div>
                     </div>
                 </div>
                 
-                <div class="flex justify-between items-center mb-3 max-w-4xl mx-auto">
-                    <h3 class="font-black text-lg">Инвентарь</h3>
-                    <button onclick="sellAll()" class="text-xs bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/30 font-bold">Продать всё</button>
+                <div class="flex justify-between items-center mb-2 md:mb-3 max-w-4xl mx-auto">
+                    <h3 class="font-black text-base md:text-lg">Инвентарь</h3>
+                    <button onclick="sellAll()" class="text-[10px] md:text-xs bg-red-500/20 text-red-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-500/30 font-bold">Продать всё</button>
                 </div>
-                <div id="inv-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto mb-4"></div>
-                <div class="flex justify-center gap-4 mb-8">
-                    <button onclick="changeInvPage(-1)" class="bg-gray-800 px-4 py-2 rounded-lg font-bold">&larr; Назад</button>
-                    <span class="py-2 text-gray-400 text-sm" id="inv-page-info">Стр. 1</span>
-                    <button onclick="changeInvPage(1)" class="bg-gray-800 px-4 py-2 rounded-lg font-bold">Вперед &rarr;</button>
+                <div id="inv-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 max-w-4xl mx-auto mb-3 md:mb-4"></div>
+                <div class="flex justify-center gap-2 md:gap-4 mb-6 md:mb-8">
+                    <button onclick="changeInvPage(-1)" class="bg-gray-800 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-base">&larr; Назад</button>
+                    <span class="py-1.5 md:py-2 text-gray-400 text-xs md:text-sm" id="inv-page-info">Стр. 1</span>
+                    <button onclick="changeInvPage(1)" class="bg-gray-800 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-base">Вперед &rarr;</button>
                 </div>
 
-                <h3 class="font-black text-lg mb-3 max-w-2xl mx-auto">История игр</h3>
-                <div class="glass p-4 rounded-2xl max-w-2xl mx-auto mb-4">
+                <h3 class="font-black text-base md:text-lg mb-2 md:mb-3 max-w-2xl mx-auto">История игр</h3>
+                <div class="glass p-3 md:p-4 rounded-2xl max-w-2xl mx-auto mb-3 md:mb-4">
                     <div id="history-list" class="flex flex-col gap-2"></div>
                 </div>
-                <div class="flex justify-center gap-4 max-w-2xl mx-auto">
-                    <button onclick="changeHistPage(-1)" class="bg-gray-800 px-4 py-2 rounded-lg font-bold">&larr; Назад</button>
-                    <span class="py-2 text-gray-400 text-sm" id="hist-page-info">Стр. 1</span>
-                    <button onclick="changeHistPage(1)" class="bg-gray-800 px-4 py-2 rounded-lg font-bold">Вперед &rarr;</button>
+                <div class="flex justify-center gap-2 md:gap-4 max-w-2xl mx-auto">
+                    <button onclick="changeHistPage(-1)" class="bg-gray-800 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-base">&larr; Назад</button>
+                    <span class="py-1.5 md:py-2 text-gray-400 text-xs md:text-sm" id="hist-page-info">Стр. 1</span>
+                    <button onclick="changeHistPage(1)" class="bg-gray-800 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-base">Вперед &rarr;</button>
                 </div>
             </div>
         </div>
 
         <aside class="hidden lg:flex flex-col w-80 flex-shrink-0 h-[calc(100vh-140px)] sticky top-[90px]">
             <div class="glass rounded-2xl flex flex-col h-full overflow-hidden border border-gray-700">
-                <div class="bg-purple-900/40 p-3 text-sm font-bold border-b border-gray-700">💬 Чат</div>
-                <div id="chat-messages-pc" class="flex-1 p-3 overflow-y-auto bg-black/30"></div>
-                <div class="flex border-t border-gray-700 bg-gray-900/90 p-2">
-                    <input type="text" id="chat-input-pc" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('pc')">
-                    <button onclick="sendChat('pc')" class="bg-purple-600 px-4 rounded text-sm font-bold">></button>
+                <div class="bg-purple-900/40 p-2 md:p-3 text-xs md:text-sm font-bold border-b border-gray-700">💬 Чат</div>
+                <div id="chat-messages-pc" class="flex-1 p-2 md:p-3 overflow-y-auto bg-black/30"></div>
+                <div class="flex border-t border-gray-700 bg-gray-900/90 p-1.5 md:p-2">
+                    <input type="text" id="chat-input-pc" placeholder="Сообщение..." class="flex-1 bg-transparent p-1 text-xs md:text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('pc')">
+                    <button onclick="sendChat('pc')" class="bg-purple-600 px-3 md:px-4 rounded text-xs md:text-sm font-bold">></button>
                 </div>
             </div>
         </aside>
     </main>
 
     <!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
-    <nav class="fixed bottom-0 w-full h-[60px] bg-[#12161f] border-t border-gray-800 flex justify-around items-center z-40 pb-safe lg:hidden">
-        <button onclick="switchTab('cases')" class="nav-btn active" id="m-nav-cases"><span class="text-xl">📦</span>Кейсы</button>
-        <button onclick="switchTab('wheel')" class="nav-btn" id="m-nav-wheel"><span class="text-xl">🎡</span>Колесо</button>
-        <button onclick="switchTab('clicker')" class="nav-btn" id="m-nav-clicker"><span class="text-xl">🦄</span>Кликер</button>
-        <button onclick="switchTab('battles')" class="nav-btn" id="m-nav-battles"><span class="text-xl">⚔️</span>Батлы</button>
-        <button onclick="switchTab('upgrade')" class="nav-btn" id="m-nav-upgrade"><span class="text-xl">📈</span>Апгрейд</button>
-        <button onclick="switchTab('mines')" class="nav-btn" id="m-nav-mines"><span class="text-xl">💣</span>Мины</button>
-        <button onclick="switchTab('leaderboard')" class="nav-btn" id="m-nav-leaderboard"><span class="text-xl">🏆</span>Топ</button>
+    <nav class="fixed bottom-0 w-full h-[55px] md:h-[60px] bg-[#12161f] border-t border-gray-800 flex justify-around items-center z-40 pb-safe lg:hidden">
+        <button onclick="switchTab('cases')" class="nav-btn active" id="m-nav-cases"><span class="text-lg md:text-xl">📦</span>Кейсы</button>
+        <button onclick="switchTab('wheel')" class="nav-btn" id="m-nav-wheel"><span class="text-lg md:text-xl">🎡</span>Колесо</button>
+        <button onclick="switchTab('clicker')" class="nav-btn" id="m-nav-clicker"><span class="text-lg md:text-xl">🦄</span>Кликер</button>
+        <button onclick="switchTab('battles')" class="nav-btn" id="m-nav-battles"><span class="text-lg md:text-xl">⚔️</span>Батлы</button>
+        <button onclick="switchTab('upgrade')" class="nav-btn" id="m-nav-upgrade"><span class="text-lg md:text-xl">📈</span>Апгрейд</button>
+        <button onclick="switchTab('mines')" class="nav-btn" id="m-nav-mines"><span class="text-lg md:text-xl">💣</span>Мины</button>
+        <button onclick="switchTab('leaderboard')" class="nav-btn" id="m-nav-leaderboard"><span class="text-lg md:text-xl">🏆</span>Топ</button>
     </nav>
 
-    <button onclick="toggleMobileChat()" class="fixed bottom-20 right-4 bg-purple-600 w-12 h-12 rounded-full shadow-lg z-40 flex lg:hidden items-center justify-center text-xl">💬</button>
-    <div id="chat-box-mobile" class="fixed inset-0 bg-black/90 z-[90] hidden flex-col lg:hidden p-4">
+    <button onclick="toggleMobileChat()" class="fixed bottom-16 md:bottom-20 right-3 md:right-4 bg-purple-600 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg z-40 flex lg:hidden items-center justify-center text-lg md:text-xl">💬</button>
+    <div id="chat-box-mobile" class="fixed inset-0 bg-black/90 z-[90] hidden flex-col lg:hidden p-3 md:p-4">
         <div class="bg-[#12161f] rounded-2xl flex flex-col w-full h-full max-w-md mx-auto border border-gray-700 overflow-hidden">
-            <div class="bg-purple-900/50 p-3 text-sm font-bold flex justify-between items-center border-b border-gray-700">
-                <span>💬 Чат</span><button onclick="toggleMobileChat()" class="text-2xl leading-none">&times;</button>
+            <div class="bg-purple-900/50 p-2 md:p-3 text-xs md:text-sm font-bold flex justify-between items-center border-b border-gray-700">
+                <span>💬 Чат</span><button onclick="toggleMobileChat()" class="text-xl md:text-2xl leading-none">&times;</button>
             </div>
-            <div id="chat-messages-mob" class="flex-1 p-3 overflow-y-auto bg-black/20"></div>
-            <div class="flex border-t border-gray-700 bg-gray-800 p-2">
-                <input type="text" id="chat-input-mob" placeholder="Сообщение..." class="flex-1 bg-transparent p-2 text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('mob')">
-                <button onclick="sendChat('mob')" class="bg-purple-600 px-4 rounded text-sm font-bold">></button>
+            <div id="chat-messages-mob" class="flex-1 p-2 md:p-3 overflow-y-auto bg-black/20"></div>
+            <div class="flex border-t border-gray-700 bg-gray-800 p-1.5 md:p-2">
+                <input type="text" id="chat-input-mob" placeholder="Сообщение..." class="flex-1 bg-transparent p-1.5 md:p-2 text-xs md:text-sm outline-none text-white" onkeypress="if(event.key==='Enter') sendChat('mob')">
+                <button onclick="sendChat('mob')" class="bg-purple-600 px-3 md:px-4 rounded text-xs md:text-sm font-bold">></button>
             </div>
         </div>
     </div>
 
     <!-- МОДАЛКИ -->
     <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100] hidden">
-        <div class="glass p-6 rounded-2xl w-full max-w-sm">
-            <h2 class="text-xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">ВХОД</h2>
-            <input type="text" id="a-user" placeholder="Логин" class="w-full bg-[#12161f] p-3 rounded-lg mb-2 text-white border border-gray-700 outline-none text-sm">
-            <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-[#12161f] p-3 rounded-lg mb-4 text-white border border-gray-700 outline-none text-sm">
+        <div class="glass p-5 md:p-6 rounded-2xl w-full max-w-sm">
+            <h2 class="text-lg md:text-xl font-black text-center mb-3 md:mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">ВХОД</h2>
+            <input type="text" id="a-user" placeholder="Логин" class="w-full bg-[#12161f] p-2.5 md:p-3 rounded-lg mb-2 text-white border border-gray-700 outline-none text-sm">
+            <input type="password" id="a-pass" placeholder="Пароль" class="w-full bg-[#12161f] p-2.5 md:p-3 rounded-lg mb-3 md:mb-4 text-white border border-gray-700 outline-none text-sm">
             <div class="flex gap-2">
-                <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-xs">ВХОД</button>
-                <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2.5 rounded-lg font-bold text-xs">РЕГА</button>
+                <button onclick="doAuth('login')" class="flex-1 bg-gray-700 py-2 md:py-2.5 rounded-lg font-bold text-xs">ВХОД</button>
+                <button onclick="doAuth('register')" class="flex-1 bg-purple-600 py-2 md:py-2.5 rounded-lg font-bold text-xs">РЕГА</button>
             </div>
             <p id="a-err" class="text-red-500 text-[10px] text-center mt-2 hidden bg-red-500/10 p-2 rounded border border-red-500/20"></p>
         </div>
     </div>
 
     <div id="modal-confirm" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-[110] backdrop-blur-md">
-        <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center border border-red-500/30">
-            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-3xl">⚠️</span></div>
-            <h3 class="text-xl font-black mb-2 text-white" id="confirm-title">Вы уверены?</h3>
-            <p class="text-sm text-gray-300 mb-6" id="confirm-text">Действие нельзя отменить.</p>
-            <div class="flex gap-3">
-                <button onclick="closeConfirm()" class="flex-1 bg-gray-700 py-2.5 rounded-lg font-bold text-sm">Отмена</button>
-                <button id="confirm-btn" onclick="executeConfirm()" class="flex-1 bg-red-600 py-2.5 rounded-lg font-bold text-sm shadow-lg">Да</button>
+        <div class="glass p-5 md:p-6 rounded-2xl w-full max-w-sm relative text-center border border-red-500/30">
+            <div class="w-12 h-12 md:w-16 md:h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4"><span class="text-2xl md:text-3xl">⚠️</span></div>
+            <h3 class="text-lg md:text-xl font-black mb-1 md:mb-2 text-white" id="confirm-title">Вы уверены?</h3>
+            <p class="text-xs md:text-sm text-gray-300 mb-4 md:mb-6" id="confirm-text">Действие нельзя отменить.</p>
+            <div class="flex gap-2 md:gap-3">
+                <button onclick="closeConfirm()" class="flex-1 bg-gray-700 py-2 md:py-2.5 rounded-lg font-bold text-xs md:text-sm">Отмена</button>
+                <button id="confirm-btn" onclick="executeConfirm()" class="flex-1 bg-red-600 py-2 md:py-2.5 rounded-lg font-bold text-xs md:text-sm shadow-lg">Да</button>
             </div>
         </div>
     </div>
 
     <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md">
         <div class="w-full max-w-4xl">
-            <h3 class="text-center text-xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
-            <div id="spin-container" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto mb-4"></div>
-            <div id="spin-results" class="hidden flex-col items-center mb-6 w-full max-w-2xl mx-auto">
-                <div class="bg-[#1A202C] px-6 py-2 rounded-full border border-purple-500/50 mb-4 text-center">
-                    <span class="text-gray-400 text-sm">Сумма:</span> <span id="total-drops-value" class="text-yellow-400 font-black text-xl">0 🪙</span>
+            <h3 class="text-center text-lg md:text-xl font-black mb-3 md:mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
+            <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] md:max-h-[60vh] overflow-y-auto mb-3 md:mb-4"></div>
+            <div id="spin-results" class="hidden flex-col items-center mb-4 md:mb-6 w-full max-w-2xl mx-auto">
+                <div class="bg-[#1A202C] px-4 md:px-6 py-1.5 md:py-2 rounded-full border border-purple-500/50 mb-3 md:mb-4 text-center">
+                    <span class="text-gray-400 text-xs md:text-sm">Сумма:</span> <span id="total-drops-value" class="text-yellow-400 font-black text-lg md:text-xl">0 🪙</span>
                 </div>
-                <div id="results-grid" class="flex flex-wrap justify-center gap-3 w-full"></div>
-                <div class="flex gap-3 mt-6 w-full max-w-md">
-                    <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 px-4 py-3 rounded-xl font-black text-sm">ПРОДАТЬ ВСЁ</button>
-                    <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 px-4 py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
+                <div id="results-grid" class="flex flex-wrap justify-center gap-2 md:gap-3 w-full"></div>
+                <div class="flex gap-2 md:gap-3 mt-4 md:mt-6 w-full max-w-md">
+                    <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 px-3 md:px-4 py-2 md:py-3 rounded-xl font-black text-xs md:text-sm">ПРОДАТЬ ВСЁ</button>
+                    <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 px-3 md:px-4 py-2 md:py-3 rounded-xl font-black text-xs md:text-sm">ЗАБРАТЬ</button>
                 </div>
             </div>
             <div class="text-center">
-                <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-bold hidden">ЗАКРЫТЬ</button>
+                <button id="spin-close-btn" onclick="closeSpinModal()" class="bg-gray-800 text-white px-6 md:px-8 py-2 md:py-3 rounded-xl font-bold hidden text-sm md:text-base">ЗАКРЫТЬ</button>
             </div>
         </div>
     </div>
 
     <div id="modal-player" class="fixed inset-0 bg-black/90 hidden flex flex-col items-center justify-center p-4 z-[80] backdrop-blur-sm">
-        <div class="glass p-6 rounded-2xl w-full max-w-sm relative text-center">
-            <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-3 right-4 text-xl text-gray-400 hover:text-white">&times;</button>
-            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-3 bg-gray-800">
+        <div class="glass p-5 md:p-6 rounded-2xl w-full max-w-sm relative text-center">
+            <button onclick="document.getElementById('modal-player').classList.add('hidden')" class="absolute top-2 md:top-3 right-3 md:right-4 text-lg md:text-xl text-gray-400 hover:text-white">&times;</button>
+            <div class="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-full overflow-hidden border-4 border-purple-500 mb-2 md:mb-3 bg-gray-800">
                 <img id="mp-avatar" class="w-full h-full object-cover hidden">
-                <div id="mp-emoji" class="w-full h-full flex items-center justify-center text-4xl">🦄</div>
+                <div id="mp-emoji" class="w-full h-full flex items-center justify-center text-3xl md:text-4xl">🦄</div>
             </div>
-            <h3 class="text-lg font-black mb-3" id="mp-name">Игрок</h3>
-            <div class="flex justify-between bg-[#12161f] p-3 rounded-xl text-xs mb-2">
+            <h3 class="text-base md:text-lg font-black mb-2 md:mb-3" id="mp-name">Игрок</h3>
+            <div class="flex justify-between bg-[#12161f] p-2 md:p-3 rounded-xl text-xs mb-2">
                 <div><div class="text-gray-400 text-[10px]">Клики</div><div id="mp-clicks" class="font-bold text-yellow-400">0</div></div>
                 <div><div class="text-gray-400 text-[10px]">Кейсы</div><div id="mp-cases" class="font-bold text-purple-400">0</div></div>
             </div>
-            <div class="bg-[#12161f] p-3 rounded-xl text-xs text-left">
+            <div class="bg-[#12161f] p-2 md:p-3 rounded-xl text-xs text-left">
                 <div class="text-gray-400 text-[10px]">Лучший дроп:</div><div id="mp-best" class="font-bold text-green-400 truncate">Нет</div>
             </div>
         </div>
@@ -681,27 +728,27 @@
             if(state.status === 'waiting') {
                 let left = Math.max(0, Math.ceil(state.end_time - Date.now()/1000));
                 timerEl.textContent = `00:${left < 10 ? '0'+left : left}`;
-                timerEl.className = "text-3xl font-black text-white mb-2";
+                timerEl.className = "text-2xl md:text-3xl font-black text-white mb-1 md:mb-2";
             } else if(state.status === 'spinning') {
                 timerEl.textContent = "Крутится!";
-                timerEl.className = "text-3xl font-black text-yellow-400 mb-2 animate-pulse";
+                timerEl.className = "text-2xl md:text-3xl font-black text-yellow-400 mb-1 md:mb-2 animate-pulse";
             } else {
                 timerEl.textContent = "Ожидание...";
             }
 
             const betsList = document.getElementById('wheel-bets-list');
             if(state.bets && state.bets.length > 0) {
-                betsList.innerHTML = state.bets.map(b => `<div class="flex justify-between items-center text-xs bg-[#1A202C] p-1.5 rounded border border-gray-700 mb-1"><span class="text-white truncate"><b class="text-purple-400">${b.username}</b></span><span class="text-yellow-400 font-bold">${b.amount}🪙 (${b.color})</span></div>`).join('');
+                betsList.innerHTML = state.bets.map(b => `<div class="flex justify-between items-center text-[10px] md:text-xs bg-[#1A202C] p-1 md:p-1.5 rounded border border-gray-700 mb-1"><span class="text-white truncate"><b class="text-purple-400">${b.username}</b></span><span class="text-yellow-400 font-bold">${b.amount}🪙 (${b.color})</span></div>`).join('');
                 document.getElementById('wheel-players-count').textContent = state.bets.length;
             } else {
-                betsList.innerHTML = '<span class="text-xs text-gray-500 text-center py-2">Пока никто не поставил</span>';
+                betsList.innerHTML = '<span class="text-[10px] md:text-xs text-gray-500 text-center py-2">Пока никто не поставил</span>';
                 document.getElementById('wheel-players-count').textContent = 0;
             }
 
             if(state.history) {
                 document.getElementById('wheel-history').innerHTML = state.history.map(c => {
                     const hex = c === 'red' ? '#ef4444' : c === 'green' ? '#22c55e' : c === 'blue' ? '#3b82f6' : '#eab308';
-                    return `<div class="w-4 h-4 rounded-full" style="background:${hex}"></div>`;
+                    return `<div class="w-3 h-3 md:w-4 md:h-4 rounded-full" style="background:${hex}"></div>`;
                 }).join('');
             }
 
@@ -711,10 +758,7 @@
                 winnerText.textContent = '???';
                 if(currentTab === 'wheel') startSpinSfx();
                 
-                // 20 секторов. 360 / 20 = 18 градусов на сектор
                 const segmentAngle = 18; 
-                // Крутим 8 полных оборотов (2880) + добавляем угол до нужного сектора
-                // Чтобы стрелка (сверху) указывала на сектор, мы вычитаем угол индекса
                 const targetDeg = (360 * 8) + (360 - (state.winning_index * segmentAngle));
                 
                 wheelVisual.style.transition = 'transform 8s cubic-bezier(0.1, 0.7, 0.1, 1)';
@@ -741,7 +785,7 @@
         function renderChatMsg(boxId, d) { 
             const box = document.getElementById(boxId); if(!box) return; 
             const msg = document.createElement('div'); msg.className = 'text-xs mb-2 flex gap-2 items-start'; 
-            let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-6 h-6 rounded-full object-cover cursor-pointer" onclick="showPlayerProfile('${d.username}')">` : `<span class="text-sm cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.avatar}</span>`; 
+            let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover cursor-pointer" onclick="showPlayerProfile('${d.username}')">` : `<span class="text-sm cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.avatar}</span>`; 
             msg.innerHTML = `${av} <div class="break-all"><span class="text-purple-400 font-bold cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.username}:</span> <span class="text-gray-300">${d.text}</span></div>`; 
             box.appendChild(msg); if(box.children.length > 40) box.firstChild.remove(); box.scrollTop = box.scrollHeight; 
         }
@@ -753,15 +797,15 @@
             try {
                 const list = await req('/api/user/leaderboard');
                 document.getElementById('leaderboard-list').innerHTML = list.map(u => `
-                    <div class="flex items-center justify-between bg-[#1A202C] p-3 rounded-xl border border-gray-800 hover:border-yellow-500/50 transition">
-                        <div class="flex items-center gap-4">
-                            <div class="text-xl font-black ${u.rank === 1 ? 'text-yellow-400' : u.rank === 2 ? 'text-gray-300' : u.rank === 3 ? 'text-amber-600' : 'text-gray-500'} w-6 text-center">#${u.rank}</div>
-                            <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-600 bg-gray-900 flex items-center justify-center cursor-pointer" onclick="showPlayerProfile('${u.username}')">
-                                ${u.avatar && u.avatar.startsWith('data:') ? `<img src="${u.avatar}" class="w-full h-full object-cover">` : `<span class="text-lg">${u.avatar || '👤'}</span>`}
+                    <div class="flex items-center justify-between bg-[#1A202C] p-2 md:p-3 rounded-xl border border-gray-800 hover:border-yellow-500/50 transition">
+                        <div class="flex items-center gap-2 md:gap-4">
+                            <div class="text-base md:text-xl font-black ${u.rank === 1 ? 'text-yellow-400' : u.rank === 2 ? 'text-gray-300' : u.rank === 3 ? 'text-amber-600' : 'text-gray-500'} w-5 md:w-6 text-center">#${u.rank}</div>
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-gray-600 bg-gray-900 flex items-center justify-center cursor-pointer" onclick="showPlayerProfile('${u.username}')">
+                                ${u.avatar && u.avatar.startsWith('data:') ? `<img src="${u.avatar}" class="w-full h-full object-cover">` : `<span class="text-sm md:text-lg">${u.avatar || '👤'}</span>`}
                             </div>
-                            <div class="font-bold text-white text-sm cursor-pointer hover:text-purple-400" onclick="showPlayerProfile('${u.username}')">${u.username}</div>
+                            <div class="font-bold text-white text-xs md:text-sm cursor-pointer hover:text-purple-400" onclick="showPlayerProfile('${u.username}')">${u.username}</div>
                         </div>
-                        <div class="font-black text-yellow-400 text-lg">${u.balance.toLocaleString()} 🪙</div>
+                        <div class="font-black text-yellow-400 text-sm md:text-lg">${u.balance.toLocaleString()} 🪙</div>
                     </div>
                 `).join('');
             } catch(e) {}
@@ -773,7 +817,7 @@
         async function loadCases() { 
             try { 
                 casesData = await req('/api/cases/list'); 
-                document.getElementById('cases-grid').innerHTML = casesData.map(c => `<div onclick="openCaseDetail('${c.id}')" class="glass p-3 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300"><span class="text-5xl mb-2 drop-shadow-lg">📦</span><span class="font-black text-xs md:text-sm text-center mb-1">${c.name}</span><span class="text-yellow-400 text-[10px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span></div>`).join(''); 
+                document.getElementById('cases-grid').innerHTML = casesData.map(c => `<div onclick="openCaseDetail('${c.id}')" class="glass p-2 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300"><span class="text-4xl md:text-5xl mb-1 md:mb-2 drop-shadow-lg">📦</span><span class="font-black text-[10px] md:text-sm text-center mb-1">${c.name}</span><span class="text-yellow-400 text-[9px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span></div>`).join(''); 
                 document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join(''); 
             } catch(e) { showToast("Ошибка кейсов", 'lose'); } 
         }
@@ -785,7 +829,7 @@
         function filterCaseItems() { 
             const filter = document.getElementById('cd-filter').value; 
             const filtered = currentCaseData.filter(item => filter === 'all' || item.rarity === filter); 
-            document.getElementById('cd-items-grid').innerHTML = filtered.map(d => `<div class="bg-[#1A202C] p-2 md:p-3 rounded-lg border-l-2 md:border-l-4 text-[10px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}"><span class="font-bold mb-1">${d.name}</span><span class="text-yellow-400 font-bold">${d.price}🪙</span><span class="text-green-400 text-[10px] mt-1 font-bold">Шанс: ${d.chance.toFixed(2)}%</span></div>`).join(''); 
+            document.getElementById('cd-items-grid').innerHTML = filtered.map(d => `<div class="bg-[#1A202C] p-1.5 md:p-3 rounded-lg border-l-2 md:border-l-4 text-[9px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}"><span class="font-bold mb-1">${d.name}</span><span class="text-yellow-400 font-bold">${d.price}🪙</span><span class="text-green-400 text-[8px] md:text-[10px] mt-1 font-bold">Шанс: ${d.chance.toFixed(2)}%</span></div>`).join(''); 
         }
 
         async function startCaseSpin() {
@@ -801,18 +845,18 @@
                     for(let i=0; i<count; i++) fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
                     container.innerHTML = fullHtml;
                     let promises = [];
+                    // ОПТИМИЗАЦИЯ: 30 элементов вместо 50 для мобилок
                     for(let i=0; i<count; i++) {
                         const strip = document.getElementById(`row-${i}-strip`); let html = '';
-                        for(let j=0; j<50; j++) { 
-                            const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
-                            // ЖЕСТКО ФИКСИРУЕМ ШИРИНУ И margin-right
-                            html += `<div class="roulette-item" style="flex: 0 0 80px; width: 80px; min-width: 80px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:10px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
+                        for(let j=0; j<30; j++) { 
+                            const item = j === 27 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
+                            html += `<div class="roulette-item" style="flex: 0 0 70px; width: 70px; min-width: 70px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
                         }
                         strip.innerHTML = html; strip.style.transition = 'none'; strip.style.transform = 'translate3d(0, 0, 0)';
                         promises.push(new Promise(resolve => { requestAnimationFrame(() => { requestAnimationFrame(() => { 
                             const containerWidth = strip.parentElement.clientWidth; 
-                            const itemWidth = 80, gap = 8; 
-                            const offset = (45 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
+                            const itemWidth = 70, gap = 8; 
+                            const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
                             strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
                             strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
                             setTimeout(resolve, 6200); 
@@ -825,7 +869,7 @@
 
         function showSpinResults(results) {
             let total = 0;
-            document.getElementById('results-grid').innerHTML = results.map((item, index) => { total += item.price; return `<div class="glass p-3 rounded-xl flex flex-col items-center min-w-[120px] border-t-2" style="border-color:${item.color}"><div class="text-xs font-bold mb-1 text-center text-white truncate w-full">${item.pony_id}</div><div class="text-yellow-400 font-bold mb-3">${item.price} 🪙</div><div class="flex gap-1 w-full" id="drop-actions-${index}"><button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 transition">Продать</button><button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 transition">Забрать</button></div></div>`; }).join('');
+            document.getElementById('results-grid').innerHTML = results.map((item, index) => { total += item.price; return `<div class="glass p-2 md:p-3 rounded-xl flex flex-col items-center min-w-[90px] md:min-w-[120px] border-t-2" style="border-color:${item.color}"><div class="text-[10px] md:text-xs font-bold mb-1 text-center text-white truncate w-full">${item.pony_id}</div><div class="text-yellow-400 font-bold mb-2 md:mb-3 text-xs md:text-sm">${item.price} 🪙</div><div class="flex gap-1 w-full" id="drop-actions-${index}"><button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[8px] md:text-[10px] font-bold hover:bg-red-600 transition">Продать</button><button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[8px] md:text-[10px] font-bold hover:bg-green-600 transition">Забрать</button></div></div>`; }).join('');
             
             document.getElementById('total-drops-value').textContent = total + ' 🪙'; 
             const btnSellAll = document.getElementById('btn-sell-all-drops');
@@ -835,8 +879,8 @@
 
             document.getElementById('spin-results').classList.remove('hidden'); document.getElementById('spin-results').classList.add('flex');
         }
-        async function sellDropItem(id, price, index) { try { await req(`/api/user/inventory/sell/${id}`, 'POST'); updateBal(user.balance + price); document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`; playSfx('win'); const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); } catch(e) { showToast(e.message, 'lose'); } }
-        function keepDropItem(index) { document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; playSfx('click'); recalcTotalDrops(); }
+        async function sellDropItem(id, price, index) { try { await req(`/api/user/inventory/sell/${id}`, 'POST'); updateBal(user.balance + price); document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-[8px] md:text-xs text-gray-400 w-full text-center py-1">Продано</div>`; playSfx('win'); const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); } catch(e) { showToast(e.message, 'lose'); } }
+        function keepDropItem(index) { document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-[8px] md:text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; playSfx('click'); recalcTotalDrops(); }
         
         function recalcTotalDrops() { 
             let newTotal = 0; 
@@ -869,7 +913,7 @@
                 for (let i = 0; i < currentDrops.length; i++) { 
                     const actions = document.getElementById(`drop-actions-${i}`); 
                     if(actions && !actions.innerHTML.includes('Продано') && !actions.innerHTML.includes('В инвентаре')) { 
-                        try { await req(`/api/user/inventory/sell/${currentDrops[i].id}`, 'POST'); actions.innerHTML = `<div class="text-xs text-gray-400 text-center">Продано</div>`; } catch(e) {} 
+                        try { await req(`/api/user/inventory/sell/${currentDrops[i].id}`, 'POST'); actions.innerHTML = `<div class="text-[8px] md:text-xs text-gray-400 text-center">Продано</div>`; } catch(e) {} 
                     } 
                 } 
                 const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); 
@@ -904,7 +948,7 @@
         function renderInventory() {
             const grid = document.getElementById('inv-grid');
             if (inv.length === 0) { grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Инвентарь пуст</div>'; return; }
-            grid.innerHTML = inv.map(i => `<div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[10px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}"><div class="truncate font-bold mb-1">${i.name}</div><div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div><button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button></div>`).join('');
+            grid.innerHTML = inv.map(i => `<div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[9px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}"><div class="truncate font-bold mb-1">${i.name}</div><div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div><button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button></div>`).join('');
         }
 
         async function sell(id) { 
@@ -934,7 +978,7 @@
                 
                 if(d.history.length === 0) { document.getElementById('history-list').innerHTML = '<div class="text-center text-gray-500 py-4">История пуста</div>'; return; }
                 
-                document.getElementById('history-list').innerHTML = d.history.map(h => `<div class="flex justify-between items-center bg-[#1A202C] p-3 rounded-lg text-sm border-l-4 ${h.game === 'Кейс' ? 'border-purple-500' : h.game === 'Апгрейд' ? 'border-green-500' : 'border-yellow-500'}"><div><div class="font-bold text-white">${h.item}</div><div class="text-xs text-gray-400">${h.result} • ${h.date}</div></div><div class="font-black ${h.game === 'Кейс' ? 'text-purple-400' : h.game === 'Апгрейд' ? 'text-green-400' : 'text-yellow-400'}">${h.price > 0 ? `+${h.price} 🪙` : 'Сгорел'}</div></div>`).join('');
+                document.getElementById('history-list').innerHTML = d.history.map(h => `<div class="flex justify-between items-center bg-[#1A202C] p-2 md:p-3 rounded-lg text-xs md:text-sm border-l-4 ${h.game === 'Кейс' ? 'border-purple-500' : h.game === 'Апгрейд' ? 'border-green-500' : 'border-yellow-500'}"><div><div class="font-bold text-white">${h.item}</div><div class="text-[10px] text-gray-400">${h.result} • ${h.date}</div></div><div class="font-black ${h.game === 'Кейс' ? 'text-purple-400' : h.game === 'Апгрейд' ? 'text-green-400' : 'text-yellow-400'}">${h.price > 0 ? `+${h.price} 🪙` : 'Сгорел'}</div></div>`).join('');
             } catch(e) { showToast("Ошибка истории", 'lose'); }
         }
 
@@ -947,7 +991,7 @@
         // КЛИКЕР
         // ==========================================
         async function doClick() { playSfx('click'); try { const res = await req('/api/clicker/click', 'POST', {count: 1}); updateBal(res.balance); document.getElementById('click-count').textContent = parseInt(document.getElementById('click-count').textContent)+1; } catch(e) { showToast(e.message, 'lose'); } }
-        function renderUpgrades() { document.getElementById('upgrades-list').innerHTML = `<div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-sm">Сила клика</div><div class="text-xs text-gray-400">Ур. ${upgLevels.click_power}</div></div><button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-sm">Автоклик</div><div class="text-xs text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div><button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-sm">Множитель</div><div class="text-xs text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div><button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-3 py-1 rounded text-xs font-bold">Купить</button></div>`; }
+        function renderUpgrades() { document.getElementById('upgrades-list').innerHTML = `<div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Сила клика</div><div class="text-[10px] text-gray-400">Ур. ${upgLevels.click_power}</div></div><button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Автоклик</div><div class="text-[10px] text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div><button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Множитель</div><div class="text-[10px] text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div><button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div>`; }
         async function buyUpgrade(key) { playSfx('click'); try { const res = await req(`/api/clicker/buy`, 'POST', {key: key}); updateBal(res.user.balance); upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier }; renderUpgrades(); } catch(e) { showToast(e.message, 'lose'); } }
 
         // ==========================================
@@ -973,9 +1017,9 @@
             container.innerHTML = inv.map(i => {
                 const isSelected = selectedUpgradeItems.includes(i.id);
                 return `
-                <div onclick="toggleUpgradeItem(${i.id})" class="cursor-pointer p-2 rounded border text-center transition ${isSelected ? 'bg-purple-600/30 border-purple-500' : 'bg-[#1A202C] border-gray-700 hover:border-gray-500'}">
-                    <div class="text-[9px] font-bold text-white truncate">${i.name}</div>
-                    <div class="text-[9px] text-yellow-400">${i.price}🪙</div>
+                <div onclick="toggleUpgradeItem(${i.id})" class="cursor-pointer p-1.5 md:p-2 rounded border text-center transition ${isSelected ? 'bg-purple-600/30 border-purple-500' : 'bg-[#1A202C] border-gray-700 hover:border-gray-500'}">
+                    <div class="text-[8px] md:text-[9px] font-bold text-white truncate">${i.name}</div>
+                    <div class="text-[8px] md:text-[9px] text-yellow-400">${i.price}🪙</div>
                 </div>`;
             }).join('');
         }
@@ -1017,7 +1061,7 @@
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
             
             document.getElementById('upg-boost-val').textContent = boost + ' 🪙'; 
-            document.getElementById('upg-my-item').textContent = selectedUpgradeItems.length > 1 ? `${names.length} предмета` : names[0]; 
+            document.getElementById('upg-my-item').textContent = selectedUpgradeItems.length > 1 ? `${names.length} предм.` : names[0]; 
             document.getElementById('upg-my-price').textContent = (totalPrice + boost) + ' 🪙'; 
             document.getElementById('upg-target-price').textContent = targetPrice + ' 🪙';
             
@@ -1094,13 +1138,13 @@
             
             let total = j.players.reduce((s,p) => s+p.amount, 0) || 1; let deg = 0; let html = ''; let playersHtml = ''; const colors = ['#8b5cf6', '#ef4444', '#3b82f6', '#22c55e', '#eab308']; 
             j.players.forEach((p, idx) => { let slice = (p.amount / total) * 360; let percent = ((p.amount / total) * 100).toFixed(1); let color = colors[idx % colors.length]; html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, ${color} ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`; playersHtml += `<div class="flex justify-between bg-[#1A202C] p-2 rounded border border-gray-700 mb-1"><span class="font-bold text-white text-[10px]"><span style="color:${color}">●</span> ${p.username}</span><span class="text-yellow-400 font-bold text-[10px]">${p.amount}🪙 (${percent}%)</span></div>`; deg += slice; }); 
-            document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-16 h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-xs font-bold" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div></div>` + html; 
+            document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-14 h-14 md:w-16 md:h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[6px] md:text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-[10px] md:text-xs font-bold" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div></div>` + html; 
             document.getElementById('jp-players').innerHTML = playersHtml; 
         }
         async function betJackpot() { const amt = parseInt(document.getElementById('jp-bet').value); if(!amt || amt < 100) return showToast("Мин. 100", 'lose'); try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); } }
         function switchBattleTab(t) { document.getElementById('battle-jackpot').classList.add('hidden'); document.getElementById('battle-1v1').classList.add('hidden'); document.getElementById(`battle-${t}`).classList.remove('hidden'); if(t === '1v1') load1v1List(); }
         async function create1v1() { const caseId = document.getElementById('b-case').value; try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); } }
-        async function load1v1List() { try { const list = await req('/api/battles/1v1/active'); const c = document.getElementById('battles-list'); if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-xs py-4">Нет лобби</div>'; return; } c.innerHTML = list.map(b => `<div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 border-purple-500 mb-2"><div><div class="font-bold text-xs">Кейс: ${b.case_id}</div><div class="text-[10px] text-gray-400">От: ${b.creator}</div></div><button onclick="join1v1('${b.id}')" class="bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-bold">ВОЙТИ</button></div>`).join(''); } catch(e) {} }
+        async function load1v1List() { try { const list = await req('/api/battles/1v1/active'); const c = document.getElementById('battles-list'); if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-[10px] md:text-xs py-4">Нет лобби</div>'; return; } c.innerHTML = list.map(b => `<div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 border-purple-500 mb-2"><div><div class="font-bold text-[10px] md:text-xs">Кейс: ${b.case_id}</div><div class="text-[9px] text-gray-400">От: ${b.creator}</div></div><button onclick="join1v1('${b.id}')" class="bg-purple-600 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold">ВОЙТИ</button></div>`).join(''); } catch(e) {} }
         async function join1v1(id) { try { await req(`/api/battles/1v1/join/${id}`, 'POST'); showToast('Вы в батле!'); } catch(e) { showToast(e.message, 'lose'); } }
     </script>
 </body>
