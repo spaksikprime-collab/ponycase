@@ -11,79 +11,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
-        html, body {
-            max-width: 100vw;
-            overflow-x: hidden;
-            margin: 0; padding: 0;
-        }
-
-        body { 
-            background-color: #12161f; 
-            color: #fff; 
-            font-family: 'Montserrat', sans-serif; 
-            background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); 
-            background-attachment: fixed; 
-            padding-bottom: 70px;
-        }
-
+        html, body { max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0; }
+        body { background-color: #12161f; color: #fff; font-family: 'Montserrat', sans-serif; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, #12161f 50%); background-attachment: fixed; padding-bottom: 70px; }
         .glass { background: rgba(26, 32, 44, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* Заглушка для кейсов (Skeleton) */
+        .skeleton { background: linear-gradient(90deg, #1A202C 25%, #2D3748 50%, #1A202C 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
         .desktop-nav-btn { padding: 8px 16px; border-radius: 8px; font-weight: bold; color: #9ca3af; transition: 0.2s; cursor: pointer; font-size: 14px; background: transparent; border: none; }
         .desktop-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
         .desktop-nav-btn.active { color: #fff; background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
-        
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 9px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
 
-        /* РУЛЕТКА КЕЙСОВ */
-        .roulette-wrapper { 
-            overflow: hidden; 
-            position: relative; 
-            background: #1A202C; 
-            border-radius: 8px; 
-            border: 1px solid #2d3748; 
-            padding: 10px 0; 
-            margin-bottom: 10px; 
-            width: 100%;
-        }
-        .roulette-strip { 
-            display: flex; 
-            will-change: transform; 
-            width: max-content; 
-            transform: translateZ(0);
-        }
-        .roulette-item { 
-            flex: 0 0 70px;
-            width: 70px; 
-            min-width: 70px;
-            height: 80px; 
-            background: #12161f; 
-            border-radius: 6px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            border: 2px solid transparent; 
-            overflow: hidden; 
-            white-space: nowrap; 
-            text-overflow: ellipsis;
-            margin-right: 8px;
-        }
-        @media (min-width: 768px) {
-            .roulette-item { flex: 0 0 80px; width: 80px; min-width: 80px; height: 90px; }
-        }
+        .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; width: 100%; }
+        .roulette-strip { display: flex; will-change: transform; width: max-content; transform: translateZ(0); }
+        .roulette-item { flex: 0 0 70px; width: 70px; min-width: 70px; height: 80px; background: #12161f; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-right: 8px; }
+        @media (min-width: 768px) { .roulette-item { flex: 0 0 80px; width: 80px; min-width: 80px; height: 90px; } }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
 
-        /* КОЛЕСО */
         .wheel-container { position: relative; width: 100%; max-width: 280px; aspect-ratio: 1 / 1; margin: 0 auto; }
         .wheel-visual { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #1A202C; box-shadow: 0 0 40px rgba(0,0,0,0.8); position: relative; overflow: hidden; transform: translateZ(0); }
         .wheel-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 40px; z-index: 20; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
         .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: #12161f; border-radius: 50%; border: 3px solid #2d3748; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.9); }
         @media (min-width: 768px) { .wheel-container { max-width: 320px; } .wheel-center { width: 100px; height: 100px; } }
-        
-        /* Апгрейд */
+
         .upg-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
         @media (min-width: 768px) { .upg-container { flex-direction: row; justify-content: center; } }
         .upg-box { background: #1A202C; border: 1px solid #2d3748; border-radius: 12px; padding: 15px; text-align: center; width: 100%; max-width: 250px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; }
@@ -93,7 +48,6 @@
         .upg-arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px; z-index: 20; will-change: transform; transform-origin: 50% 135px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.8)); }
         @media (min-width: 768px) { .upg-wheel-container { max-width: 280px; } .upg-center-circle { width: 140px; height: 140px; } .upg-arrow { font-size: 40px; transform-origin: 50% 160px; } }
 
-        /* Мины */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-width: 300px; margin: 0 auto; }
         .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; border: 1px solid #2d3748; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.5); transition: 0.1s; }
         .mine-cell:active { transform: scale(0.95); box-shadow: none; }
@@ -102,7 +56,6 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* Уведомления */
         #toast-container { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; pointer-events: none; }
         .toast { background: rgba(26, 32, 44, 0.95); border-left: 4px solid #8b5cf6; padding: 10px 15px; border-radius: 8px; color: white; font-weight: bold; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); animation: slideDown 0.3s forwards; text-align: center; }
         .toast.win { border-color: #22c55e; } .toast.lose { border-color: #ef4444; }
@@ -160,7 +113,13 @@
             <!-- КЕЙСЫ -->
             <div id="page-cases" class="page active">
                 <h2 class="text-xl md:text-2xl font-black mb-3 md:mb-4">Кейсы</h2>
-                <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3"></div>
+                <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                    <!-- Скелетоны загрузки -->
+                    <div class="skeleton h-32 md:h-40 rounded-xl"></div>
+                    <div class="skeleton h-32 md:h-40 rounded-xl"></div>
+                    <div class="skeleton h-32 md:h-40 rounded-xl"></div>
+                    <div class="skeleton h-32 md:h-40 rounded-xl"></div>
+                </div>
             </div>
 
             <!-- ДЕТАЛИ КЕЙСА -->
@@ -254,7 +213,11 @@
             <div id="page-leaderboard" class="page">
                 <h2 class="text-xl md:text-2xl font-black mb-4 text-yellow-400">🏆 Топ игроков</h2>
                 <div class="glass p-3 md:p-6 rounded-2xl max-w-2xl">
-                    <div class="flex flex-col gap-2 md:gap-3" id="leaderboard-list"></div>
+                    <div class="flex flex-col gap-2 md:gap-3" id="leaderboard-list">
+                        <div class="skeleton h-12 rounded-xl"></div>
+                        <div class="skeleton h-12 rounded-xl"></div>
+                        <div class="skeleton h-12 rounded-xl"></div>
+                    </div>
                 </div>
             </div>
 
@@ -347,8 +310,7 @@
                             <span id="upg-boost-val" class="text-green-400 font-bold text-[10px] md:text-sm">0 🪙</span>
                         </div>
 
-                        <!-- ДОБАВЛЕН ID ДЛЯ КНОПКИ АПГРЕЙДА -->
-                        <button id="upg-btn" onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-2.5 md:py-3 rounded-xl font-black text-sm md:text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
+                        <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-2.5 md:py-3 rounded-xl font-black text-sm md:text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
                     </div>
                 </div>
             </div>
@@ -533,6 +495,7 @@
         
         function startSpinSfx() { 
             if(currentTab !== 'wheel') return;
+
             if(spinAudioInstance) spinAudioInstance.pause(); 
             spinAudioInstance = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'); 
             spinAudioInstance.loop = true; 
@@ -581,7 +544,13 @@
             if(token) h['Authorization'] = `Bearer ${token}`;
             const r = await fetch(`${API}${ep}`, { method: m, headers: h, body: b ? JSON.stringify(b) : null });
             const d = await r.json();
-            if(!r.ok) throw new Error(d.detail || 'Ошибка сервера');
+            if(!r.ok) {
+                if(r.status === 401) {
+                    localStorage.removeItem('pony_token');
+                    location.reload();
+                }
+                throw new Error(d.detail || 'Ошибка сервера');
+            }
             return d;
         }
 
@@ -590,6 +559,7 @@
                 const u = document.getElementById('a-user').value;
                 const p = document.getElementById('a-pass').value;
                 if(!u || !p) return;
+                
                 const d = await req(`/api/auth/${type}`, 'POST', {username: u, password: p});
                 token = d.token; localStorage.setItem('pony_token', token);
                 document.getElementById('auth-modal').classList.add('hidden'); 
@@ -602,6 +572,7 @@
         }
 
         async function init() {
+            // 1. Загружаем профиль (независимо)
             try {
                 user = await req('/api/clicker/state'); 
                 updateBal(user.balance); 
@@ -611,40 +582,51 @@
                 if(user.avatar && user.avatar.startsWith('data:')) { 
                     document.getElementById('header-avatar').src = user.avatar; document.getElementById('header-avatar').classList.remove('hidden'); document.getElementById('header-emoji').classList.add('hidden'); 
                 }
-                
-                loadCases(); 
-                renderUpgrades();
-                fetchWheelState();
-                
-                loadLeaderboard();
-                setInterval(loadLeaderboard, 30000);
+            } catch(e) {
+                console.error("Profile load error:", e);
+                showToast("Ошибка загрузки профиля", "lose");
+            }
 
-                if(!socket) {
-                    socket = io({ auth: { token } });
-                    socket.on('online', d => document.getElementById('online-count').textContent = d.count);
-                    socket.on('drop', d => { 
-                        const live = document.getElementById('live-drops'); if(live.querySelector('.italic')) live.innerHTML = '';
-                        const el = document.createElement('div'); el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer'; el.onclick = () => showPlayerProfile(d.username);
-                        let avHtml = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` : `<span class="text-[10px]">${d.avatar}</span>`;
-                        el.innerHTML = `${avHtml} <b class="text-purple-400 text-[10px]">${d.username}</b> выбил <b style="color:${d.color}" class="text-[10px]">${d.pony}</b>`;
-                        live.prepend(el); if(live.children.length > 10) live.lastChild.remove(); 
-                    });
-                    socket.on('chat', d => { renderChatMsg('chat-messages-pc', d); renderChatMsg('chat-messages-mob', d); });
-                    socket.on('jackpot_update', d => updateJackpotUI(d));
-                    
-                    socket.on('jackpot_finish', d => { 
-                        document.getElementById('jp-winner').textContent = d.winner.username; 
-                        playSfx('win'); confetti(); showToast(`Джекпот: ${d.winner.username}!`, 'win');
-                        setTimeout(() => { 
-                            document.getElementById('jp-winner').textContent = '???'; document.getElementById('jp-players').innerHTML = ''; document.getElementById('jp-total').textContent = '0 🪙'; 
-                            document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-16 h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-xs font-bold" id="jp-winner">???</span></div></div>`; 
-                        }, 5000); 
-                    });
-                    
-                    socket.on('wheel_state_update', d => updateWheelUI(d));
-                    socket.on('wheel_payout', d => { playSfx('win'); confetti(); showToast(`Вы выиграли ${d.amount} 🪙!`, 'win'); });
-                }
-            } catch(e) { console.error(e); }
+            // 2. Загружаем кейсы (независимо)
+            try {
+                await loadCases();
+            } catch(e) {
+                console.error("Cases load error:", e);
+            }
+            
+            // 3. Остальное (независимо)
+            renderUpgrades();
+            fetchWheelState().catch(e => console.error(e));
+            
+            loadLeaderboard().catch(e => console.error(e));
+            setInterval(loadLeaderboard, 30000);
+
+            // 4. Сокеты
+            if(!socket) {
+                socket = io({ auth: { token } });
+                socket.on('online', d => document.getElementById('online-count').textContent = d.count);
+                socket.on('drop', d => { 
+                    const live = document.getElementById('live-drops'); if(live.querySelector('.italic')) live.innerHTML = '';
+                    const el = document.createElement('div'); el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer'; el.onclick = () => showPlayerProfile(d.username);
+                    let avHtml = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` : `<span class="text-[10px]">${d.avatar}</span>`;
+                    el.innerHTML = `${avHtml} <b class="text-purple-400 text-[10px]">${d.username}</b> выбил <b style="color:${d.color}" class="text-[10px]">${d.pony}</b>`;
+                    live.prepend(el); if(live.children.length > 10) live.lastChild.remove(); 
+                });
+                socket.on('chat', d => { renderChatMsg('chat-messages-pc', d); renderChatMsg('chat-messages-mob', d); });
+                socket.on('jackpot_update', d => updateJackpotUI(d));
+                
+                socket.on('jackpot_finish', d => { 
+                    document.getElementById('jp-winner').textContent = d.winner.username; 
+                    playSfx('win'); confetti(); showToast(`Джекпот: ${d.winner.username}!`, 'win');
+                    setTimeout(() => { 
+                        document.getElementById('jp-winner').textContent = '???'; document.getElementById('jp-players').innerHTML = ''; document.getElementById('jp-total').textContent = '0 🪙'; 
+                        document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-14 h-14 md:w-16 md:h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[6px] md:text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-[10px] md:text-xs font-bold" id="jp-winner">???</span></div></div>`; 
+                    }, 5000); 
+                });
+                
+                socket.on('wheel_state_update', d => updateWheelUI(d));
+                socket.on('wheel_payout', d => { playSfx('win'); confetti(); showToast(`Вы выиграли ${d.amount} 🪙!`, 'win'); });
+            }
         }
 
         function updateBal(v) { 
@@ -732,15 +714,14 @@
                 }).join('');
             }
 
-            // ИДЕАЛЬНАЯ АНИМАЦИЯ (Защита от undefined)
+            // АНИМАЦИЯ КОЛЕСА (ИДЕАЛЬНАЯ МАТЕМАТИКА)
             if(state.status === 'spinning' && lastWheelStatus !== 'spinning') {
                 lastWheelStatus = 'spinning';
                 winnerText.textContent = '???';
                 if(currentTab === 'wheel') startSpinSfx();
                 
-                const index = (state.winning_index !== undefined) ? state.winning_index : Math.floor(Math.random() * 20);
                 const segmentAngle = 18; 
-                const targetDeg = (360 * 8) + (360 - (index * segmentAngle));
+                const targetDeg = (360 * 8) + (360 - (state.winning_index * segmentAngle));
                 
                 wheelVisual.style.transition = 'transform 8s cubic-bezier(0.1, 0.7, 0.1, 1)';
                 wheelVisual.style.transform = `rotate(${targetDeg}deg)`;
@@ -796,11 +777,9 @@
         // КЕЙСЫ
         // ==========================================
         async function loadCases() { 
-            try { 
-                casesData = await req('/api/cases/list'); 
-                document.getElementById('cases-grid').innerHTML = casesData.map(c => `<div onclick="openCaseDetail('${c.id}')" class="glass p-2 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300"><span class="text-4xl md:text-5xl mb-1 md:mb-2 drop-shadow-lg">📦</span><span class="font-black text-[10px] md:text-sm text-center mb-1">${c.name}</span><span class="text-yellow-400 text-[9px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span></div>`).join(''); 
-                document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join(''); 
-            } catch(e) { showToast("Ошибка кейсов", 'lose'); } 
+            casesData = await req('/api/cases/list'); 
+            document.getElementById('cases-grid').innerHTML = casesData.map(c => `<div onclick="openCaseDetail('${c.id}')" class="glass p-2 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300"><span class="text-4xl md:text-5xl mb-1 md:mb-2 drop-shadow-lg">📦</span><span class="font-black text-[10px] md:text-sm text-center mb-1">${c.name}</span><span class="text-yellow-400 text-[9px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span></div>`).join(''); 
+            document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join(''); 
         }
         async function openCaseDetail(id) { 
             const c = casesData.find(x => x.id === id); if(!c) return; 
@@ -818,59 +797,33 @@
             const isFast = document.getElementById('cd-fast').checked; const count = parseInt(document.getElementById('cd-count').value);
             const container = document.getElementById('spin-container'); container.innerHTML = ''; container.classList.remove('hidden');
             document.getElementById('modal-spin').classList.remove('hidden'); document.getElementById('spin-title').textContent = "Открываем кейс...";
-            
             try {
-                const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count}); 
-                updateBal(res.balance); 
-                currentDrops = res.results;
-                
-                if (isFast) { 
-                    playSfx('win'); confetti(); 
-                    document.getElementById('spin-container').classList.add('hidden'); 
-                    showSpinResults(res.results); 
-                }
+                const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count}); updateBal(res.balance); currentDrops = res.results;
+                if (isFast) { playSfx('win'); confetti(); document.getElementById('spin-container').classList.add('hidden'); showSpinResults(res.results); }
                 else {
-                    playSfx('spin'); 
-                    let fullHtml = ''; 
-                    const pool = currentCaseData.length > 0 ? currentCaseData : [{name: 'Pony', color: '#fff'}];
-                    
-                    for(let i=0; i<count; i++) {
-                        fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
-                    }
+                    startSpinSfx(); let fullHtml = ''; const pool = currentCaseData;
+                    for(let i=0; i<count; i++) fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
                     container.innerHTML = fullHtml;
-                    
-                    // Даем браузеру 50мс на отрисовку DOM
-                    await new Promise(r => setTimeout(r, 50));
-
+                    let promises = [];
                     for(let i=0; i<count; i++) {
-                        const strip = document.getElementById(`row-${i}-strip`); 
-                        if(!strip) continue;
-
-                        let html = '';
+                        const strip = document.getElementById(`row-${i}-strip`); let html = '';
                         for(let j=0; j<30; j++) { 
                             const item = j === 27 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
                             html += `<div class="roulette-item" style="flex: 0 0 70px; width: 70px; min-width: 70px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
                         }
-                        strip.innerHTML = html; 
-                        strip.style.transition = 'none'; 
-                        strip.style.transform = 'translate3d(0, 0, 0)';
-                        void strip.offsetWidth; // Форсируем рефлоу
-                        
-                        const containerWidth = strip.parentElement.clientWidth; 
-                        const itemWidth = 70, gap = 8; 
-                        const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
-                        
-                        strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
-                        strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
+                        strip.innerHTML = html; strip.style.transition = 'none'; strip.style.transform = 'translate3d(0, 0, 0)';
+                        promises.push(new Promise(resolve => { requestAnimationFrame(() => { requestAnimationFrame(() => { 
+                            const containerWidth = strip.parentElement.clientWidth; 
+                            const itemWidth = 70, gap = 8; 
+                            const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
+                            strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
+                            strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
+                            setTimeout(resolve, 6200); 
+                        }); }); }));
                     }
-                    
-                    setTimeout(() => { 
-                        playSfx('win'); confetti(); 
-                        document.getElementById('spin-container').classList.add('hidden'); 
-                        showSpinResults(res.results); 
-                    }, 6200);
+                    Promise.all(promises).then(() => { stopSpinSfx(); playSfx('win'); confetti(); document.getElementById('spin-container').classList.add('hidden'); showSpinResults(res.results); });
                 }
-            } catch(e) { showToast(e.message, 'lose'); document.getElementById('modal-spin').classList.add('hidden'); }
+            } catch(e) { stopSpinSfx(); showToast(e.message, 'lose'); document.getElementById('modal-spin').classList.add('hidden'); }
         }
 
         function showSpinResults(results) {
@@ -1092,10 +1045,10 @@
             
             const arrow = document.getElementById('upg-arrow'); 
             arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)'; 
-            playSfx('spin');
+            startSpinSfx();
             
-            const btn = document.getElementById('upg-btn');
-            if(btn) btn.disabled = true;
+            const btn = event.target;
+            btn.disabled = true;
 
             try { 
                 const res = await req('/api/upgrade/play', 'POST', { item_ids: selectedUpgradeItems, target_price: targetPrice, target_name: `Upgraded Pony`, boost: boost }); 
@@ -1111,15 +1064,16 @@
                     arrow.style.transform = `translateX(-50%) rotate(${targetDeg}deg)`; 
                     
                     setTimeout(() => { 
+                        stopSpinSfx(); 
                         if(res.win) { playSfx('win'); confetti(); showToast(`ПОБЕДА!`, 'win'); } 
                         else { playSfx('lose'); showToast(`Проигрыш`, 'lose'); } 
                         loadUpgrade(); 
-                        if(btn) btn.disabled = false;
+                        btn.disabled = false;
                     }, 5200); 
                 }, 50); 
             } catch(e) { 
-                showToast(e.message, 'lose'); 
-                if(btn) btn.disabled = false;
+                stopSpinSfx(); showToast(e.message, 'lose'); 
+                btn.disabled = false;
             }
         }
 
@@ -1129,4 +1083,28 @@
         let mId = null;
         async function startMines() { const bet = parseInt(document.getElementById('mines-bet').value); const mines = parseInt(document.getElementById('mines-count').value); try { const r = await req('/api/mines/start', 'POST', {bet, mines}); updateBal(r.balance); mId = r.game_id; document.getElementById('mines-setup').classList.add('hidden'); document.getElementById('mines-game').classList.remove('hidden'); document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join(''); } catch(e) { showToast(e.message, 'lose'); } }
         async function clickMine(i) { try { const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i}); const c = document.getElementById(`mc-${i}`); if(r.status === 'boom') { c.classList.add('boom'); c.textContent = '💥'; r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣'); playSfx('lose'); document.getElementById('main-body').classList.add('shake'); if (navigator.vibrate) navigator.vibrate([100, 50, 100]); setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500); setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000); } else if (r.status === 'ok') { c.classList.add('opened'); c.textContent = '💎'; playSfx('safe'); document.getElementById('mines-multi').textContent = r.multiplier + 'x'; document.getElementById('mines-profit').textContent = r.next_win + ' 🪙'; } } catch(e) { showToast(e.message, 'lose'); } }
-        async function cashoutMines() { try { const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); updateBal(r.balance); playSfx('win'); showToast(`Забрано ${r.amount}
+        async function cashoutMines() { try { const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); updateBal(r.balance); playSfx('win'); showToast(`Забрано ${r.amount}🪙!`, 'win'); document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); } catch(e) { showToast(e.message, 'lose'); } }
+
+        // ==========================================
+        // ДЖЕКПОТ И БАТЛЫ
+        // ==========================================
+        async function loadJackpot() { try { const list = await req('/api/battles/active'); if(list.length > 0) updateJackpotUI(list[0]); } catch(e) {} }
+        function updateJackpotUI(j) { 
+            document.getElementById('jp-total').textContent = j.total + ' 🪙'; const timerEl = document.getElementById('jp-timer'); 
+            if(j.status === 'countdown') { timerEl.classList.remove('hidden'); if(jpTimerInterval) clearInterval(jpTimerInterval); jpTimerInterval = setInterval(() => { let left = Math.max(0, Math.ceil(j.end_time - Date.now()/1000)); timerEl.textContent = `⏳ ${left}s`; if(left <= 0) { clearInterval(jpTimerInterval); timerEl.textContent = 'КРУТИТСЯ!'; } }, 1000); } 
+            else if (j.status === 'spinning') { timerEl.classList.remove('hidden'); timerEl.textContent = 'КРУТИТСЯ!'; } 
+            else { timerEl.classList.add('hidden'); if(jpTimerInterval) clearInterval(jpTimerInterval); } 
+            
+            let total = j.players.reduce((s,p) => s+p.amount, 0) || 1; let deg = 0; let html = ''; let playersHtml = ''; const colors = ['#8b5cf6', '#ef4444', '#3b82f6', '#22c55e', '#eab308']; 
+            j.players.forEach((p, idx) => { let slice = (p.amount / total) * 360; let percent = ((p.amount / total) * 100).toFixed(1); let color = colors[idx % colors.length]; html += `<div class="jackpot-sector" style="background: conic-gradient(transparent 0deg ${deg}deg, ${color} ${deg}deg ${deg+slice}deg, transparent ${deg+slice}deg 360deg)"></div>`; playersHtml += `<div class="flex justify-between bg-[#1A202C] p-2 rounded border border-gray-700 mb-1"><span class="font-bold text-white text-[10px]"><span style="color:${color}">●</span> ${p.username}</span><span class="text-yellow-400 font-bold text-[10px]">${p.amount}🪙 (${percent}%)</span></div>`; deg += slice; }); 
+            document.getElementById('jp-wheel').innerHTML = `<div class="absolute inset-0 flex items-center justify-center z-10"><div class="w-14 h-14 md:w-16 md:h-16 bg-gray-800 rounded-full border-2 border-yellow-500 flex flex-col items-center justify-center"><span class="text-[6px] md:text-[8px] text-gray-400">ВЫИГРЫШ</span><span class="text-[10px] md:text-xs font-bold" id="jp-winner">${j.winner ? j.winner.username : '???'}</span></div></div>` + html; 
+            document.getElementById('jp-players').innerHTML = playersHtml; 
+        }
+        async function betJackpot() { const amt = parseInt(document.getElementById('jp-bet').value); if(!amt || amt < 100) return showToast("Мин. 100", 'lose'); try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); } }
+        function switchBattleTab(t) { document.getElementById('battle-jackpot').classList.add('hidden'); document.getElementById('battle-1v1').classList.add('hidden'); document.getElementById(`battle-${t}`).classList.remove('hidden'); if(t === '1v1') load1v1List(); }
+        async function create1v1() { const caseId = document.getElementById('b-case').value; try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); } }
+        async function load1v1List() { try { const list = await req('/api/battles/1v1/active'); const c = document.getElementById('battles-list'); if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-[10px] md:text-xs py-4">Нет лобби</div>'; return; } c.innerHTML = list.map(b => `<div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 border-purple-500 mb-2"><div><div class="font-bold text-[10px] md:text-xs">Кейс: ${b.case_id}</div><div class="text-[9px] text-gray-400">От: ${b.creator}</div></div><button onclick="join1v1('${b.id}')" class="bg-purple-600 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold">ВОЙТИ</button></div>`).join(''); } catch(e) {} }
+        async function join1v1(id) { try { await req(`/api/battles/1v1/join/${id}`, 'POST'); showToast('Вы в батле!'); } catch(e) { showToast(e.message, 'lose'); } }
+    </script>
+</body>
+</html>
