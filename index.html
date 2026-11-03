@@ -26,7 +26,8 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 9px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
 
-        .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; width: 100%; }
+        /* ФИКС НАЛОЖЕНИЯ КЕЙСОВ */
+        .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 8px; width: 100%; min-height: 100px; flex-shrink: 0; }
         .roulette-strip { display: flex; will-change: transform; width: max-content; transform: translateZ(0); }
         .roulette-item { flex: 0 0 70px; width: 70px; min-width: 70px; height: 80px; background: #12161f; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-right: 8px; }
         @media (min-width: 768px) { .roulette-item { flex: 0 0 80px; width: 80px; min-width: 80px; height: 90px; } }
@@ -50,6 +51,7 @@
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-width: 300px; margin: 0 auto; }
         .mine-cell { aspect-ratio: 1; background: #1A202C; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; border: 1px solid #2d3748; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.5); transition: 0.1s; }
         .mine-cell:active { transform: scale(0.95); box-shadow: none; }
+        .mine-cell.loading { background: #374151; color: #9ca3af; cursor: wait; }
         .mine-cell.opened { background: #064e3b; border-color: #10b981; box-shadow: inset 0 0 15px rgba(16,185,129,0.5); }
         .mine-cell.boom { background: #7f1d1d; border-color: #ef4444; box-shadow: inset 0 0 15px rgba(239,68,68,0.5); }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
@@ -184,7 +186,7 @@
                         <p class="text-[10px] md:text-xs text-gray-400 mb-4 md:mb-6 uppercase tracking-widest">До старта</p>
                         <div class="wheel-container">
                             <div class="wheel-pointer">🔻</div>
-                            <div class="wheel-visual" id="wheel-visual" style="background: conic-gradient(#ef4444 0% 50%, #22c55e 50% 80%, #3b82f6 80% 98%, #eab308 98% 100%);">
+                            <div class="wheel-visual" id="wheel-visual">
                                 <div class="wheel-center">
                                     <span class="text-[8px] md:text-[10px] text-gray-400">Победитель</span>
                                     <span class="text-xs md:text-sm font-bold text-white" id="wheel-winner-text">???</span>
@@ -444,7 +446,7 @@
     <div id="modal-spin" class="fixed inset-0 bg-black/95 hidden flex flex-col items-center justify-center p-2 z-50 backdrop-blur-md">
         <div class="w-full max-w-4xl">
             <h3 class="text-center text-lg md:text-xl font-black mb-3 md:mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500" id="spin-title">Открываем кейс...</h3>
-            <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] md:max-h-[60vh] overflow-y-auto mb-3 md:mb-4"></div>
+            <div id="spin-container" class="flex flex-col gap-2 max-h-[50vh] md:max-h-[60vh] overflow-y-auto mb-3 md:mb-4 pr-1"></div>
             <div id="spin-results" class="hidden flex-col items-center mb-4 md:mb-6 w-full max-w-2xl mx-auto">
                 <div class="bg-[#1A202C] px-4 md:px-6 py-1.5 md:py-2 rounded-full border border-purple-500/50 mb-3 md:mb-4 text-center">
                     <span class="text-gray-400 text-xs md:text-sm">Сумма:</span> <span id="total-drops-value" class="text-yellow-400 font-black text-lg md:text-xl">0 🪙</span>
@@ -526,7 +528,7 @@
         let upgMult = 2, casesData = [], jpTimerInterval = null, upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
         let selectedWheelColor = 'red';
         let lastWheelStatus = null;
-        let wheelTimerInterval = null; // Локальный таймер колеса
+        let wheelTimerInterval = null;
 
         let invPage = 1;
         let histPage = 1;
@@ -644,8 +646,11 @@
         }
 
         // ==========================================
-        // КОЛЕСО ФОРТУНЫ
+        // КОЛЕСО ФОРТУНЫ (ИСПРАВЛЕНО)
         // ==========================================
+        const WHEEL_COLORS = { red: '#ef4444', green: '#22c55e', blue: '#3b82f6', yellow: '#eab308' };
+        const WHEEL_SEGMENTS = ["red", "green", "red", "blue", "red", "green", "red", "yellow", "red", "green", "red", "blue", "red", "green", "red", "blue", "red", "green", "red", "green"];
+
         async function fetchWheelState() {
             try { const state = await req('/api/wheel/state'); updateWheelUI(state); } catch(e) {}
         }
@@ -675,6 +680,13 @@
             const timerEl = document.getElementById('wheel-timer');
             const wheelVisual = document.getElementById('wheel-visual');
             const winnerText = document.getElementById('wheel-winner-text');
+
+            // Генерируем правильный градиент на основе 20 сегментов бэкенда
+            if(!wheelVisual.dataset.gradientSet) {
+                let gradientStr = WHEEL_SEGMENTS.map((c, i) => `${WHEEL_COLORS[c]} ${i * 18}deg ${(i + 1) * 18}deg`).join(', ');
+                wheelVisual.style.background = `conic-gradient(${gradientStr})`;
+                wheelVisual.dataset.gradientSet = 'true';
+            }
 
             if (state.server_time) {
                 serverTimeOffset = state.server_time - (Date.now() / 1000);
@@ -722,7 +734,7 @@
                 if(lastWheelStatus === 'spinning') {
                     stopSpinSfx();
                     winnerText.textContent = state.winning_color.toUpperCase();
-                    winnerText.style.color = state.winning_color === 'red' ? '#ef4444' : state.winning_color === 'green' ? '#22c55e' : state.winning_color === 'blue' ? '#3b82f6' : '#eab308';
+                    winnerText.style.color = WHEEL_COLORS[state.winning_color] || 'white';
                     lastWheelStatus = 'finished';
                 }
             }
@@ -738,7 +750,7 @@
 
             if(state.history) {
                 document.getElementById('wheel-history').innerHTML = state.history.map(c => {
-                    const hex = c === 'red' ? '#ef4444' : c === 'green' ? '#22c55e' : c === 'blue' ? '#3b82f6' : '#eab308';
+                    const hex = WHEEL_COLORS[c] || '#fff';
                     return `<div class="w-3 h-3 md:w-4 md:h-4 rounded-full" style="background:${hex}"></div>`;
                 }).join('');
             }
@@ -777,7 +789,7 @@
         }
 
         // ==========================================
-        // КЕЙСЫ
+        // КЕЙСЫ (ИСПРАВЛЕНО НАЛОЖЕНИЕ)
         // ==========================================
         async function loadCases() { 
             casesData = await req('/api/cases/list'); 
@@ -830,27 +842,32 @@
                     for(let i=0; i<count; i++) fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
                     container.innerHTML = fullHtml;
                     
+                    // Форсируем рефлоу, чтобы контейнеры получили правильную ширину
+                    void container.offsetWidth;
+
                     let promises = [];
                     for(let i=0; i<count; i++) {
                         const strip = document.getElementById(`row-${i}-strip`); 
                         let html = '';
                         for(let j=0; j<30; j++) { 
                             const item = j === 27 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
-                            html += `<div class="roulette-item" style="flex: 0 0 70px; width: 70px; min-width: 70px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
+                            html += `<div class="roulette-item" style="border-color:${item.color}"><div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
                         }
                         strip.innerHTML = html; 
                         strip.style.transition = 'none'; 
                         strip.style.transform = 'translate3d(0, 0, 0)';
                         
                         promises.push(new Promise(resolve => { 
-                            setTimeout(() => { 
-                                const containerWidth = strip.parentElement.clientWidth; 
-                                const itemWidth = 70, gap = 8; 
-                                const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
-                                strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
-                                strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
-                                setTimeout(resolve, 6200); 
-                            }, 50); 
+                            requestAnimationFrame(() => {
+                                setTimeout(() => { 
+                                    const containerWidth = strip.parentElement.clientWidth; 
+                                    const itemWidth = 70, gap = 8; 
+                                    const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
+                                    strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
+                                    strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
+                                    setTimeout(resolve, 6200); 
+                                }, 50); 
+                            });
                         }));
                     }
                     Promise.all(promises).then(() => { 
@@ -996,7 +1013,7 @@
         async function buyUpgrade(key) { playSfx('click'); try { const res = await req(`/api/clicker/buy`, 'POST', {key: key}); updateBal(res.user.balance); upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier }; renderUpgrades(); } catch(e) { showToast(e.message, 'lose'); } }
 
         // ==========================================
-        // АПГРЕЙД (МУЛЬТИ)
+        // АПГРЕЙД (ИСПРАВЛЕНО КОЛЕСО)
         // ==========================================
         async function loadUpgrade() { 
             selectedUpgradeItems = []; 
@@ -1077,7 +1094,7 @@
             if(chance > 95) chance = 95; 
             
             document.getElementById('upg-chance').textContent = chance.toFixed(1) + '%'; 
-            document.getElementById('upg-wheel').style.background = `conic-gradient(#ef4444 0% ${chance}%, #1A202C ${chance}% 100%)`;
+            document.getElementById('upg-wheel').style.background = `conic-gradient(#22c55e 0% ${chance}%, #ef4444 ${chance}% 100%)`; // Зеленый для выигрыша, красный для проигрыша
         }
         
         async function doUpgrade(btn) {
@@ -1112,6 +1129,7 @@
                 updateBal(res.balance); 
                 
                 const greenDeg = (res.chance / 100) * 360; 
+                // Если выигрыш, стрелка падает в зеленую зону (от 0 до greenDeg). Если проигрыш - в красную.
                 let targetDeg = res.win ? 3600 + (Math.random() * (greenDeg - 10) + 5) : 3600 + (Math.random() * (360 - greenDeg - 10) + greenDeg + 5);
                 
                 void arrow.offsetWidth; 
@@ -1144,12 +1162,71 @@
         }
 
         // ==========================================
-        // МИНЫ
+        // МИНЫ (МГНОВЕННЫЙ ОТКЛИК)
         // ==========================================
         let mId = null;
-        async function startMines() { const bet = parseInt(document.getElementById('mines-bet').value); const mines = parseInt(document.getElementById('mines-count').value); try { const r = await req('/api/mines/start', 'POST', {bet, mines}); updateBal(r.balance); mId = r.game_id; document.getElementById('mines-setup').classList.add('hidden'); document.getElementById('mines-game').classList.remove('hidden'); document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join(''); } catch(e) { showToast(e.message, 'lose'); } }
-        async function clickMine(i) { try { const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i}); const c = document.getElementById(`mc-${i}`); if(r.status === 'boom') { c.classList.add('boom'); c.textContent = '💥'; r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣'); playSfx('lose'); document.getElementById('main-body').classList.add('shake'); if (navigator.vibrate) navigator.vibrate([100, 50, 100]); setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500); setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000); } else if (r.status === 'ok') { c.classList.add('opened'); c.textContent = '💎'; playSfx('safe'); document.getElementById('mines-multi').textContent = r.multiplier + 'x'; document.getElementById('mines-profit').textContent = r.next_win + ' 🪙'; } } catch(e) { showToast(e.message, 'lose'); } }
-        async function cashoutMines() { try { const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); updateBal(r.balance); playSfx('win'); showToast(`Забрано ${r.amount}🪙!`, 'win'); document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); } catch(e) { showToast(e.message, 'lose'); } }
+        async function startMines() { 
+            const bet = parseInt(document.getElementById('mines-bet').value); 
+            const mines = parseInt(document.getElementById('mines-count').value); 
+            try { 
+                const r = await req('/api/mines/start', 'POST', {bet, mines}); 
+                updateBal(r.balance); 
+                mId = r.game_id; 
+                document.getElementById('mines-setup').classList.add('hidden'); 
+                document.getElementById('mines-game').classList.remove('hidden'); 
+                document.getElementById('mines-grid').innerHTML = Array.from({length:25}).map((_,i) => `<div class="mine-cell" onclick="clickMine(${i})" id="mc-${i}"></div>`).join(''); 
+            } catch(e) { showToast(e.message, 'lose'); } 
+        }
+        
+        async function clickMine(i) { 
+            const cell = document.getElementById(`mc-${i}`);
+            if (cell.classList.contains('opened') || cell.classList.contains('loading') || cell.classList.contains('boom')) return;
+
+            // ОПТИМИСТИЧНЫЙ UI: Мгновенно показываем загрузку
+            cell.classList.add('loading');
+            cell.textContent = '⏳';
+
+            try { 
+                const r = await req('/api/mines/click', 'POST', {game_id: mId, cell: i}); 
+                cell.classList.remove('loading');
+                
+                if(r.status === 'boom') { 
+                    cell.classList.add('boom'); 
+                    cell.textContent = '💥'; 
+                    r.mines.forEach(m => document.getElementById(`mc-${m}`).textContent = '💣'); 
+                    playSfx('lose'); 
+                    document.getElementById('main-body').classList.add('shake'); 
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
+                    setTimeout(() => document.getElementById('main-body').classList.remove('shake'), 500); 
+                    setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000); 
+                } else if (r.status === 'ok' || r.status === 'win') { 
+                    cell.classList.add('opened'); 
+                    cell.textContent = '💎'; 
+                    playSfx('safe'); 
+                    document.getElementById('mines-multi').textContent = r.multiplier + 'x'; 
+                    document.getElementById('mines-profit').textContent = r.next_win + ' 🪙'; 
+                    if(r.status === 'win') {
+                        showToast(`Джекпот! Вы забрали всё поле!`, 'win');
+                        setTimeout(() => { document.getElementById('mines-setup').classList.remove('hidden'); document.getElementById('mines-game').classList.add('hidden'); }, 2000);
+                    }
+                } 
+            } catch(e) { 
+                cell.classList.remove('loading');
+                cell.textContent = '';
+                showToast(e.message, 'lose'); 
+            } 
+        }
+        
+        async function cashoutMines() { 
+            try { 
+                const r = await req('/api/mines/cashout', 'POST', {game_id: mId}); 
+                updateBal(r.balance); 
+                playSfx('win'); 
+                showToast(`Забрано ${r.amount}🪙!`, 'win'); 
+                document.getElementById('mines-setup').classList.remove('hidden'); 
+                document.getElementById('mines-game').classList.add('hidden'); 
+            } catch(e) { showToast(e.message, 'lose'); } 
+        }
 
         // ==========================================
         // ДЖЕКПОТ И БАТЛЫ
