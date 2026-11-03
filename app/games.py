@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import secrets
 import random
+from typing import Tuple, List, Dict # Добавили для совместимости
 
 PONY_DB = {
     "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
@@ -13,7 +14,6 @@ PONY_DB = {
     "celestial": ["The Creator", "Goddess of Sun", "Goddess of Moon", "Alpha Pony"]
 }
 
-# СНИЖЕНЫ МНОЖИТЕЛИ, ЧТОБЫ НЕ БЫЛО ИНФЛЯЦИИ
 RARITIES = [
     ("common",    500_000, "Обычная",     2, "#9ca3af"), 
     ("uncommon",  250_000, "Необычная",   5, "#4ade80"), 
@@ -65,27 +65,32 @@ def pick_rarity(case_id: str, ticket: int) -> str:
             return rarity
     return next(iter(weights))
 
-def pick_pony(rarity: str) -> tuple[str, int, str]:
+def pick_pony(rarity: str) -> Tuple[str, int, str]:
     base_mult = RARITY_BY_ID[rarity][3]
     pony_name = random.choice(PONY_DB.get(rarity, ["Unknown Pony"]))
+    # ИСПРАВЛЕНО: В реальном дропе цена тоже может быть случайной, это нормально
     price = int(100 * base_mult * random.uniform(0.5, 1.5))
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
 
-def get_case_preview(case_id: str) -> list:
+def get_case_preview(case_id: str) -> List[Dict]:
     weights = CASES[case_id]["weights"]
     total_weight = sum(weights.values())
     preview = []
     
     for rarity, weight in weights.items():
         chance = (weight / total_weight) * 100
-        ponies = random.sample(PONY_DB.get(rarity, ["Unknown"]), min(2, len(PONY_DB.get(rarity, []))))
+        ponies = PONY_DB.get(rarity, ["Unknown"])
+        # Берем 2 случайные пони для превью
+        sample_ponies = random.sample(ponies, min(2, len(ponies)))
         
-        for p in ponies:
+        for p in sample_ponies:
             base_mult = RARITY_BY_ID[rarity][3]
-            price = int(100 * base_mult * random.uniform(0.5, 1.5))
+            # ИСПРАВЛЕНО: В превью показываем фиксированную среднюю цену, 
+            # чтобы игрок не видел "прыгающие" цифры при каждом обновлении
+            price = int(100 * base_mult * 1.0) 
             color = RARITY_BY_ID[rarity][4]
-            item_chance = chance / len(ponies) 
+            item_chance = chance / len(sample_ponies) 
             
             preview.append({
                 "name": p, 
