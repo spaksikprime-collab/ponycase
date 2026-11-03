@@ -28,11 +28,17 @@ def upgrade_cost(user: User, key: str) -> int:
 
 def apply_passive(user: User, db: Session):
     now = datetime.utcnow()
+    
+    # ЗАЩИТА ОТ NULL (если у старого аккаунта нет времени)
+    if not user.last_passive_tick:
+        user.last_passive_tick = now
+        db.commit()
+        return
+        
     elapsed = (now - user.last_passive_tick).total_seconds()
     
-    if elapsed > 5 and user.auto_rate > 0:
-        # УБРАНО УПОМИНАНИЕ PRESTIGE
-        user.balance += int(elapsed * user.auto_rate * user.multiplier)
+    if elapsed > 5 and user.auto_rate and user.auto_rate > 0:
+        user.balance += int(elapsed * user.auto_rate * (user.multiplier or 1))
         user.last_passive_tick = now
         db.commit()
     elif elapsed > 60:
@@ -65,7 +71,7 @@ def click(user: User = Depends(current_user), db: Session = Depends(get_db)):
     bucket.append(now)
 
     apply_passive(user, db)
-    gain = int(user.click_power * user.multiplier)
+    gain = int(user.click_power * (user.multiplier or 1))
     user.balance += gain
     user.total_clicks += 1
     db.commit()
