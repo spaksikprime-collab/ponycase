@@ -121,6 +121,7 @@ async def run_jackpot_timer():
     await broadcast_drop(winner["username"], winner["avatar"], "ДЖЕКПОТ!", int(total*0.95), "#facc15", "Джекпот")
     
     await asyncio.sleep(5)
+    # СБРОС ДЖЕКПОТА
     JACKPOTS["global_jp"] = {
         "id": "global_jp", "status": "waiting", "total": 0, "players": [], "end_time": 0
     }
