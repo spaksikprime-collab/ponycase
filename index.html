@@ -26,9 +26,9 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 9px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
 
-        /* РУЛЕТКА (ЖЕСТКИЙ ФИКС СЛИПАНИЯ) */
+        /* РУЛЕТКА КЕЙСОВ (ФИКС НАЛОЖЕНИЯ) */
         .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 10px; }
-        .roulette-strip { display: flex; will-change: transform; padding: 0; margin: 0; }
+        .roulette-strip { display: flex; will-change: transform; width: max-content; }
         .roulette-item { 
             flex: 0 0 80px; 
             width: 80px; 
@@ -44,12 +44,11 @@
             overflow: hidden; 
             white-space: nowrap; 
             text-overflow: ellipsis;
-            margin-right: 8px; /* Используем margin вместо gap */
+            margin-right: 8px;
         }
-        .roulette-item:last-child { margin-right: 0; }
         .roulette-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #22c55e; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px #22c55e; }
 
-        /* Колесо Фортуны */
+        /* КОЛЕСО ФОРТУНЫ */
         .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
         .wheel-visual { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #1A202C; box-shadow: 0 0 40px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
         .wheel-pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 50px; z-index: 20; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
@@ -84,6 +83,7 @@
 
     <div id="toast-container"></div>
 
+    <!-- HEADER -->
     <header class="glass sticky top-0 z-40 px-4 py-3 border-b border-gray-800">
         <div class="max-w-[1400px] mx-auto flex justify-between items-center">
             <div class="flex items-center gap-6">
@@ -101,7 +101,11 @@
             </div>
             
             <div class="flex gap-2 md:gap-4 items-center">
-                <div class="text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-500/20 font-bold hidden sm:block">🟢 <span id="online-count">0</span></div>
+                <!-- ФИКС: Онлайн теперь виден на телефонах (убран hidden sm:block) -->
+                <div class="flex items-center gap-1 text-[10px] text-green-400 bg-green-400/10 px-2 py-1 rounded border border-green-500/20 font-bold">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> <span id="online-count">0</span>
+                </div>
+                
                 <button onclick="claimBonus()" class="bg-green-600/20 text-green-400 border border-green-500/50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition">Бонус</button>
                 <div class="bg-gray-900 px-3 py-1.5 rounded-lg border border-yellow-500/50"><span id="balance" class="text-yellow-400 font-bold">0</span> 🪙</div>
                 
@@ -351,7 +355,9 @@
                     <label class="text-xs bg-purple-600 px-4 py-1.5 rounded-full cursor-pointer inline-block mb-3 font-bold">
                         Сменить фото <input type="file" id="avatar-file" class="hidden" onchange="uploadAvatar(this)" accept="image/*">
                     </label>
-                    <h2 class="text-2xl font-black mb-4" id="p-name">Loading...</h2>
+                    <h2 class="text-2xl font-black mb-1" id="p-name">Loading...</h2>
+                    <p class="text-xs text-gray-500 mb-4" id="p-reg-date">Дата регистрации: ...</p>
+                    
                     <div class="flex justify-center gap-4 bg-[#12161f] p-4 rounded-xl max-w-md mx-auto mb-4 border border-gray-800">
                         <div class="flex-1 text-center"><div class="text-gray-400 text-[10px] mb-1">Клики</div><div id="p-clicks" class="font-black text-lg text-yellow-400">0</div></div>
                         <div class="w-px bg-gray-700"></div>
@@ -458,7 +464,6 @@
                 </div>
                 <div id="results-grid" class="flex flex-wrap justify-center gap-3 w-full"></div>
                 <div class="flex gap-3 mt-6 w-full max-w-md">
-                    <!-- Кнопка теперь всегда на месте, просто будет неактивной -->
                     <button id="btn-sell-all-drops" onclick="sellAllDrops()" class="flex-1 bg-red-600 px-4 py-3 rounded-xl font-black text-sm">ПРОДАТЬ ВСЁ</button>
                     <button onclick="closeSpinModal()" class="flex-1 bg-gray-700 px-4 py-3 rounded-xl font-black text-sm">ЗАБРАТЬ</button>
                 </div>
@@ -498,7 +503,6 @@
         }
         
         function startSpinSfx() { 
-            // ЗВУК ИГРАЕТ ТОЛЬКО НА ВКЛАДКЕ КОЛЕСА
             if(currentTab !== 'wheel') return;
 
             if(spinAudioInstance) spinAudioInstance.pause(); 
@@ -701,15 +705,19 @@
                 }).join('');
             }
 
+            // АНИМАЦИЯ КОЛЕСА (ИДЕАЛЬНАЯ МАТЕМАТИКА)
             if(state.status === 'spinning' && lastWheelStatus !== 'spinning') {
                 lastWheelStatus = 'spinning';
                 winnerText.textContent = '???';
                 if(currentTab === 'wheel') startSpinSfx();
                 
-                const segmentAngle = 360 / 20; 
-                const targetDeg = (360 * 5) - (state.winning_index * segmentAngle); 
+                // 20 секторов. 360 / 20 = 18 градусов на сектор
+                const segmentAngle = 18; 
+                // Крутим 8 полных оборотов (2880) + добавляем угол до нужного сектора
+                // Чтобы стрелка (сверху) указывала на сектор, мы вычитаем угол индекса
+                const targetDeg = (360 * 8) + (360 - (state.winning_index * segmentAngle));
                 
-                wheelVisual.style.transition = 'transform 5s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                wheelVisual.style.transition = 'transform 8s cubic-bezier(0.1, 0.7, 0.1, 1)';
                 wheelVisual.style.transform = `rotate(${targetDeg}deg)`;
             } 
             else if(state.status === 'finished' && lastWheelStatus === 'spinning') {
@@ -760,7 +768,7 @@
         }
 
         // ==========================================
-        // КЕЙСЫ
+        // КЕЙСЫ (ФИКС СЖАТИЯ)
         // ==========================================
         async function loadCases() { 
             try { 
@@ -797,7 +805,7 @@
                         const strip = document.getElementById(`row-${i}-strip`); let html = '';
                         for(let j=0; j<50; j++) { 
                             const item = j === 45 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
-                            // ЖЕСТКО ФИКСИРУЕМ ШИРИНУ И ОТСТУП В HTML
+                            // ЖЕСТКО ФИКСИРУЕМ ШИРИНУ И margin-right
                             html += `<div class="roulette-item" style="flex: 0 0 80px; width: 80px; min-width: 80px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:10px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
                         }
                         strip.innerHTML = html; strip.style.transition = 'none'; strip.style.transform = 'translate3d(0, 0, 0)';
@@ -820,15 +828,12 @@
             document.getElementById('results-grid').innerHTML = results.map((item, index) => { total += item.price; return `<div class="glass p-3 rounded-xl flex flex-col items-center min-w-[120px] border-t-2" style="border-color:${item.color}"><div class="text-xs font-bold mb-1 text-center text-white truncate w-full">${item.pony_id}</div><div class="text-yellow-400 font-bold mb-3">${item.price} 🪙</div><div class="flex gap-1 w-full" id="drop-actions-${index}"><button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[10px] font-bold hover:bg-red-600 transition">Продать</button><button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[10px] font-bold hover:bg-green-600 transition">Забрать</button></div></div>`; }).join('');
             
             document.getElementById('total-drops-value').textContent = total + ' 🪙'; 
-            document.getElementById('btn-sell-all-drops').textContent = `ПРОДАТЬ ВСЁ ЗА ${total} 🪙`;
-            
-            // Кнопка "Продать всё" всегда видна
             const btnSellAll = document.getElementById('btn-sell-all-drops');
+            btnSellAll.textContent = `ПРОДАТЬ ВСЁ ЗА ${total} 🪙`;
             btnSellAll.style.display = 'block';
             btnSellAll.disabled = false;
 
-            document.getElementById('spin-results').classList.remove('hidden'); 
-            document.getElementById('spin-results').classList.add('flex');
+            document.getElementById('spin-results').classList.remove('hidden'); document.getElementById('spin-results').classList.add('flex');
         }
         async function sellDropItem(id, price, index) { try { await req(`/api/user/inventory/sell/${id}`, 'POST'); updateBal(user.balance + price); document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-gray-400 w-full text-center py-1">Продано</div>`; playSfx('win'); const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); } catch(e) { showToast(e.message, 'lose'); } }
         function keepDropItem(index) { document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; playSfx('click'); recalcTotalDrops(); }
@@ -842,7 +847,6 @@
             
             const btnSellAll = document.getElementById('btn-sell-all-drops');
             document.getElementById('total-drops-value').textContent = newTotal + ' 🪙'; 
-            
             if(newTotal > 0) {
                 btnSellAll.textContent = `ПРОДАТЬ ОСТАВШЕЕСЯ ЗА ${newTotal} 🪙`; 
                 btnSellAll.disabled = false;
@@ -881,6 +885,8 @@
                 const d = await req(`/api/user/profile?page=${invPage}&limit=10`); 
                 updateBal(d.user.balance); 
                 document.getElementById('p-name').textContent = d.user.username; 
+                document.getElementById('p-reg-date').textContent = `Дата регистрации: ${d.user.created_at}`;
+                
                 document.getElementById('p-clicks').textContent = d.stats.total_clicks; 
                 document.getElementById('p-cases').textContent = d.stats.cases_opened; 
                 document.getElementById('p-best-drop').textContent = d.best_drop ? `${d.best_drop.name} (${d.best_drop.price}🪙)` : 'Нет'; 
