@@ -24,7 +24,14 @@ def get_my_profile(page: int = 1, limit: int = 10, user: User = Depends(current_
     best_drop = {"name": user.best_drop_name, "price": user.best_drop_price} if user.best_drop_price > 0 else None
 
     return {
-        "user": public_user(user),
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "balance": user.balance,
+            "avatar": user.avatar,
+            # ДОБАВЛЕНО: Дата регистрации
+            "created_at": user.created_at.strftime("%d.%m.%Y") if user.created_at else "Неизвестно"
+        },
         "stats": {"total_clicks": user.total_clicks, "cases_opened": opened_cases},
         "best_drop": best_drop,
         "inventory": [{"id": i.id, "name": i.pony_id, "rarity": i.rarity, "price": i.price, "color": i.color} for i in inventory],
