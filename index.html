@@ -17,7 +17,6 @@
         .page { display: none; } .page.active { display: block; animation: fadeIn 0.2s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Заглушка для кейсов (Skeleton) */
         .skeleton { background: linear-gradient(90deg, #1A202C 25%, #2D3748 50%, #1A202C 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
@@ -114,7 +113,6 @@
             <div id="page-cases" class="page active">
                 <h2 class="text-xl md:text-2xl font-black mb-3 md:mb-4">Кейсы</h2>
                 <div id="cases-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-                    <!-- Скелетоны загрузки -->
                     <div class="skeleton h-32 md:h-40 rounded-xl"></div>
                     <div class="skeleton h-32 md:h-40 rounded-xl"></div>
                     <div class="skeleton h-32 md:h-40 rounded-xl"></div>
@@ -287,10 +285,10 @@
                                 </div>
                             </div>
                             <div class="flex gap-1">
-                                <button onclick="setUpgMult(1.5)" class="bg-gray-800 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-gray-700">x1.5</button>
-                                <button onclick="setUpgMult(2)" class="bg-green-600 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-green-500 font-bold">x2</button>
-                                <button onclick="setUpgMult(5)" class="bg-gray-800 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-gray-700">x5</button>
-                                <button onclick="setUpgMult(10)" class="bg-gray-800 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border border-gray-700">x10</button>
+                                <button onclick="setUpgMult(1.5, this)" class="bg-gray-800 border-gray-700 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border">x1.5</button>
+                                <button onclick="setUpgMult(2, this)" class="bg-green-600 border-green-500 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border font-bold">x2</button>
+                                <button onclick="setUpgMult(5, this)" class="bg-gray-800 border-gray-700 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border">x5</button>
+                                <button onclick="setUpgMult(10, this)" class="bg-gray-800 border-gray-700 text-[10px] md:text-xs py-1 px-2 md:px-3 rounded border">x10</button>
                             </div>
                         </div>
                         <div class="upg-box border-green-500/50">
@@ -310,7 +308,7 @@
                             <span id="upg-boost-val" class="text-green-400 font-bold text-[10px] md:text-sm">0 🪙</span>
                         </div>
 
-                        <button onclick="doUpgrade()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-2.5 md:py-3 rounded-xl font-black text-sm md:text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
+                        <button id="upg-btn" onclick="doUpgrade(this)" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 py-2.5 md:py-3 rounded-xl font-black text-sm md:text-lg shadow-[0_0_15px_rgba(34,197,94,0.3)]">АПГРЕЙДНУТЬ</button>
                     </div>
                 </div>
             </div>
@@ -394,7 +392,6 @@
         </aside>
     </main>
 
-    <!-- МОБИЛЬНАЯ НАВИГАЦИЯ -->
     <nav class="fixed bottom-0 w-full h-[55px] md:h-[60px] bg-[#12161f] border-t border-gray-800 flex justify-around items-center z-40 pb-safe lg:hidden">
         <button onclick="switchTab('cases')" class="nav-btn active" id="m-nav-cases"><span class="text-lg md:text-xl">📦</span>Кейсы</button>
         <button onclick="switchTab('wheel')" class="nav-btn" id="m-nav-wheel"><span class="text-lg md:text-xl">🎡</span>Колесо</button>
@@ -419,7 +416,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКИ -->
     <div id="auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-4 z-[100] hidden">
         <div class="glass p-5 md:p-6 rounded-2xl w-full max-w-sm">
             <h2 class="text-lg md:text-xl font-black text-center mb-3 md:mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">ВХОД</h2>
@@ -494,8 +490,6 @@
         }
         
         function startSpinSfx() { 
-            if(currentTab !== 'wheel') return;
-
             if(spinAudioInstance) spinAudioInstance.pause(); 
             spinAudioInstance = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'); 
             spinAudioInstance.loop = true; 
@@ -532,6 +526,7 @@
         let upgMult = 2, casesData = [], jpTimerInterval = null, upgLevels = { click_power: 1, auto_rate: 0, multiplier: 1 };
         let selectedWheelColor = 'red';
         let lastWheelStatus = null;
+        let wheelTimerInterval = null; // Локальный таймер колеса
 
         let invPage = 1;
         let histPage = 1;
@@ -572,7 +567,6 @@
         }
 
         async function init() {
-            // 1. Загружаем профиль (независимо)
             try {
                 user = await req('/api/clicker/state'); 
                 updateBal(user.balance); 
@@ -587,21 +581,14 @@
                 showToast("Ошибка загрузки профиля", "lose");
             }
 
-            // 2. Загружаем кейсы (независимо)
-            try {
-                await loadCases();
-            } catch(e) {
-                console.error("Cases load error:", e);
-            }
+            try { await loadCases(); } catch(e) { console.error("Cases load error:", e); }
             
-            // 3. Остальное (независимо)
             renderUpgrades();
             fetchWheelState().catch(e => console.error(e));
             
             loadLeaderboard().catch(e => console.error(e));
             setInterval(loadLeaderboard, 30000);
 
-            // 4. Сокеты
             if(!socket) {
                 socket = io({ auth: { token } });
                 socket.on('online', d => document.getElementById('online-count').textContent = d.count);
@@ -682,20 +669,62 @@
             } catch(e) { showToast(e.message, 'lose'); }
         }
 
+        let serverTimeOffset = 0;
+
         function updateWheelUI(state) {
             const timerEl = document.getElementById('wheel-timer');
             const wheelVisual = document.getElementById('wheel-visual');
             const winnerText = document.getElementById('wheel-winner-text');
 
+            if (state.server_time) {
+                serverTimeOffset = state.server_time - (Date.now() / 1000);
+            }
+
+            if (wheelTimerInterval) clearInterval(wheelTimerInterval);
+
             if(state.status === 'waiting') {
-                let left = Math.max(0, Math.ceil(state.end_time - Date.now()/1000));
-                timerEl.textContent = `00:${left < 10 ? '0'+left : left}`;
+                const updateTimer = () => {
+                    const now = (Date.now() / 1000) + serverTimeOffset;
+                    let left = Math.max(0, Math.ceil(state.end_time - now));
+                    timerEl.textContent = `00:${left < 10 ? '0'+left : left}`;
+                    if (left <= 0) clearInterval(wheelTimerInterval);
+                };
+                updateTimer();
+                wheelTimerInterval = setInterval(updateTimer, 1000);
                 timerEl.className = "text-2xl md:text-3xl font-black text-white mb-1 md:mb-2";
+
+                if(lastWheelStatus !== 'waiting') {
+                    lastWheelStatus = 'waiting';
+                    wheelVisual.style.transition = 'none';
+                    wheelVisual.style.transform = 'rotate(0deg)';
+                    winnerText.textContent = '???';
+                    winnerText.style.color = 'white';
+                }
             } else if(state.status === 'spinning') {
                 timerEl.textContent = "Крутится!";
                 timerEl.className = "text-2xl md:text-3xl font-black text-yellow-400 mb-1 md:mb-2 animate-pulse";
-            } else {
+                
+                if(lastWheelStatus !== 'spinning') {
+                    lastWheelStatus = 'spinning';
+                    winnerText.textContent = '???';
+                    if(currentTab === 'wheel') startSpinSfx();
+                    
+                    const segmentAngle = 18; 
+                    const targetDeg = (360 * 8) + (360 - (state.winning_index * segmentAngle));
+                    
+                    wheelVisual.style.transition = 'transform 8s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    wheelVisual.style.transform = `rotate(${targetDeg}deg)`;
+                }
+            } else if(state.status === 'finished') {
                 timerEl.textContent = "Ожидание...";
+                timerEl.className = "text-2xl md:text-3xl font-black text-white mb-1 md:mb-2";
+                
+                if(lastWheelStatus === 'spinning') {
+                    stopSpinSfx();
+                    winnerText.textContent = state.winning_color.toUpperCase();
+                    winnerText.style.color = state.winning_color === 'red' ? '#ef4444' : state.winning_color === 'green' ? '#22c55e' : state.winning_color === 'blue' ? '#3b82f6' : '#eab308';
+                    lastWheelStatus = 'finished';
+                }
             }
 
             const betsList = document.getElementById('wheel-bets-list');
@@ -712,32 +741,6 @@
                     const hex = c === 'red' ? '#ef4444' : c === 'green' ? '#22c55e' : c === 'blue' ? '#3b82f6' : '#eab308';
                     return `<div class="w-3 h-3 md:w-4 md:h-4 rounded-full" style="background:${hex}"></div>`;
                 }).join('');
-            }
-
-            // АНИМАЦИЯ КОЛЕСА (ИДЕАЛЬНАЯ МАТЕМАТИКА)
-            if(state.status === 'spinning' && lastWheelStatus !== 'spinning') {
-                lastWheelStatus = 'spinning';
-                winnerText.textContent = '???';
-                if(currentTab === 'wheel') startSpinSfx();
-                
-                const segmentAngle = 18; 
-                const targetDeg = (360 * 8) + (360 - (state.winning_index * segmentAngle));
-                
-                wheelVisual.style.transition = 'transform 8s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                wheelVisual.style.transform = `rotate(${targetDeg}deg)`;
-            } 
-            else if(state.status === 'finished' && lastWheelStatus === 'spinning') {
-                lastWheelStatus = state.winning_color;
-                stopSpinSfx();
-                winnerText.textContent = state.winning_color.toUpperCase();
-                winnerText.style.color = state.winning_color === 'red' ? '#ef4444' : state.winning_color === 'green' ? '#22c55e' : state.winning_color === 'blue' ? '#3b82f6' : '#eab308';
-            }
-            else if(state.status === 'waiting') {
-                lastWheelStatus = null;
-                wheelVisual.style.transition = 'none';
-                wheelVisual.style.transform = 'rotate(0deg)';
-                winnerText.textContent = '???';
-                winnerText.style.color = 'white';
             }
         }
 
@@ -793,37 +796,76 @@
         }
 
         async function startCaseSpin() {
-            const btn = document.getElementById('spin-close-btn'); btn.classList.add('hidden'); document.getElementById('spin-results').classList.add('hidden'); document.getElementById('spin-results').classList.remove('flex');
-            const isFast = document.getElementById('cd-fast').checked; const count = parseInt(document.getElementById('cd-count').value);
-            const container = document.getElementById('spin-container'); container.innerHTML = ''; container.classList.remove('hidden');
-            document.getElementById('modal-spin').classList.remove('hidden'); document.getElementById('spin-title').textContent = "Открываем кейс...";
+            const btn = document.getElementById('spin-close-btn'); 
+            btn.classList.add('hidden'); 
+            document.getElementById('spin-results').classList.add('hidden'); 
+            document.getElementById('spin-results').classList.remove('flex');
+            
+            const isFast = document.getElementById('cd-fast').checked; 
+            const count = parseInt(document.getElementById('cd-count').value);
+            const container = document.getElementById('spin-container'); 
+            container.innerHTML = ''; 
+            container.classList.remove('hidden');
+            document.getElementById('modal-spin').classList.remove('hidden'); 
+            document.getElementById('spin-title').textContent = "Открываем кейс...";
+
             try {
-                const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count}); updateBal(res.balance); currentDrops = res.results;
-                if (isFast) { playSfx('win'); confetti(); document.getElementById('spin-container').classList.add('hidden'); showSpinResults(res.results); }
-                else {
-                    startSpinSfx(); let fullHtml = ''; const pool = currentCaseData;
+                const res = await req(`/api/cases/open_multi/${currentCase}`, 'POST', {count: count}); 
+                updateBal(res.balance); 
+                currentDrops = res.results;
+
+                if (!currentDrops || currentDrops.length === 0) throw new Error("Сервер не вернул предметы");
+
+                if (isFast) { 
+                    playSfx('win'); 
+                    confetti(); 
+                    document.getElementById('spin-container').classList.add('hidden'); 
+                    showSpinResults(res.results); 
+                } else {
+                    startSpinSfx(); 
+                    let fullHtml = ''; 
+                    const pool = currentCaseData;
+                    if(!pool || pool.length === 0) throw new Error("Кейс пуст");
+                    
                     for(let i=0; i<count; i++) fullHtml += `<div class="roulette-wrapper" id="row-${i}"><div class="roulette-line"></div><div class="roulette-strip" id="row-${i}-strip"></div></div>`;
                     container.innerHTML = fullHtml;
+                    
                     let promises = [];
                     for(let i=0; i<count; i++) {
-                        const strip = document.getElementById(`row-${i}-strip`); let html = '';
+                        const strip = document.getElementById(`row-${i}-strip`); 
+                        let html = '';
                         for(let j=0; j<30; j++) { 
                             const item = j === 27 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
                             html += `<div class="roulette-item" style="flex: 0 0 70px; width: 70px; min-width: 70px; margin-right: 8px; border-color:${item.color}"><div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.pony_id || item.name}</div></div>`; 
                         }
-                        strip.innerHTML = html; strip.style.transition = 'none'; strip.style.transform = 'translate3d(0, 0, 0)';
-                        promises.push(new Promise(resolve => { requestAnimationFrame(() => { requestAnimationFrame(() => { 
-                            const containerWidth = strip.parentElement.clientWidth; 
-                            const itemWidth = 70, gap = 8; 
-                            const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
-                            strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
-                            strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
-                            setTimeout(resolve, 6200); 
-                        }); }); }));
+                        strip.innerHTML = html; 
+                        strip.style.transition = 'none'; 
+                        strip.style.transform = 'translate3d(0, 0, 0)';
+                        
+                        promises.push(new Promise(resolve => { 
+                            setTimeout(() => { 
+                                const containerWidth = strip.parentElement.clientWidth; 
+                                const itemWidth = 70, gap = 8; 
+                                const offset = (27 * (itemWidth + gap)) + (itemWidth / 2) - (containerWidth / 2); 
+                                strip.style.transition = 'transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)'; 
+                                strip.style.transform = `translate3d(-${offset}px, 0, 0)`; 
+                                setTimeout(resolve, 6200); 
+                            }, 50); 
+                        }));
                     }
-                    Promise.all(promises).then(() => { stopSpinSfx(); playSfx('win'); confetti(); document.getElementById('spin-container').classList.add('hidden'); showSpinResults(res.results); });
+                    Promise.all(promises).then(() => { 
+                        stopSpinSfx(); 
+                        playSfx('win'); 
+                        confetti(); 
+                        document.getElementById('spin-container').classList.add('hidden'); 
+                        showSpinResults(res.results); 
+                    });
                 }
-            } catch(e) { stopSpinSfx(); showToast(e.message, 'lose'); document.getElementById('modal-spin').classList.add('hidden'); }
+            } catch(e) { 
+                stopSpinSfx(); 
+                showToast(e.message || "Ошибка открытия кейса", 'lose'); 
+                document.getElementById('modal-spin').classList.add('hidden'); 
+            }
         }
 
         function showSpinResults(results) {
@@ -993,10 +1035,17 @@
             updateUpgradeUI();
         }
         
-        function setUpgMult(m) { 
-            upgMult = m; updateUpgradeUI(); 
-            document.querySelectorAll('#page-upgrade button').forEach(b => b.classList.remove('bg-green-600', 'border-green-500')); 
-            event.target.classList.add('bg-green-600', 'border-green-500'); 
+        function setUpgMult(m, btn) { 
+            upgMult = m; 
+            updateUpgradeUI(); 
+            document.querySelectorAll('#page-upgrade button').forEach(b => {
+                b.classList.remove('bg-green-600', 'border-green-500');
+                b.classList.add('bg-gray-800', 'border-gray-700');
+            }); 
+            if(btn) {
+                btn.classList.remove('bg-gray-800', 'border-gray-700');
+                btn.classList.add('bg-green-600', 'border-green-500'); 
+            }
         }
         
         function updateUpgradeUI() {
@@ -1031,9 +1080,11 @@
             document.getElementById('upg-wheel').style.background = `conic-gradient(#ef4444 0% ${chance}%, #1A202C ${chance}% 100%)`;
         }
         
-        async function doUpgrade() {
+        async function doUpgrade(btn) {
+            if(!btn) btn = document.getElementById('upg-btn');
+            if(btn.disabled) return;
             if(selectedUpgradeItems.length === 0) return showToast("Выбери предметы", 'lose');
-            
+
             let totalPrice = 0;
             selectedUpgradeItems.forEach(id => {
                 const item = inv.find(i => i.id === id);
@@ -1044,14 +1095,20 @@
             const boost = parseInt(document.getElementById('upg-boost').value) || 0;
             
             const arrow = document.getElementById('upg-arrow'); 
-            arrow.style.transition = 'none'; arrow.style.transform = 'translateX(-50%) rotate(0deg)'; 
+            arrow.style.transition = 'none'; 
+            arrow.style.transform = 'translateX(-50%) rotate(0deg)'; 
             startSpinSfx();
             
-            const btn = event.target;
             btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = "КРУТИМ...";
 
             try { 
-                const res = await req('/api/upgrade/play', 'POST', { item_ids: selectedUpgradeItems, target_price: targetPrice, target_name: `Upgraded Pony`, boost: boost }); 
+                const res = await req('/api/upgrade/play', 'POST', { 
+                    item_ids: selectedUpgradeItems, 
+                    multiplier: upgMult, 
+                    boost: boost 
+                }); 
                 updateBal(res.balance); 
                 
                 const greenDeg = (res.chance / 100) * 360; 
@@ -1065,15 +1122,24 @@
                     
                     setTimeout(() => { 
                         stopSpinSfx(); 
-                        if(res.win) { playSfx('win'); confetti(); showToast(`ПОБЕДА!`, 'win'); } 
-                        else { playSfx('lose'); showToast(`Проигрыш`, 'lose'); } 
+                        if(res.win) { 
+                            playSfx('win'); 
+                            confetti(); 
+                            showToast(`ПОБЕДА!`, 'win'); 
+                        } else { 
+                            playSfx('lose'); 
+                            showToast(`Проигрыш`, 'lose'); 
+                        } 
                         loadUpgrade(); 
                         btn.disabled = false;
+                        btn.textContent = originalText;
                     }, 5200); 
                 }, 50); 
             } catch(e) { 
-                stopSpinSfx(); showToast(e.message, 'lose'); 
+                stopSpinSfx(); 
+                showToast(e.message || "Ошибка апгрейда", 'lose'); 
                 btn.disabled = false;
+                btn.textContent = originalText;
             }
         }
 
