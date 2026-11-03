@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+import asyncio # ДОБАВЛЕНО ДЛЯ ФОНОВЫХ ЗАДАЧ
 from .db import get_db
 from .models import User, InventoryItem, CaseOpen, GameHistory
 from .auth import current_user
@@ -31,66 +32,63 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
     if data.count < 1 or data.count > 10: 
         raise HTTPException(400, "Можно открывать от 1 до 10 кейсов за раз")
     
+    # Блокируем юзера, чтобы не было двойных списаний при спаме
+    user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+    
     case = CASES[case_id]
     total_price = case["price"] * data.count
     
-    # Начисляем пассивный доход и проверяем баланс
-    apply_passive(user, db)
+    apply_passive(user_db, db)
     
-    if user.balance < total_price: 
+    if user_db.balance < total_price: 
         raise HTTPException(400, "Недостаточно копыт для открытия")
 
-    user.balance -= total_price
+    user_db.balance -= total_price
     results = []
     
     try:
         for _ in range(data.count):
-            user.nonce += 1
+            user_db.nonce += 1
             server_seed = gen_seed()
             client_seed = gen_seed()
-            ticket = roll_ticket(server_seed, client_seed, user.nonce)
+            ticket = roll_ticket(server_seed, client_seed, user_db.nonce)
             rarity = pick_rarity(case_id, ticket)
             pony_id, price, color = pick_pony(rarity)
 
-            # Создаем предмет в инвентаре
             item = InventoryItem(
-                user_id=user.id, 
+                user_id=user_db.id, 
                 pony_id=pony_id, 
                 rarity=rarity, 
                 price=price, 
                 color=color
             )
             db.add(item)
-            db.flush() # Получаем ID предмета до коммита
+            db.flush() 
             
-            # Записываем открытие кейса (для Provably Fair)
             db.add(CaseOpen(
-                user_id=user.id, 
+                user_id=user_db.id, 
                 case_id=case_id, 
                 pony_id=pony_id, 
                 rarity=rarity, 
                 price=case["price"], 
                 server_seed=server_seed, 
                 client_seed=client_seed, 
-                nonce=user.nonce, 
+                nonce=user_db.nonce, 
                 ticket=ticket
             ))
 
-            # Запись в общую историю игр
             db.add(GameHistory(
-                user_id=user.id, 
+                user_id=user_db.id, 
                 game_type="Кейс", 
                 item_name=pony_id, 
                 price=price, 
                 result_text=f"Открыл {case['name']}"
             ))
             
-            # Обновляем лучший дроп за всё время
-            if price > user.best_drop_price:
-                user.best_drop_price = price
-                user.best_drop_name = pony_id
+            if price > user_db.best_drop_price:
+                user_db.best_drop_price = price
+                user_db.best_drop_name = pony_id
             
-            # Собираем результаты для отправки на фронтенд
             results.append({
                 "id": item.id, 
                 "pony_id": pony_id, 
@@ -99,19 +97,19 @@ async def open_multi(case_id: str, data: OpenMulti, user: User = Depends(current
                 "color": color
             })
             
-            # Отправляем в Live-ленту только дорогие дропы (дороже 5000)
             if price > 5000:
-                await broadcast_drop(
-                    user.username, 
-                    user.avatar, 
+                # Отправляем асинхронно, не блокируя ответ игроку
+                asyncio.create_task(broadcast_drop(
+                    user_db.username, 
+                    user_db.avatar, 
                     pony_id, 
                     price, 
                     color, 
                     f"Кейс: {case['name']}"
-                )
+                ))
 
         db.commit()
-        return {"results": results, "balance": user.balance}
+        return {"results": results, "balance": user_db.balance}
         
     except Exception as e:
         db.rollback()
