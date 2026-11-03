@@ -1,7 +1,13 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Text, Index, CheckConstraint
+from sqlalchemy import (
+    Column, Integer, BigInteger, String, Float, 
+    DateTime, ForeignKey, Text, Index, CheckConstraint
+)
 from sqlalchemy.orm import relationship
 from .db import Base, utc_now
 
+# ==========================================
+# МОДЕЛЬ ПОЛЬЗОВАТЕЛЯ
+# ==========================================
 class User(Base):
     __tablename__ = "users"
     
@@ -10,11 +16,13 @@ class User(Base):
     password_hash = Column(String(256), nullable=False)
     avatar = Column(Text, default="🦄")
     
-    # Баланс с индексом для быстрого топа игроков
+    # Баланс и статистика (BigInteger защищает от переполнения при больших множителях)
     balance = Column(BigInteger, default=1000, nullable=False, index=True)
     total_clicks = Column(BigInteger, default=0, nullable=False)
     
     # Параметры кликера
+    # Примечание: Float используется для совместимости. Точность контролируется 
+    # на уровне Python (round(..., 4)) в clicker.py, чтобы избежать drift.
     click_power = Column(Integer, default=1, nullable=False)
     auto_rate = Column(Float, default=0.0, nullable=False)
     multiplier = Column(Float, default=1.0, nullable=False)
@@ -27,16 +35,16 @@ class User(Base):
     best_drop_price = Column(BigInteger, default=0, nullable=False)
     best_drop_name = Column(String(64), nullable=True)
     
-    # Временные метки с правильной поддержкой часовых поясов
+    # Временные метки
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     last_passive_tick = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     
-    # Relationships для cascade-удаления
+    # Relationships для cascade-удаления (при удалении юзера удаляется всё его добро)
     inventory = relationship("InventoryItem", back_populates="user", cascade="all, delete-orphan")
     case_opens = relationship("CaseOpen", back_populates="user", cascade="all, delete-orphan")
     game_history = relationship("GameHistory", back_populates="user", cascade="all, delete-orphan")
     
-    # Constraints для защиты от невалидных данных
+    # Constraints для жесткой защиты от невалидных данных на уровне БД
     __table_args__ = (
         CheckConstraint('balance >= 0', name='check_balance_non_negative'),
         CheckConstraint('click_power >= 1', name='check_click_power_positive'),
@@ -45,6 +53,9 @@ class User(Base):
         CheckConstraint('nonce >= 0', name='check_nonce_non_negative'),
     )
 
+# ==========================================
+# МОДЕЛЬ ИНВЕНТАРЯ
+# ==========================================
 class InventoryItem(Base):
     __tablename__ = "inventory"
     
@@ -56,15 +67,17 @@ class InventoryItem(Base):
     color = Column(String(16), default="#ffffff", nullable=False)
     obtained_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     
-    # Relationship
     user = relationship("User", back_populates="inventory")
     
-    # Индексы для быстрой сортировки и фильтрации
+    # Составные индексы для молниеносной сортировки инвентаря в профиле
     __table_args__ = (
         Index('ix_inventory_user_price', 'user_id', 'price'),
         Index('ix_inventory_user_rarity', 'user_id', 'rarity'),
     )
 
+# ==========================================
+# МОДЕЛЬ ОТКРЫТИЙ КЕЙСОВ (Provably Fair)
+# ==========================================
 class CaseOpen(Base):
     __tablename__ = "case_opens"
     
@@ -75,7 +88,7 @@ class CaseOpen(Base):
     rarity = Column(String(32), nullable=False, index=True)
     price = Column(BigInteger, nullable=False)
     
-    # Provably Fair данные
+    # Данные для верификации честности игры
     server_seed = Column(String(64), nullable=False)
     client_seed = Column(String(64), nullable=False)
     nonce = Column(BigInteger, nullable=False)
@@ -83,14 +96,16 @@ class CaseOpen(Base):
     
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
     
-    # Relationship
     user = relationship("User", back_populates="case_opens")
     
-    # Составной индекс для быстрого поиска открытий кейсов пользователем
+    # Индекс для быстрого поиска истории открытий конкретного пользователя
     __table_args__ = (
         Index('ix_case_opens_user_created', 'user_id', 'created_at'),
     )
 
+# ==========================================
+# МОДЕЛЬ ИСТОРИИ ИГР
+# ==========================================
 class GameHistory(Base):
     __tablename__ = "game_history"
     
@@ -102,10 +117,9 @@ class GameHistory(Base):
     result_text = Column(String(128), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
     
-    # Relationship
     user = relationship("User", back_populates="game_history")
     
-    # Составной индекс для моментальной загрузки истории профиля (новые записи сверху)
+    # Индексы для быстрой загрузки истории профиля и статистики по типам игр
     __table_args__ = (
         Index('ix_game_history_user_created', 'user_id', 'created_at'),
         Index('ix_game_history_type_created', 'game_type', 'created_at'),
