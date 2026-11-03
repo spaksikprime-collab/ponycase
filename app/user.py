@@ -2,10 +2,9 @@ import base64
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from pydantic import Field
 
 from .db import get_db
 from .models import User, InventoryItem, CaseOpen, GameHistory
@@ -29,8 +28,8 @@ BONUS_COOLDOWN_SECONDS = 3600  # 1 час
 # ==========================================
 @router.get("/profile")
 def get_my_profile(
-    page: int = Field(default=1, ge=1),
-    limit: int = Field(default=10, ge=1, le=MAX_PAGINATION_LIMIT),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=10, ge=1, le=MAX_PAGINATION_LIMIT),
     user: User = Depends(current_user),
     db: Session = Depends(get_db)
 ):
@@ -93,8 +92,8 @@ def get_my_profile(
 # ==========================================
 @router.get("/history")
 def get_history(
-    page: int = Field(default=1, ge=1),
-    limit: int = Field(default=10, ge=1, le=MAX_PAGINATION_LIMIT),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=10, ge=1, le=MAX_PAGINATION_LIMIT),
     user: User = Depends(current_user),
     db: Session = Depends(get_db)
 ):
