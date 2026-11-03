@@ -2,7 +2,6 @@ import datetime
 from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Boolean, Text, Index
 from .db import Base
 
-# Используем lambda для корректного времени
 def utc_now():
     return datetime.datetime.now(datetime.timezone.utc)
 
@@ -12,7 +11,7 @@ class User(Base):
     username = Column(String(32), unique=True, index=True, nullable=False)
     password_hash = Column(String(256), nullable=False)
     avatar = Column(Text, default="🦄")
-    balance = Column(BigInteger, default=1000, nullable=False, index=True) # ДОБАВЛЕН ИНДЕКС (для Топа)
+    balance = Column(BigInteger, default=1000, nullable=False, index=True) # ИНДЕКС ДЛЯ ТОПА
     total_clicks = Column(BigInteger, default=0)
     click_power = Column(Integer, default=1)
     auto_rate = Column(Float, default=0.0)
@@ -27,11 +26,10 @@ class User(Base):
 class InventoryItem(Base):
     __tablename__ = "inventory"
     id = Column(Integer, primary_key=True)
-    # ДОБАВЛЕН CASCADE (удаление предметов при удалении юзера)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     pony_id = Column(String(64), nullable=False)
     rarity = Column(String(32), nullable=False)
-    price = Column(BigInteger, default=0, index=True) # ДОБАВЛЕН ИНДЕКС (для сортировки в профиле)
+    price = Column(BigInteger, default=0, index=True) # ИНДЕКС ДЛЯ СОРТИРОВКИ В ПРОФИЛЕ
     color = Column(String(16), default="#fff")
     obtained_at = Column(DateTime, default=utc_now)
 
@@ -57,7 +55,7 @@ class GameHistory(Base):
     item_name = Column(String(64), nullable=False)
     price = Column(BigInteger, default=0)
     result_text = Column(String(128), nullable=True)
-    created_at = Column(DateTime, default=utc_now, index=True) # ДОБАВЛЕН ИНДЕКС (для истории)
+    created_at = Column(DateTime, default=utc_now, index=True)
 
     # Составной индекс для моментальной загрузки истории профиля
     __table_args__ = (
