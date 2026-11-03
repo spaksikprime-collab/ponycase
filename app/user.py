@@ -18,6 +18,7 @@ def get_my_profile(page: int = 1, limit: int = 10, user: User = Depends(current_
     skip = (page - 1) * limit
     inv_query = db.query(InventoryItem).filter(InventoryItem.user_id == user_db.id)
     total_items = inv_query.count()
+    # Сортируем по цене, чтобы самые дорогие были сверху
     inventory = inv_query.order_by(InventoryItem.price.desc()).offset(skip).limit(limit).all()
     
     opened_cases = db.query(CaseOpen).filter(CaseOpen.user_id == user_db.id).count()
@@ -43,6 +44,7 @@ def get_history(page: int = 1, limit: int = 10, user: User = Depends(current_use
     hist_query = db.query(GameHistory).filter(GameHistory.user_id == user.id)
     total = hist_query.count()
     
+    # Сортируем по дате (сначала новые)
     history = hist_query.order_by(GameHistory.created_at.desc()).offset(skip).limit(limit).all()
     
     return {
@@ -52,6 +54,7 @@ def get_history(page: int = 1, limit: int = 10, user: User = Depends(current_use
 
 @router.get("/leaderboard")
 def get_leaderboard(db: Session = Depends(get_db)):
+    # Благодаря индексу на balance, это работает моментально даже с миллионом юзеров
     top_users = db.query(User).order_by(User.balance.desc()).limit(10).all()
     return [{"rank": i+1, "username": u.username, "avatar": u.avatar, "balance": u.balance} for i, u in enumerate(top_users)]
 
