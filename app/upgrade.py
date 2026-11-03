@@ -15,26 +15,17 @@ from .ws import broadcast_drop
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Хранилище фоновых задач (защита от garbage collection)
 background_tasks = set()
 
-# ==========================================
-# МОДЕЛИ ЗАПРОСОВ
-# ==========================================
 class UpgradeRequest(BaseModel):
     item_ids: List[int] = Field(..., min_length=1, description="ID предметов для апгрейда")
     multiplier: float = Field(..., ge=1.1, le=100.0, description="Множитель апгрейда (от 1.1 до 100)")
     boost: int = Field(default=0, ge=0, description="Дополнительный буст балансом")
 
-# ==========================================
-# ЭНДПОИНТ АПГРЕЙДА
-# ==========================================
 @router.post("/play")
 async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    # Блокируем пользователя для предотвращения race condition
     user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
     
-    # Получаем предметы и строго проверяем, что они принадлежат пользователю
     items = db.query(InventoryItem).filter(
         InventoryItem.id.in_(data.item_ids), 
         InventoryItem.user_id == user_db.id
@@ -44,8 +35,6 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
         raise HTTPException(status_code=404, detail="Некоторые предметы не найдены в вашем инвентаре")
 
     total_items_price = sum(i.price for i in items)
-    
-    # Сервер сам считает целевую цену (защита от накрутки)
     target_price = int(total_items_price * data.multiplier)
     
     if target_price <= (total_items_price + data.boost):
@@ -53,7 +42,6 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
 
     apply_passive(user_db, db)
     
-    # Списание буста
     if data.boost > 0:
         if user_db.balance < data.boost: 
             raise HTTPException(status_code=400, detail="Недостаточно средств для буста")
@@ -62,21 +50,11 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
     total_bet_value = total_items_price + data.boost
     chance = (total_bet_value / target_price) * 100
     
-    # Ограничение максимального шанса (House Edge)
     if chance > 95.0: 
         chance = 95.0
 
-    # ==========================================
-    # PROVABLY FAIR (Честная генерация)
-    # ==========================================
-    # Инкрементируем nonce
     user_db.nonce += 1
-    
-    # Генерируем серверный сид
     server_seed = gen_seed()
-    
-    # Клиентский сид детерминирован и известен до броска (ID юзера + его nonce)
-    # Это делает систему полностью верифицируемой и неподкручиваемой
     client_seed = f"{user_db.id}:{user_db.nonce}"
     
     ticket = roll_ticket(server_seed, client_seed, user_db.nonce)
@@ -84,14 +62,11 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
     win = roll_pct <= chance
 
     try:
-        # Удаляем старые предметы
+        # ИСПРАВЛЕНО: Убрана проверка db.session
         for item in items:
-            # Дополнительная проверка, чтобы избежать ошибок при конкурентных запросах
-            if item in db.session:
-                db.delete(item)
+            db.delete(item)
             
         if win:
-            # Сохраняем имя оригинального предмета для "души" коллекции
             original_name = items[0].pony_id
             new_name = f"{original_name} (Upgraded x{data.multiplier})"
             
@@ -100,11 +75,10 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
                 pony_id=new_name, 
                 rarity="upgraded", 
                 price=target_price, 
-                color="#facc15" # Золотой цвет для апгрейдов
+                color="#facc15"
             )
             db.add(new_item)
             
-            # Обновляем лучший дроп
             if target_price > (user_db.best_drop_price or 0):
                 user_db.best_drop_price = target_price
                 user_db.best_drop_name = new_name
@@ -118,7 +92,6 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
             ))
             db.commit()
             
-            # Безопасный broadcast
             task = asyncio.create_task(broadcast_drop(user_db.username, user_db.avatar, new_name, target_price, "#facc15", "Апгрейд"))
             background_tasks.add(task)
             task.add_done_callback(background_tasks.discard)
