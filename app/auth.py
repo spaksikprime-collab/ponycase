@@ -37,14 +37,13 @@ def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer), db: Sessi
 
 @router.post("/register")
 def register(data: AuthIn, db: Session = Depends(get_db)):
-    # Валидация логина
     clean_name = data.username.strip()
+    
+    # Валидация
     if len(clean_name) < 3:
         raise HTTPException(400, "Никнейм должен быть от 3 символов")
     if len(clean_name) > 32:
         raise HTTPException(400, "Никнейм слишком длинный")
-        
-    # Защита от ошибки bcrypt (он не принимает пароли длиннее 72 байт)
     if len(data.password.encode('utf-8')) > 72:
         raise HTTPException(400, "Пароль слишком длинный (макс 72 символа)")
     if len(data.password) < 4:
@@ -53,18 +52,33 @@ def register(data: AuthIn, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == clean_name).first():
         raise HTTPException(400, "Этот никнейм уже занят")
     
-    user = User(
-        username=clean_name, 
-        password_hash=pwd.hash(data.password)
-    )
+    # Фикс падения bcrypt
+    try:
+        hashed_pw = pwd.hash(data.password)
+    except Exception:
+        raise HTTPException(500, "Ошибка шифрования пароля. Попробуйте другой пароль.")
+
+    user = User(username=clean_name, password_hash=hashed_pw)
     db.add(user)
-    db.commit()
-    db.refresh(user)
-    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
+    
+    try:
+        db.commit()
+        db.refresh(user)
+    except Exception:
+        db.rollback()
+        raise HTTPException(500, "Ошибка при создании пользователя. Попробуйте позже.")
+        
+    return {
+        "token": create_token(user.id), 
+        "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}
+    }
 
 @router.post("/login")
 def login(data: AuthIn, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == data.username.strip()).first()
     if not user or not pwd.verify(data.password, user.password_hash):
         raise HTTPException(401, "Неверный логин или пароль")
-    return {"token": create_token(user.id), "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}}
+    return {
+        "token": create_token(user.id), 
+        "user": {"id": user.id, "username": user.username, "balance": user.balance, "avatar": user.avatar}
+    }
