@@ -27,21 +27,34 @@ def current_user(cred: HTTPAuthorizationCredentials = Depends(bearer), db: Sessi
     if not cred: raise HTTPException(401, "Нет токена")
     try:
         user_id = int(jwt.decode(cred.credentials, SECRET_KEY, algorithms=[ALGORITHM])["sub"])
-    except JWTError: raise HTTPException(401, "Неверный токен")
+    except JWTError: 
+        raise HTTPException(401, "Неверный токен")
+    
     user = db.get(User, user_id)
-    if not user: raise HTTPException(401, "Юзер не найден")
+    if not user: 
+        raise HTTPException(401, "Юзер не найден")
     return user
 
 @router.post("/register")
 def register(data: AuthIn, db: Session = Depends(get_db)):
-    if len(data.username.strip()) < 3:
+    # Валидация логина
+    clean_name = data.username.strip()
+    if len(clean_name) < 3:
         raise HTTPException(400, "Никнейм должен быть от 3 символов")
+    if len(clean_name) > 32:
+        raise HTTPException(400, "Никнейм слишком длинный")
         
-    if db.query(User).filter(User.username == data.username.strip()).first():
+    # Защита от ошибки bcrypt (он не принимает пароли длиннее 72 байт)
+    if len(data.password.encode('utf-8')) > 72:
+        raise HTTPException(400, "Пароль слишком длинный (макс 72 символа)")
+    if len(data.password) < 4:
+        raise HTTPException(400, "Пароль должен быть от 4 символов")
+        
+    if db.query(User).filter(User.username == clean_name).first():
         raise HTTPException(400, "Этот никнейм уже занят")
     
     user = User(
-        username=data.username.strip(), 
+        username=clean_name, 
         password_hash=pwd.hash(data.password)
     )
     db.add(user)
