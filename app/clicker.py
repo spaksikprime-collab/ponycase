@@ -1,13 +1,14 @@
 import time
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from .db import get_db
 from .models import User
 from .auth import current_user
 
 router = APIRouter()
+
+CLICK_RATE_LIMIT = 15
 CLICK_BUCKETS = {}
 
 UPGRADES = {
@@ -28,7 +29,9 @@ def upgrade_cost(user: User, key: str) -> int:
 def apply_passive(user: User, db: Session):
     now = datetime.utcnow()
     elapsed = (now - user.last_passive_tick).total_seconds()
+    
     if elapsed > 5 and user.auto_rate > 0:
+        # УБРАНО УПОМИНАНИЕ PRESTIGE
         user.balance += int(elapsed * user.auto_rate * user.multiplier)
         user.last_passive_tick = now
         db.commit()
@@ -37,11 +40,16 @@ def apply_passive(user: User, db: Session):
         db.commit()
 
 def public_user(user: User) -> dict:
-    return {"id": user.id, "username": user.username, "avatar": user.avatar, "balance": user.balance, "total_clicks": user.total_clicks}
-
-class ClickIn(BaseModel):
-    # Защита от отрицательных значений и читов
-    count: int = Field(default=1, ge=1, le=5) 
+    return {
+        "id": user.id, 
+        "username": user.username, 
+        "avatar": user.avatar, 
+        "balance": user.balance, 
+        "total_clicks": user.total_clicks,
+        "click_power": user.click_power,
+        "auto_rate": user.auto_rate,
+        "multiplier": user.multiplier
+    }
 
 @router.get("/state")
 def state(user: User = Depends(current_user), db: Session = Depends(get_db)):
@@ -49,38 +57,31 @@ def state(user: User = Depends(current_user), db: Session = Depends(get_db)):
     return public_user(user)
 
 @router.post("/click")
-def click(data: ClickIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def click(user: User = Depends(current_user), db: Session = Depends(get_db)):
     now = time.time()
     bucket = CLICK_BUCKETS.setdefault(user.id, [])
     bucket[:] = [t for t in bucket if now - t < 1.0]
-    
-    # Защита от автокликеров (макс 15 кликов в секунду)
-    if len(bucket) + data.count > 15: 
-        raise HTTPException(429, "Слишком быстро! Не читери.")
-    bucket.extend([now] * data.count)
+    if len(bucket) >= CLICK_RATE_LIMIT: raise HTTPException(429, "Слишком быстро")
+    bucket.append(now)
 
     apply_passive(user, db)
-    gain = int(user.click_power * user.multiplier) * data.count
+    gain = int(user.click_power * user.multiplier)
     user.balance += gain
-    user.total_clicks += data.count
+    user.total_clicks += 1
     db.commit()
     return {"balance": user.balance, "gain": gain}
 
-class BuyIn(BaseModel):
-    key: str
-
-@router.post("/buy")
-def buy(data: BuyIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if data.key not in UPGRADES: raise HTTPException(404, "Нет апгрейда")
+@router.post("/buy/{key}")
+def buy(key: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if key not in UPGRADES: raise HTTPException(404, "Нет апгрейда")
     apply_passive(user, db)
-    
-    cost = upgrade_cost(user, data.key)
+    cost = upgrade_cost(user, key)
     if user.balance < cost: raise HTTPException(400, f"Нужно {cost}")
-    
     user.balance -= cost
-    if data.key == "click_power": user.click_power += 1
-    elif data.key == "auto_rate": user.auto_rate += UPGRADES[data.key]["step"]
-    elif data.key == "multiplier": user.multiplier += UPGRADES[data.key]["step"]
+    
+    if key == "click_power": user.click_power += 1
+    elif key == "auto_rate": user.auto_rate += UPGRADES[key]["step"]
+    elif key == "multiplier": user.multiplier += UPGRADES[key]["step"]
     
     db.commit()
-    return {"user": public_user(user), "next_cost": upgrade_cost(user, data.key)}
+    return {"user": public_user(user), "next_cost": upgrade_cost(user, key)}
