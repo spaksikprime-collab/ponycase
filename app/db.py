@@ -68,6 +68,8 @@ def init_db():
                 result = conn.execute(text(f"PRAGMA table_info({table_name});")).fetchall()
                 existing_cols = [row[1] for row in result]
                 
+                if "email" not in existing_cols:
+                    conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN email VARCHAR(128);"))
                 if "best_drop_price" not in existing_cols:
                     conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN best_drop_price BIGINT DEFAULT 0;"))
                 if "best_drop_name" not in existing_cols:
@@ -82,17 +84,35 @@ def init_db():
             elif dialect == "postgresql":
                 # Для PostgreSQL используем безопасный синтаксис ADD COLUMN IF NOT EXISTS
                 # и TIMESTAMPTZ для корректной работы с timezone-aware datetime
+                
+                # Делаем колонку email опциональной (снимаем NOT NULL)
+                try:
+                    conn.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN email DROP NOT NULL;"))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                
+                try:
+                    conn.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN email SET DEFAULT NULL;"))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                
+                # Остальные колонки
                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS best_drop_price BIGINT DEFAULT 0;"))
                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS best_drop_name VARCHAR(64);"))
                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS last_bonus TIMESTAMPTZ;"))
                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS nonce BIGINT DEFAULT 0;"))
                 conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS last_passive_tick TIMESTAMPTZ;"))
+                conn.commit()
             
-            conn.commit()
             print(f"=== ✅ ИНИЦИАЛИЗАЦИЯ И МИГРАЦИЯ БД ({dialect.upper()}) УСПЕШНА ===")
         except Exception as e:
             print(f"=== ⚠️ ОШИБКА МИГРАЦИИ (возможно, колонки уже существуют или нет прав): {e} ===")
-            conn.rollback()
+            try:
+                conn.rollback()
+            except Exception:
+                pass
 
 # ВАЖНО: Мы НЕ вызываем init_db() здесь автоматически.
 # Это должно быть сделано в main.py при запуске приложения.
