@@ -44,7 +44,13 @@ def start_mines(data: StartMines, user: User = Depends(current_user), db: Sessio
     mines_positions = set(random.sample(range(25), data.mines))
     
     MINES_GAMES[game_id] = {
-        "id": game_id, "user_id": user_db.id, "bet": data.bet, "mines_pos": mines_positions, "opened": set(), "active": True, "mines_count": data.mines
+        "id": game_id, 
+        "user_id": user_db.id, 
+        "bet": data.bet, 
+        "mines_pos": mines_positions, 
+        "opened": set(), 
+        "active": True, 
+        "mines_count": data.mines
     }
     
     return {"game_id": game_id, "balance": user_db.balance}
