@@ -8,7 +8,6 @@ from .auth import current_user
 
 router = APIRouter()
 
-# Увеличили лимит, чтобы не было лагов при быстром клике
 CLICK_RATE_LIMIT = 30 
 CLICK_BUCKETS = {}
 LAST_BUCKET_CLEANUP = time.time()
@@ -28,16 +27,14 @@ def upgrade_level(user: User, key: str) -> int:
 def upgrade_cost(user: User, key: str) -> int:
     return int(UPGRADES[key]["base_cost"] * (UPGRADES[key]["scale"] ** upgrade_level(user, key)))
 
-# ИЗМЕНЕНО: Теперь функция НЕ делает коммит, а просто меняет объект в памяти
+# Функция только меняет объект в памяти, коммит делается в роутах
 def apply_passive(user: User, db: Session):
     now = datetime.utcnow()
-    
     if not user.last_passive_tick:
         user.last_passive_tick = now
         return
         
     elapsed = (now - user.last_passive_tick).total_seconds()
-    
     if elapsed > 5 and user.auto_rate and user.auto_rate > 0:
         user.balance += int(elapsed * user.auto_rate * (user.multiplier or 1))
         user.last_passive_tick = now
@@ -56,12 +53,10 @@ def public_user(user: User) -> dict:
         "multiplier": user.multiplier
     }
 
-# ОЧИСТКА ПАМЯТИ ОТ СТАРЫХ ЮЗЕРОВ
 def clean_click_buckets():
     global LAST_BUCKET_CLEANUP
     now = time.time()
-    if now - LAST_BUCKET_CLEANUP > 60: # Раз в минуту
-        # Удаляем юзеров, которые не кликали последние 5 минут
+    if now - LAST_BUCKET_CLEANUP > 60:
         for uid in list(CLICK_BUCKETS.keys()):
             if not CLICK_BUCKETS[uid] or now - CLICK_BUCKETS[uid][-1] > 300:
                 del CLICK_BUCKETS[uid]
@@ -71,12 +66,12 @@ def clean_click_buckets():
 def state(user: User = Depends(current_user), db: Session = Depends(get_db)):
     user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
     apply_passive(user_db, db)
-    db.commit() # Один коммит на весь запрос
+    db.commit()
     return public_user(user_db)
 
 @router.post("/click")
 def click(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    clean_click_buckets() # Чистим память
+    clean_click_buckets()
     
     now = time.time()
     bucket = CLICK_BUCKETS.setdefault(user.id, [])
@@ -85,15 +80,14 @@ def click(user: User = Depends(current_user), db: Session = Depends(get_db)):
         raise HTTPException(429, "Слишком быстро")
     bucket.append(now)
 
-    # Блокируем строку юзера
     user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
-    
     apply_passive(user_db, db)
+    
     gain = int(user_db.click_power * (user_db.multiplier or 1))
     user_db.balance += gain
     user_db.total_clicks += 1
     
-    db.commit() # Один коммит
+    db.commit()
     return {"balance": user_db.balance, "gain": gain}
 
 @router.post("/buy/{key}")
