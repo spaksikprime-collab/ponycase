@@ -62,7 +62,6 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
     win = roll_pct <= chance
 
     try:
-        # ИСПРАВЛЕНО: Убрана проверка db.session
         for item in items:
             db.delete(item)
             
