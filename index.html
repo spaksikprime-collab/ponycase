@@ -20,7 +20,6 @@
             background-attachment: fixed; 
             padding-bottom: 70px; 
         }
-        /* ИСПРАВЛЕНО: Убираем отступ на десктопе */
         @media (min-width: 1024px) { 
             body { padding-bottom: 0; } 
         }
@@ -38,7 +37,6 @@
         .nav-btn { display: flex; flex-direction: column; align-items: center; color: #9ca3af; font-size: 9px; font-weight: bold; width: 20%; transition: 0.2s; }
         .nav-btn.active { color: #a855f7; }
 
-        /* ФИКС НАЛОЖЕНИЯ КЕЙСОВ */
         .roulette-wrapper { overflow: hidden; position: relative; background: #1A202C; border-radius: 8px; border: 1px solid #2d3748; padding: 10px 0; margin-bottom: 8px; width: 100%; min-height: 100px; flex-shrink: 0; }
         .roulette-strip { display: flex; will-change: transform; width: max-content; transform: translateZ(0); }
         .roulette-item { flex: 0 0 70px; width: 70px; min-width: 70px; height: 80px; background: #12161f; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-right: 8px; }
@@ -74,7 +72,6 @@
         .toast.win { border-color: #22c55e; } .toast.lose { border-color: #ef4444; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        /* ИСПРАВЛЕНО: Оптимизированный рендеринг колеса джекпота */
         .jackpot-wheel { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
     </style>
 </head>
@@ -182,7 +179,6 @@
                             </div>
                             <p class="text-xs text-gray-400 mb-2">Выберите цвет:</p>
                             <div class="grid grid-cols-2 gap-2 mb-3" id="wheel-colors">
-                                <!-- ИСПРАВЛЕНО: Множители синхронизированы с бэкендом -->
                                 <button onclick="setWheelColor('red', event)" class="wheel-color-btn bg-red-600/20 border-red-500 text-red-400 border-2 py-1.5 rounded-lg font-bold text-sm transition ring-4 ring-white">X1.9</button>
                                 <button onclick="setWheelColor('green', event)" class="wheel-color-btn bg-green-600/20 border-green-500 text-green-400 border-2 py-1.5 rounded-lg font-bold text-sm transition">X3</button>
                                 <button onclick="setWheelColor('blue', event)" class="wheel-color-btn bg-blue-600/20 border-blue-500 text-blue-400 border-2 py-1.5 rounded-lg font-bold text-sm transition">X5</button>
@@ -498,7 +494,6 @@
     </div>
 
     <script>
-        // ИСПРАВЛЕНО: Динамическое определение API URL
         const API = window.location.origin;
         
         const sfx = { 
@@ -512,7 +507,6 @@
         let currentTab = 'cases';
         let audioInitialized = false;
 
-        // ИСПРАВЛЕНО: Инициализация аудио по первому клику (обход блокировки мобильных браузеров)
         function initAudio() {
             if (audioInitialized) return;
             Object.values(sfx).forEach(audio => {
@@ -568,7 +562,7 @@
         let selectedWheelColor = 'red';
         let lastWheelStatus = null;
         let wheelTimerInterval = null;
-        let isMinesActionPending = false; // ИСПРАВЛЕНО: Флаг блокировки быстрых кликов
+        let isMinesActionPending = false;
 
         let invPage = 1;
         let histPage = 1;
@@ -638,10 +632,10 @@
                     const live = document.getElementById('live-drops'); if(live.querySelector('.italic')) live.innerHTML = '';
                     const el = document.createElement('div'); el.className = 'bg-gray-800/80 px-2 py-1 rounded border border-gray-700 flex items-center gap-1 cursor-pointer'; el.onclick = () => showPlayerProfile(d.username);
                     let avHtml = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-4 h-4 rounded-full inline object-cover">` : `<span class="text-[10px]">${d.avatar}</span>`;
-                    // ИСПРАВЛЕНО: XSS-защита через textContent
                     el.innerHTML = `${avHtml} <b class="text-purple-400 text-[10px]"></b> выбил <b style="color:${d.color}" class="text-[10px]"></b>`;
-                    el.querySelectorAll('b')[0].textContent = d.username;
-                    el.querySelectorAll('b')[1].textContent = d.pony;
+                    const bTags = el.querySelectorAll('b');
+                    if (bTags[0]) bTags[0].textContent = d.username;
+                    if (bTags[1]) bTags[1].textContent = d.pony;
                     live.prepend(el); if(live.children.length > 10) live.lastChild.remove(); 
                 });
                 socket.on('chat', d => { renderChatMsg('chat-messages-pc', d); renderChatMsg('chat-messages-mob', d); });
@@ -688,9 +682,6 @@
             if(t==='leaderboard') loadLeaderboard();
         }
 
-        // ==========================================
-        // КОЛЕСО ФОРТУНЫ
-        // ==========================================
         const WHEEL_COLORS = { red: '#ef4444', green: '#22c55e', blue: '#3b82f6', yellow: '#eab308' };
         const WHEEL_SEGMENTS = ["red", "green", "red", "blue", "red", "green", "red", "yellow", "red", "green", "red", "blue", "red", "green", "red", "blue", "red", "green", "red", "green"];
 
@@ -784,7 +775,8 @@
             const betsList = document.getElementById('wheel-bets-list');
             if(state.bets && state.bets.length > 0) {
                 betsList.innerHTML = state.bets.map(b => `<div class="flex justify-between items-center text-[10px] md:text-xs bg-[#1A202C] p-1 md:p-1.5 rounded border border-gray-700 mb-1"><span class="text-white truncate"><b class="text-purple-400"></b></span><span class="text-yellow-400 font-bold">${b.amount}🪙 (${b.color})</span></div>`).join('');
-                betsList.querySelectorAll('b').forEach((el, i) => el.textContent = state.bets[i].username);
+                const bTags = betsList.querySelectorAll('b');
+                bTags.forEach((el, i) => { if (state.bets[i]) el.textContent = state.bets[i].username; });
                 document.getElementById('wheel-players-count').textContent = state.bets.length;
             } else {
                 betsList.innerHTML = '<span class="text-[10px] md:text-xs text-gray-500 text-center py-2">Пока никто не поставил</span>';
@@ -799,17 +791,14 @@
             }
         }
 
-        // ==========================================
-        // ЧАТ И ТОП
-        // ==========================================
         function renderChatMsg(boxId, d) { 
             const box = document.getElementById(boxId); if(!box) return; 
             const msg = document.createElement('div'); msg.className = 'text-xs mb-2 flex gap-2 items-start'; 
-            let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover cursor-pointer" onclick="showPlayerProfile('${d.username}')">` : `<span class="text-sm cursor-pointer" onclick="showPlayerProfile('${d.username}')">${d.avatar}</span>`; 
-            // ИСПРАВЛЕНО: XSS-защита
+            let av = d.avatar && d.avatar.startsWith('data:') ? `<img src="${d.avatar}" class="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover cursor-pointer">` : `<span class="text-sm">${d.avatar}</span>`; 
             msg.innerHTML = `${av} <div class="break-all"><span class="text-purple-400 font-bold cursor-pointer username-link"></span>: <span class="text-gray-300 chat-text"></span></div>`;
-            msg.querySelector('.username-link').textContent = d.username;
-            msg.querySelector('.username-link').onclick = () => showPlayerProfile(d.username);
+            const usernameLink = msg.querySelector('.username-link');
+            usernameLink.textContent = d.username;
+            usernameLink.onclick = () => showPlayerProfile(d.username);
             msg.querySelector('.chat-text').textContent = d.text;
             box.appendChild(msg); if(box.children.length > 40) box.firstChild.remove(); box.scrollTop = box.scrollHeight; 
         }
@@ -820,44 +809,62 @@
         async function loadLeaderboard() {
             try {
                 const list = await req('/api/user/leaderboard');
-                document.getElementById('leaderboard-list').innerHTML = list.map(u => `
+                const container = document.getElementById('leaderboard-list');
+                
+                if (list.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-4">Топ пуст</div>';
+                    return;
+                }
+                
+                container.innerHTML = list.map(u => `
                     <div class="flex items-center justify-between bg-[#1A202C] p-2 md:p-3 rounded-xl border border-gray-800 hover:border-yellow-500/50 transition">
                         <div class="flex items-center gap-2 md:gap-4">
                             <div class="text-base md:text-xl font-black ${u.rank === 1 ? 'text-yellow-400' : u.rank === 2 ? 'text-gray-300' : u.rank === 3 ? 'text-amber-600' : 'text-gray-500'} w-5 md:w-6 text-center">#${u.rank}</div>
-                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-gray-600 bg-gray-900 flex items-center justify-center cursor-pointer" onclick="showPlayerProfile('${u.username}')">
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-gray-600 bg-gray-900 flex items-center justify-center cursor-pointer" onclick="showPlayerProfile('${u.username.replace(/'/g, "\\'")}')">
                                 ${u.avatar && u.avatar.startsWith('data:') ? `<img src="${u.avatar}" class="w-full h-full object-cover">` : `<span class="text-sm md:text-lg">${u.avatar || '👤'}</span>`}
                             </div>
-                            <div class="font-bold text-white text-xs md:text-sm cursor-pointer hover:text-purple-400 username-link"></div>
+                            <div class="font-bold text-white text-xs md:text-sm cursor-pointer hover:text-purple-400" onclick="showPlayerProfile('${u.username.replace(/'/g, "\\'")}')"></div>
                         </div>
                         <div class="font-black text-yellow-400 text-sm md:text-lg">${u.balance.toLocaleString()} 🪙</div>
                     </div>
                 `).join('');
-                document.querySelectorAll('.username-link').forEach(el => {
-                    el.textContent = u.username;
-                    el.onclick = () => showPlayerProfile(u.username);
+                
+                // Заполняем имена через textContent для XSS-защиты
+                const usernameEls = container.querySelectorAll('.font-bold.text-white');
+                usernameEls.forEach((el, i) => {
+                    if (list[i]) el.textContent = list[i].username;
                 });
-            } catch(e) {}
+            } catch(e) {
+                console.error("Leaderboard error:", e);
+            }
         }
 
-        // ==========================================
-        // КЕЙСЫ
-        // ==========================================
         async function loadCases() { 
             casesData = await req('/api/cases/list'); 
-            document.getElementById('cases-grid').innerHTML = casesData.map(c => `<div onclick="openCaseDetail('${c.id}')" class="glass p-2 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300"><span class="text-4xl md:text-5xl mb-1 md:mb-2 drop-shadow-lg">📦</span><span class="font-black text-[10px] md:text-sm text-center mb-1"></span><span class="text-yellow-400 text-[9px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span></div>`).join(''); 
-            document.querySelectorAll('#cases-grid .font-black').forEach((el, i) => el.textContent = casesData[i].name);
+            const grid = document.getElementById('cases-grid');
+            grid.innerHTML = casesData.map(c => `<div class="glass p-2 md:p-4 rounded-xl flex flex-col items-center border-b-2 border-purple-600 cursor-pointer hover:-translate-y-1 transition duration-300"><span class="text-4xl md:text-5xl mb-1 md:mb-2 drop-shadow-lg">📦</span><span class="font-black text-[10px] md:text-sm text-center mb-1 case-name"></span><span class="text-yellow-400 text-[9px] md:text-xs bg-[#12161f] px-2 py-0.5 rounded-full border border-gray-700 font-bold">${c.price} 🪙</span></div>`).join(''); 
+            
+            const caseEls = grid.querySelectorAll('.glass');
+            caseEls.forEach((el, i) => {
+                el.onclick = () => openCaseDetail(casesData[i].id);
+                el.querySelector('.case-name').textContent = casesData[i].name;
+            });
+            
             document.getElementById('b-case').innerHTML = casesData.map(c => `<option value="${c.id}">${c.name} - ${c.price}🪙</option>`).join(''); 
         }
+        
         async function openCaseDetail(id) { 
             const c = casesData.find(x => x.id === id); if(!c) return; 
             currentCase = id; document.getElementById('page-cases').classList.remove('active'); document.getElementById('page-case-detail').classList.add('active'); document.getElementById('cd-name').textContent = c.name; document.getElementById('cd-price').textContent = c.price + ' 🪙'; document.getElementById('cd-filter').value = 'all'; document.getElementById('cd-items-grid').innerHTML = '<div class="text-gray-400 text-sm">Загрузка...</div>'; 
             try { currentCaseData = await req(`/api/cases/preview/${id}`); filterCaseItems(); } catch(e) { document.getElementById('cd-items-grid').innerHTML = 'Ошибка'; } 
         }
+        
         function filterCaseItems() { 
             const filter = document.getElementById('cd-filter').value; 
             const filtered = currentCaseData.filter(item => filter === 'all' || item.rarity === filter); 
-            document.getElementById('cd-items-grid').innerHTML = filtered.map(d => `<div class="bg-[#1A202C] p-1.5 md:p-3 rounded-lg border-l-2 md:border-l-4 text-[9px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}"><span class="font-bold mb-1 item-name"></span><span class="text-yellow-400 font-bold">${d.price}🪙</span><span class="text-green-400 text-[8px] md:text-[10px] mt-1 font-bold">Шанс: ${d.chance.toFixed(2)}%</span></div>`).join('');
-            document.querySelectorAll('#cd-items-grid .item-name').forEach((el, i) => el.textContent = filtered[i].name);
+            const grid = document.getElementById('cd-items-grid');
+            grid.innerHTML = filtered.map(d => `<div class="bg-[#1A202C] p-1.5 md:p-3 rounded-lg border-l-2 md:border-l-4 text-[9px] md:text-xs flex flex-col justify-between" style="border-color:${d.color}"><span class="font-bold mb-1 item-name"></span><span class="text-yellow-400 font-bold">${d.price}🪙</span><span class="text-green-400 text-[8px] md:text-[10px] mt-1 font-bold">Шанс: ${d.chance.toFixed(2)}%</span></div>`).join('');
+            grid.querySelectorAll('.item-name').forEach((el, i) => { if (filtered[i]) el.textContent = filtered[i].name; });
         }
 
         async function startCaseSpin() {
@@ -901,12 +908,15 @@
                     for(let i=0; i<count; i++) {
                         const strip = document.getElementById(`row-${i}-strip`); 
                         let html = '';
+                        // ИСПРАВЛЕНО: Генерируем предметы СРАЗУ с правильными именами
                         for(let j=0; j<30; j++) { 
                             const item = j === 27 ? res.results[i] : pool[Math.floor(Math.random()*pool.length)]; 
-                            html += `<div class="roulette-item" style="border-color:${item.color}"><div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; item-name"></div></div>`; 
+                            const itemName = item.pony_id || item.name || 'Unknown';
+                            html += `<div class="roulette-item" style="border-color:${item.color}">
+                                <div style="color:white; font-size:9px; font-weight:bold; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${itemName}</div>
+                            </div>`; 
                         }
-                        strip.innerHTML = html;
-                        strip.querySelectorAll('.item-name').forEach((el, j) => el.textContent = j === 27 ? res.results[i].pony_id : pool[Math.floor(Math.random()*pool.length)].name);
+                        strip.innerHTML = html; 
                         strip.style.transition = 'none'; 
                         strip.style.transform = 'translate3d(0, 0, 0)';
                         
@@ -940,8 +950,10 @@
 
         function showSpinResults(results) {
             let total = 0;
-            document.getElementById('results-grid').innerHTML = results.map((item, index) => { total += item.price; return `<div class="glass p-2 md:p-3 rounded-xl flex flex-col items-center min-w-[90px] md:min-w-[120px] border-t-2" style="border-color:${item.color}"><div class="text-[10px] md:text-xs font-bold mb-1 text-center text-white truncate w-full item-name"></div><div class="text-yellow-400 font-bold mb-2 md:mb-3 text-xs md:text-sm">${item.price} 🪙</div><div class="flex gap-1 w-full" id="drop-actions-${index}"><button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[8px] md:text-[10px] font-bold hover:bg-red-600 transition">Продать</button><button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[8px] md:text-[10px] font-bold hover:bg-green-600 transition">Забрать</button></div></div>`; }).join('');
-            document.querySelectorAll('#results-grid .item-name').forEach((el, i) => el.textContent = results[i].pony_id);
+            const grid = document.getElementById('results-grid');
+            grid.innerHTML = results.map((item, index) => { total += item.price; return `<div class="glass p-2 md:p-3 rounded-xl flex flex-col items-center min-w-[90px] md:min-w-[120px] border-t-2" style="border-color:${item.color}"><div class="text-[10px] md:text-xs font-bold mb-1 text-center text-white truncate w-full item-name"></div><div class="text-yellow-400 font-bold mb-2 md:mb-3 text-xs md:text-sm">${item.price} 🪙</div><div class="flex gap-1 w-full" id="drop-actions-${index}"><button onclick="sellDropItem(${item.id}, ${item.price}, ${index})" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/50 py-1 rounded text-[8px] md:text-[10px] font-bold hover:bg-red-600 transition">Продать</button><button onclick="keepDropItem(${index})" class="flex-1 bg-green-600/20 text-green-400 border border-green-500/50 py-1 rounded text-[8px] md:text-[10px] font-bold hover:bg-green-600 transition">Забрать</button></div></div>`; }).join('');
+            
+            grid.querySelectorAll('.item-name').forEach((el, i) => { if (results[i]) el.textContent = results[i].pony_id; });
             
             document.getElementById('total-drops-value').textContent = total + ' 🪙'; 
             const btnSellAll = document.getElementById('btn-sell-all-drops');
@@ -951,8 +963,23 @@
 
             document.getElementById('spin-results').classList.remove('hidden'); document.getElementById('spin-results').classList.add('flex');
         }
-        async function sellDropItem(id, price, index) { try { await req(`/api/user/inventory/sell/${id}`, 'POST'); updateBal(user.balance + price); document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-[8px] md:text-xs text-gray-400 w-full text-center py-1">Продано</div>`; playSfx('win'); const state = await req('/api/clicker/state'); updateBal(state.balance); recalcTotalDrops(); } catch(e) { showToast(e.message, 'lose'); } }
-        function keepDropItem(index) { document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-[8px] md:text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; playSfx('click'); recalcTotalDrops(); }
+        
+        async function sellDropItem(id, price, index) { 
+            try { 
+                await req(`/api/user/inventory/sell/${id}`, 'POST'); 
+                document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-[8px] md:text-xs text-gray-400 w-full text-center py-1">Продано</div>`; 
+                playSfx('win'); 
+                const state = await req('/api/clicker/state'); 
+                updateBal(state.balance); 
+                recalcTotalDrops(); 
+            } catch(e) { showToast(e.message, 'lose'); } 
+        }
+        
+        function keepDropItem(index) { 
+            document.getElementById(`drop-actions-${index}`).innerHTML = `<div class="text-[8px] md:text-xs text-green-400 w-full text-center py-1 font-bold">В инвентаре</div>`; 
+            playSfx('click'); 
+            recalcTotalDrops(); 
+        }
         
         function recalcTotalDrops() { 
             let newTotal = 0; 
@@ -993,9 +1020,6 @@
         }
         function closeSpinModal() { document.getElementById('modal-spin').classList.add('hidden'); }
 
-        // ==========================================
-        // ПРОФИЛЬ, ИСТОРИЯ И ПАГИНАЦИЯ
-        // ==========================================
         async function loadProfile() { 
             try { 
                 const d = await req(`/api/user/profile?page=${invPage}&limit=10`); 
@@ -1021,7 +1045,7 @@
             const grid = document.getElementById('inv-grid');
             if (inv.length === 0) { grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Инвентарь пуст</div>'; return; }
             grid.innerHTML = inv.map(i => `<div class="glass p-2 md:p-3 rounded-lg border-t-2 text-[9px] md:text-xs flex flex-col justify-between shadow-lg" style="border-color:${i.color}"><div class="truncate font-bold mb-1 item-name"></div><div class="text-yellow-400 font-bold mb-2">${i.price}🪙</div><button onclick="sell(${i.id})" class="w-full bg-[#12161f] hover:bg-red-600 rounded py-1 font-bold transition border border-gray-700">Продать</button></div>`).join('');
-            grid.querySelectorAll('.item-name').forEach((el, i) => el.textContent = inv[i].name);
+            grid.querySelectorAll('.item-name').forEach((el, i) => { if (inv[i]) el.textContent = inv[i].name; });
         }
 
         async function sell(id) { 
@@ -1051,26 +1075,69 @@
                 
                 if(d.history.length === 0) { document.getElementById('history-list').innerHTML = '<div class="text-center text-gray-500 py-4">История пуста</div>'; return; }
                 
-                document.getElementById('history-list').innerHTML = d.history.map(h => `<div class="flex justify-between items-center bg-[#1A202C] p-2 md:p-3 rounded-lg text-xs md:text-sm border-l-4 ${h.game === 'Кейс' ? 'border-purple-500' : h.game === 'Апгрейд' ? 'border-green-500' : 'border-yellow-500'}"><div><div class="font-bold text-white item-name"></div><div class="text-[10px] text-gray-400">${h.result} • ${h.date}</div></div><div class="font-black ${h.game === 'Кейс' ? 'text-purple-400' : h.game === 'Апгрейд' ? 'text-green-400' : 'text-yellow-400'}">${h.price > 0 ? `+${h.price} 🪙` : 'Сгорел'}</div></div>`).join('');
-                document.querySelectorAll('#history-list .item-name').forEach((el, i) => el.textContent = d.history[i].item);
+                const list = document.getElementById('history-list');
+                list.innerHTML = d.history.map(h => `<div class="flex justify-between items-center bg-[#1A202C] p-2 md:p-3 rounded-lg text-xs md:text-sm border-l-4 ${h.game === 'Кейс' ? 'border-purple-500' : h.game === 'Апгрейд' ? 'border-green-500' : 'border-yellow-500'}"><div><div class="font-bold text-white item-name"></div><div class="text-[10px] text-gray-400">${h.result} • ${h.date}</div></div><div class="font-black ${h.game === 'Кейс' ? 'text-purple-400' : h.game === 'Апгрейд' ? 'text-green-400' : 'text-yellow-400'}">${h.price > 0 ? `+${h.price} 🪙` : 'Сгорел'}</div></div>`).join('');
+                list.querySelectorAll('.item-name').forEach((el, i) => { if (d.history[i]) el.textContent = d.history[i].item; });
             } catch(e) { showToast("Ошибка истории", 'lose'); }
         }
 
         function changeHistPage(dir) { if(histPage + dir < 1) return; histPage += dir; loadHistory(); }
 
-        async function uploadAvatar(input) { const file = input.files[0]; if(!file) return; const fd = new FormData(); fd.append("file", file); try { const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); const d = await res.json(); if(!res.ok) throw new Error(d.detail); document.getElementById('p-avatar').src = d.avatar; document.getElementById('p-avatar').classList.remove('hidden'); document.getElementById('p-emoji').classList.add('hidden'); document.getElementById('header-avatar').src = d.avatar; document.getElementById('header-avatar').classList.remove('hidden'); document.getElementById('header-emoji').classList.add('hidden'); showToast('Аватарка обновлена!', 'win'); } catch(e) { showToast(e.message, 'lose'); } }
-        async function showPlayerProfile(username) { try { const u = await req(`/api/user/public/by_name/${username}`); document.getElementById('mp-name').textContent = u.username; document.getElementById('mp-clicks').textContent = u.total_clicks; document.getElementById('mp-cases').textContent = u.cases_opened; document.getElementById('mp-best').textContent = u.best_drop ? `${u.best_drop.name} (${u.best_drop.price}🪙)` : 'Нет'; if(u.avatar && u.avatar.startsWith('data:')) { document.getElementById('mp-avatar').src = u.avatar; document.getElementById('mp-avatar').classList.remove('hidden'); document.getElementById('mp-emoji').classList.add('hidden'); } else { document.getElementById('mp-emoji').textContent = u.avatar || '🦄'; document.getElementById('mp-avatar').classList.add('hidden'); document.getElementById('mp-emoji').classList.remove('hidden'); } document.getElementById('modal-player').classList.remove('hidden'); } catch(e) { showToast("Ошибка профиля", 'lose'); } }
+        async function uploadAvatar(input) { 
+            const file = input.files[0]; if(!file) return; 
+            const fd = new FormData(); fd.append("file", file); 
+            try { 
+                const res = await fetch(`${API}/api/user/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); 
+                const d = await res.json(); if(!res.ok) throw new Error(d.detail); 
+                document.getElementById('p-avatar').src = d.avatar; document.getElementById('p-avatar').classList.remove('hidden'); document.getElementById('p-emoji').classList.add('hidden'); 
+                document.getElementById('header-avatar').src = d.avatar; document.getElementById('header-avatar').classList.remove('hidden'); document.getElementById('header-emoji').classList.add('hidden'); 
+                showToast('Аватарка обновлена!', 'win'); 
+            } catch(e) { showToast(e.message, 'lose'); } 
+        }
+        
+        async function showPlayerProfile(username) { 
+            try { 
+                const u = await req(`/api/user/public/by_name/${username}`); 
+                document.getElementById('mp-name').textContent = u.username; 
+                document.getElementById('mp-clicks').textContent = u.total_clicks; 
+                document.getElementById('mp-cases').textContent = u.cases_opened; 
+                document.getElementById('mp-best').textContent = u.best_drop ? `${u.best_drop.name} (${u.best_drop.price}🪙)` : 'Нет'; 
+                if(u.avatar && u.avatar.startsWith('data:')) { 
+                    document.getElementById('mp-avatar').src = u.avatar; 
+                    document.getElementById('mp-avatar').classList.remove('hidden'); 
+                    document.getElementById('mp-emoji').classList.add('hidden'); 
+                } else { 
+                    document.getElementById('mp-emoji').textContent = u.avatar || '🦄'; 
+                    document.getElementById('mp-avatar').classList.add('hidden'); 
+                    document.getElementById('mp-emoji').classList.remove('hidden'); 
+                } 
+                document.getElementById('modal-player').classList.remove('hidden'); 
+            } catch(e) { showToast("Ошибка профиля", 'lose'); } 
+        }
 
-        // ==========================================
-        // КЛИКЕР
-        // ==========================================
-        async function doClick() { playSfx('click'); try { const res = await req('/api/clicker/click', 'POST', {count: 1}); updateBal(res.balance); document.getElementById('click-count').textContent = parseInt(document.getElementById('click-count').textContent)+1; } catch(e) { showToast(e.message, 'lose'); } }
-        function renderUpgrades() { document.getElementById('upgrades-list').innerHTML = `<div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Сила клика</div><div class="text-[10px] text-gray-400">Ур. ${upgLevels.click_power}</div></div><button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Автоклик</div><div class="text-[10px] text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div><button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Множитель</div><div class="text-[10px] text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div><button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div>`; }
-        async function buyUpgrade(key) { playSfx('click'); try { const res = await req(`/api/clicker/buy`, 'POST', {key: key}); updateBal(res.user.balance); upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier }; renderUpgrades(); } catch(e) { showToast(e.message, 'lose'); } }
+        async function doClick() { 
+            playSfx('click'); 
+            try { 
+                const res = await req('/api/clicker/click', 'POST', {count: 1}); 
+                updateBal(res.balance); 
+                document.getElementById('click-count').textContent = parseInt(document.getElementById('click-count').textContent)+1; 
+            } catch(e) { showToast(e.message, 'lose'); } 
+        }
+        
+        function renderUpgrades() { 
+            document.getElementById('upgrades-list').innerHTML = `<div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Сила клика</div><div class="text-[10px] text-gray-400">Ур. ${upgLevels.click_power}</div></div><button onclick="buyUpgrade('click_power')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Автоклик</div><div class="text-[10px] text-gray-400">Ур. ${Math.round(upgLevels.auto_rate * 2)}</div></div><button onclick="buyUpgrade('auto_rate')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div><div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg"><div><div class="font-bold text-xs md:text-sm">Множитель</div><div class="text-[10px] text-gray-400">Ур. ${Math.round((upgLevels.multiplier - 1) * 4)}</div></div><button onclick="buyUpgrade('multiplier')" class="bg-purple-600 px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-bold">Купить</button></div>`; 
+        }
+        
+        async function buyUpgrade(key) { 
+            playSfx('click'); 
+            try { 
+                const res = await req(`/api/clicker/buy`, 'POST', {key: key}); 
+                updateBal(res.user.balance); 
+                upgLevels = { click_power: res.user.click_power, auto_rate: res.user.auto_rate, multiplier: res.user.multiplier }; 
+                renderUpgrades(); 
+            } catch(e) { showToast(e.message, 'lose'); } 
+        }
 
-        // ==========================================
-        // АПГРЕЙД
-        // ==========================================
         async function loadUpgrade() { 
             selectedUpgradeItems = []; 
             await loadProfileForUpgrade(); 
@@ -1096,7 +1163,7 @@
                     <div class="text-[8px] md:text-[9px] text-yellow-400">${i.price}🪙</div>
                 </div>`;
             }).join('');
-            container.querySelectorAll('.item-name').forEach((el, i) => el.textContent = inv[i].name);
+            container.querySelectorAll('.item-name').forEach((el, i) => { if (inv[i]) el.textContent = inv[i].name; });
         }
 
         function toggleUpgradeItem(id) {
@@ -1112,7 +1179,7 @@
         function setUpgMult(m, btn) { 
             upgMult = m; 
             updateUpgradeUI(); 
-            document.querySelectorAll('#page-upgrade button').forEach(b => {
+            document.querySelectorAll('#page-upgrade .flex.gap-1 button').forEach(b => {
                 b.classList.remove('bg-green-600', 'border-green-500');
                 b.classList.add('bg-gray-800', 'border-gray-700');
             }); 
@@ -1186,7 +1253,6 @@
                 updateBal(res.balance); 
                 
                 const greenDeg = (res.chance / 100) * 360; 
-                // ИСПРАВЛЕНО: Корректная математика вращения стрелки
                 let targetDeg = res.win ? 3600 + (Math.random() * greenDeg) : 3600 + greenDeg + (Math.random() * (360 - greenDeg));
                 
                 void arrow.offsetWidth; 
@@ -1218,9 +1284,6 @@
             }
         }
 
-        // ==========================================
-        // МИНЫ
-        // ==========================================
         let mId = null;
         async function startMines() { 
             const bet = parseInt(document.getElementById('mines-bet').value); 
@@ -1236,7 +1299,6 @@
         }
         
         async function clickMine(i) { 
-            // ИСПРАВЛЕНО: Блокировка быстрых кликов
             if (isMinesActionPending) return;
             const cell = document.getElementById(`mc-${i}`);
             if (cell.classList.contains('opened') || cell.classList.contains('loading') || cell.classList.contains('boom')) return;
@@ -1289,19 +1351,32 @@
             } catch(e) { showToast(e.message, 'lose'); } 
         }
 
-        // ==========================================
-        // ДЖЕКПОТ И БАТЛЫ
-        // ==========================================
         async function loadJackpot() { try { const list = await req('/api/battles/active'); if(list.length > 0) updateJackpotUI(list[0]); } catch(e) {} }
+        
         function updateJackpotUI(j) { 
-            document.getElementById('jp-total').textContent = j.total + ' 🪙'; const timerEl = document.getElementById('jp-timer'); 
-            if(j.status === 'countdown') { timerEl.classList.remove('hidden'); if(jpTimerInterval) clearInterval(jpTimerInterval); jpTimerInterval = setInterval(() => { let left = Math.max(0, Math.ceil(j.end_time - Date.now()/1000)); timerEl.textContent = `⏳ ${left}s`; if(left <= 0) { clearInterval(jpTimerInterval); timerEl.textContent = 'КРУТИТСЯ!'; } }, 1000); } 
-            else if (j.status === 'spinning') { timerEl.classList.remove('hidden'); timerEl.textContent = 'КРУТИТСЯ!'; } 
-            else { timerEl.classList.add('hidden'); if(jpTimerInterval) clearInterval(jpTimerInterval); } 
+            document.getElementById('jp-total').textContent = j.total + ' 🪙'; 
+            const timerEl = document.getElementById('jp-timer'); 
+            if(j.status === 'countdown') { 
+                timerEl.classList.remove('hidden'); 
+                if(jpTimerInterval) clearInterval(jpTimerInterval); 
+                jpTimerInterval = setInterval(() => { 
+                    let left = Math.max(0, Math.ceil(j.end_time - Date.now()/1000)); 
+                    timerEl.textContent = `⏳ ${left}s`; 
+                    if(left <= 0) { clearInterval(jpTimerInterval); timerEl.textContent = 'КРУТИТСЯ!'; } 
+                }, 1000); 
+            } else if (j.status === 'spinning') { 
+                timerEl.classList.remove('hidden'); 
+                timerEl.textContent = 'КРУТИТСЯ!'; 
+            } else { 
+                timerEl.classList.add('hidden'); 
+                if(jpTimerInterval) clearInterval(jpTimerInterval); 
+            } 
             
-            let total = j.players.reduce((s,p) => s+p.amount, 0) || 1; let deg = 0; let html = ''; let playersHtml = ''; const colors = ['#8b5cf6', '#ef4444', '#3b82f6', '#22c55e', '#eab308']; 
+            let total = j.players.reduce((s,p) => s+p.amount, 0) || 1; 
+            let deg = 0; 
+            let playersHtml = ''; 
+            const colors = ['#8b5cf6', '#ef4444', '#3b82f6', '#22c55e', '#eab308']; 
             
-            // ИСПРАВЛЕНО: Оптимизированный рендеринг колеса джекпота (единый conic-gradient)
             let gradientParts = [];
             j.players.forEach((p, idx) => { 
                 let slice = (p.amount / total) * 360; 
@@ -1320,14 +1395,22 @@
             }
             
             document.getElementById('jp-players').innerHTML = playersHtml;
-            document.querySelectorAll('#jp-players .player-name').forEach((el, i) => el.textContent = j.players[i].username);
+            const playerNames = document.querySelectorAll('#jp-players .player-name');
+            playerNames.forEach((el, i) => { if (j.players[i]) el.textContent = j.players[i].username; });
         }
+        
         async function betJackpot() { const amt = parseInt(document.getElementById('jp-bet').value); if(!amt || amt < 100) return showToast("Мин. 100", 'lose'); try { const r = await req(`/api/battles/bet`, 'POST', {amount: amt}); updateBal(r.balance); showToast(`Ставка ${amt}🪙!`); } catch(e) { showToast(e.message, 'lose'); } }
         function switchBattleTab(t) { document.getElementById('battle-jackpot').classList.add('hidden'); document.getElementById('battle-1v1').classList.add('hidden'); document.getElementById(`battle-${t}`).classList.remove('hidden'); if(t === '1v1') load1v1List(); }
         async function create1v1() { const caseId = document.getElementById('b-case').value; try { const r = await req('/api/battles/1v1/create', 'POST', {case_id: caseId}); updateBal(r.balance); showToast('Лобби создано!'); load1v1List(); } catch(e) { showToast(e.message, 'lose'); } }
-        async function load1v1List() { try { const list = await req('/api/battles/1v1/active'); const c = document.getElementById('battles-list'); if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-[10px] md:text-xs py-4">Нет лобби</div>'; return; } c.innerHTML = list.map(b => `<div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 border-purple-500 mb-2"><div><div class="font-bold text-[10px] md:text-xs">Кейс: ${b.case_id}</div><div class="text-[9px] text-gray-400">От: <span class="creator-name"></span></div></div><button onclick="join1v1('${b.id}')" class="bg-purple-600 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold">ВОЙТИ</button></div>`).join('');
-            c.querySelectorAll('.creator-name').forEach((el, i) => el.textContent = list[i].creator);
-        } catch(e) {} }
+        async function load1v1List() { 
+            try { 
+                const list = await req('/api/battles/1v1/active'); 
+                const c = document.getElementById('battles-list'); 
+                if(list.length === 0) { c.innerHTML = '<div class="text-center text-gray-500 text-[10px] md:text-xs py-4">Нет лобби</div>'; return; } 
+                c.innerHTML = list.map(b => `<div class="glass p-2 md:p-3 rounded-xl flex justify-between items-center border-l-2 border-purple-500 mb-2"><div><div class="font-bold text-[10px] md:text-xs">Кейс: ${b.case_id}</div><div class="text-[9px] text-gray-400">От: <span class="creator-name"></span></div></div><button onclick="join1v1('${b.id}')" class="bg-purple-600 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold">ВОЙТИ</button></div>`).join('');
+                c.querySelectorAll('.creator-name').forEach((el, i) => { if (list[i]) el.textContent = list[i].creator; });
+            } catch(e) {} 
+        }
         async function join1v1(id) { try { await req(`/api/battles/1v1/join/${id}`, 'POST'); showToast('Вы в батле!'); } catch(e) { showToast(e.message, 'lose'); } }
     </script>
 </body>
