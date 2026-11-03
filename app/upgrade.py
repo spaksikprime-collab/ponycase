@@ -14,7 +14,7 @@ router = APIRouter()
 
 class UpgradeRequest(BaseModel):
     item_ids: List[int]
-    multiplier: float # ИЗМЕНЕНО: Теперь клиент присылает множитель (x2), а не цену
+    multiplier: float 
     boost: int = 0
 
 @router.post("/play")
@@ -57,23 +57,28 @@ async def play_upgrade(data: UpgradeRequest, user: User = Depends(current_user),
             db.delete(item)
             
         if win:
-            new_item = InventoryItem(user_id=user_db.id, pony_id=f"Upgraded Pony x{data.multiplier}", rarity="upgraded", price=target_price, color="#facc15")
+            new_item = InventoryItem(
+                user_id=user_db.id, 
+                pony_id=f"Upgraded Pony x{data.multiplier}", 
+                rarity="upgraded", 
+                price=target_price, 
+                color="#facc15"
+            )
             db.add(new_item)
             
             if target_price > user_db.best_drop_price:
                 user_db.best_drop_price = target_price
                 user_db.best_drop_name = f"Upgraded Pony x{data.multiplier}"
             
-            db.add(GameHistory(user_id=user_db.id, game_type="Апгрейд", item_name=f"Upgraded Pony", price=target_price, result_text=f"Победа x{round(chance,1)}%"))
+            db.add(GameHistory(user_id=user_db.id, game_type="Апгрейд", item_name="Upgraded Pony", price=target_price, result_text=f"Победа x{round(chance,1)}%"))
             db.commit()
             
-            # Асинхронно оповещаем в ленту
-            asyncio.create_task(broadcast_drop(user_db.username, user_db.avatar, f"Upgraded Pony", target_price, "#facc15", "Апгрейд"))
+            asyncio.create_task(broadcast_drop(user_db.username, user_db.avatar, "Upgraded Pony", target_price, "#facc15", "Апгрейд"))
         else:
             db.add(GameHistory(user_id=user_db.id, game_type="Апгрейд", item_name="Сгорело", price=0, result_text=f"Проигрыш x{round(chance,1)}%"))
             db.commit()
             
-    except Exception as e:
+    except Exception:
         db.rollback()
         raise HTTPException(500, "Ошибка сервера")
 
