@@ -8,8 +8,10 @@ from .auth import current_user
 
 router = APIRouter()
 
-CLICK_RATE_LIMIT = 15
+# Увеличили лимит, чтобы не было лагов при быстром клике
+CLICK_RATE_LIMIT = 30 
 CLICK_BUCKETS = {}
+LAST_BUCKET_CLEANUP = time.time()
 
 UPGRADES = {
     "click_power": {"base_cost": 50,    "scale": 1.18, "step": 1.0},
@@ -26,13 +28,12 @@ def upgrade_level(user: User, key: str) -> int:
 def upgrade_cost(user: User, key: str) -> int:
     return int(UPGRADES[key]["base_cost"] * (UPGRADES[key]["scale"] ** upgrade_level(user, key)))
 
+# ИЗМЕНЕНО: Теперь функция НЕ делает коммит, а просто меняет объект в памяти
 def apply_passive(user: User, db: Session):
     now = datetime.utcnow()
     
-    # ЗАЩИТА ОТ NULL (если у старого аккаунта нет времени)
     if not user.last_passive_tick:
         user.last_passive_tick = now
-        db.commit()
         return
         
     elapsed = (now - user.last_passive_tick).total_seconds()
@@ -40,10 +41,8 @@ def apply_passive(user: User, db: Session):
     if elapsed > 5 and user.auto_rate and user.auto_rate > 0:
         user.balance += int(elapsed * user.auto_rate * (user.multiplier or 1))
         user.last_passive_tick = now
-        db.commit()
     elif elapsed > 60:
         user.last_passive_tick = now
-        db.commit()
 
 def public_user(user: User) -> dict:
     return {
@@ -57,37 +56,66 @@ def public_user(user: User) -> dict:
         "multiplier": user.multiplier
     }
 
+# ОЧИСТКА ПАМЯТИ ОТ СТАРЫХ ЮЗЕРОВ
+def clean_click_buckets():
+    global LAST_BUCKET_CLEANUP
+    now = time.time()
+    if now - LAST_BUCKET_CLEANUP > 60: # Раз в минуту
+        # Удаляем юзеров, которые не кликали последние 5 минут
+        for uid in list(CLICK_BUCKETS.keys()):
+            if not CLICK_BUCKETS[uid] or now - CLICK_BUCKETS[uid][-1] > 300:
+                del CLICK_BUCKETS[uid]
+        LAST_BUCKET_CLEANUP = now
+
 @router.get("/state")
 def state(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    apply_passive(user, db)
-    return public_user(user)
+    user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+    apply_passive(user_db, db)
+    db.commit() # Один коммит на весь запрос
+    return public_user(user_db)
 
 @router.post("/click")
 def click(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    clean_click_buckets() # Чистим память
+    
     now = time.time()
     bucket = CLICK_BUCKETS.setdefault(user.id, [])
     bucket[:] = [t for t in bucket if now - t < 1.0]
-    if len(bucket) >= CLICK_RATE_LIMIT: raise HTTPException(429, "Слишком быстро")
+    if len(bucket) >= CLICK_RATE_LIMIT: 
+        raise HTTPException(429, "Слишком быстро")
     bucket.append(now)
 
-    apply_passive(user, db)
-    gain = int(user.click_power * (user.multiplier or 1))
-    user.balance += gain
-    user.total_clicks += 1
-    db.commit()
-    return {"balance": user.balance, "gain": gain}
+    # Блокируем строку юзера
+    user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+    
+    apply_passive(user_db, db)
+    gain = int(user_db.click_power * (user_db.multiplier or 1))
+    user_db.balance += gain
+    user_db.total_clicks += 1
+    
+    db.commit() # Один коммит
+    return {"balance": user_db.balance, "gain": gain}
 
 @router.post("/buy/{key}")
 def buy(key: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if key not in UPGRADES: raise HTTPException(404, "Нет апгрейда")
-    apply_passive(user, db)
-    cost = upgrade_cost(user, key)
-    if user.balance < cost: raise HTTPException(400, f"Нужно {cost}")
-    user.balance -= cost
+    if key not in UPGRADES: 
+        raise HTTPException(404, "Нет апгрейда")
+        
+    user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
+    apply_passive(user_db, db)
     
-    if key == "click_power": user.click_power += 1
-    elif key == "auto_rate": user.auto_rate += UPGRADES[key]["step"]
-    elif key == "multiplier": user.multiplier += UPGRADES[key]["step"]
+    cost = upgrade_cost(user_db, key)
+    if user_db.balance < cost: 
+        raise HTTPException(400, f"Нужно {cost}")
+        
+    user_db.balance -= cost
+    
+    if key == "click_power": 
+        user_db.click_power += 1
+    elif key == "auto_rate": 
+        user_db.auto_rate += UPGRADES[key]["step"]
+    elif key == "multiplier": 
+        user_db.multiplier += UPGRADES[key]["step"]
     
     db.commit()
-    return {"user": public_user(user), "next_cost": upgrade_cost(user, key)}
+    return {"user": public_user(user_db), "next_cost": upgrade_cost(user_db, key)}
