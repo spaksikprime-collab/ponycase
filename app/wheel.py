@@ -26,9 +26,9 @@ WHEEL_COLORS = {
 }
 
 GAME_STATE = {
-    "status": "waiting", # waiting, spinning, finished
+    "status": "waiting", 
     "end_time": 0,
-    "server_time": 0,    # ДОБАВЛЕНО ДЛЯ СИНХРОНИЗАЦИИ ТАЙМЕРА
+    "server_time": 0,    
     "bets": [],
     "winning_color": None,
     "winning_index": 0,
@@ -42,7 +42,7 @@ class BetRequest(BaseModel):
 @router.get("/state")
 def get_wheel_state():
     global GAME_STATE
-    GAME_STATE["server_time"] = time.time() # Синхронизация времени
+    GAME_STATE["server_time"] = time.time() 
     return GAME_STATE
 
 @router.post("/bet")
@@ -58,7 +58,6 @@ async def place_bet(data: BetRequest, user: User = Depends(current_user), db: Se
     if data.amount < 10:
         raise HTTPException(400, "Минимальная ставка 10 🪙")
 
-    # Блокируем юзера
     user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
     apply_passive(user_db, db)
     
@@ -97,7 +96,7 @@ async def wheel_game_loop():
         await sio.emit("wheel_state_update", GAME_STATE)
         await asyncio.sleep(15)
         
-        # --- ФАЗА 2: Кручение (8 секунд, чтобы дождаться анимации) ---
+        # --- ФАЗА 2: Кручение (8 секунд) ---
         GAME_STATE["status"] = "spinning"
         
         winning_index = random.randint(0, 19)
