@@ -16,13 +16,14 @@ class User(Base):
     password_hash = Column(String(256), nullable=False)
     avatar = Column(Text, default="🦄")
     
+    # Email опционален (для регистрации только по логину/паролю)
+    email = Column(String(128), nullable=True, default=None)
+    
     # Баланс и статистика (BigInteger защищает от переполнения при больших множителях)
     balance = Column(BigInteger, default=1000, nullable=False, index=True)
     total_clicks = Column(BigInteger, default=0, nullable=False)
     
     # Параметры кликера
-    # Примечание: Float используется для совместимости. Точность контролируется 
-    # на уровне Python (round(..., 4)) в clicker.py, чтобы избежать drift.
     click_power = Column(Integer, default=1, nullable=False)
     auto_rate = Column(Float, default=0.0, nullable=False)
     multiplier = Column(Float, default=1.0, nullable=False)
