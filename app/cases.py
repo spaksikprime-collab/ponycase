@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import asyncio # ДОБАВЛЕНО ДЛЯ ФОНОВЫХ ЗАДАЧ
+import asyncio
 from .db import get_db
 from .models import User, InventoryItem, CaseOpen, GameHistory
 from .auth import current_user
