@@ -1,23 +1,18 @@
 import os
 import re
 import logging
+import bcrypt
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from jose import jwt, JWTError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from .db import get_db
 from .models import User
 
-# ==========================================
-# НАСТРОЙКИ БЕЗОПАСНОСТИ
-# ==========================================
-# В продакшене ОБЯЗАТЕЛЬНО установи SECRET_KEY через переменную окружения!
-# Например: openssl rand -hex 32
 SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_pony_key_123_CHANGE_ME_IN_PRODUCTION")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
@@ -25,25 +20,13 @@ ACCESS_TOKEN_EXPIRE_DAYS = 30
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Настройка хеширования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
-# Фиктивный хеш для защиты от Timing Attacks (стандартный bcrypt хеш)
-DUMMY_HASH = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Lf.9ddBSOUTjj.sKZ/1VC"
-
-# ==========================================
-# МОДЕЛИ ДАННЫХ
-# ==========================================
 class AuthIn(BaseModel):
-    username: str = Field(..., min_length=3, max_length=32, description="Никнейм пользователя")
-    password: str = Field(..., min_length=4, max_length=72, description="Пароль пользователя")
+    username: str = Field(..., min_length=3, max_length=32)
+    password: str = Field(..., min_length=4, max_length=72)
 
-# ==========================================
-# УТИЛИТЫ JWT И АВТОРИЗАЦИИ
-# ==========================================
 def create_token(user_id: int) -> str:
-    """Создает JWT токен с современным подходом к времени (timezone-aware)."""
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
@@ -57,7 +40,6 @@ def current_user(
     cred: HTTPAuthorizationCredentials = Depends(bearer), 
     db: Session = Depends(get_db)
 ) -> User:
-    """Зависимость FastAPI для получения текущего авторизованного пользователя."""
     if not cred:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
     
@@ -84,17 +66,13 @@ def current_user(
     return user
 
 def validate_username(username: str) -> str:
-    """Валидирует и очищает username от опасных символов и пробелов."""
-    clean_name = username.strip().lower() # Приводим к нижнему регистру для защиты от спуфинга
+    clean_name = username.strip().lower()
     
     if len(clean_name) < 3:
         raise HTTPException(status_code=400, detail="Никнейм должен быть от 3 символов")
     if len(clean_name) > 32:
         raise HTTPException(status_code=400, detail="Никнейм слишком длинный (макс 32 символа)")
     
-    # Разрешаем только буквы (латиница/кириллица), цифры, подчеркивания и дефисы
-    # Если хочешь запретить кириллицу полностью (максимальная защита от гомоглифов), 
-    # замени regex на: r'^[a-zA-Z0-9_\-]+$'
     if not re.match(r'^[a-zA-Zа-яё0-9_\-]+$', clean_name):
         raise HTTPException(
             status_code=400, 
@@ -103,15 +81,10 @@ def validate_username(username: str) -> str:
     
     return clean_name
 
-# ==========================================
-# ЭНДПОИНТЫ АВТОРИЗАЦИИ
-# ==========================================
 @router.post("/register")
 def register(data: AuthIn, db: Session = Depends(get_db)):
-    """Регистрация нового пользователя."""
     clean_name = validate_username(data.username)
     
-    # Проверка длины пароля в байтах (bcrypt лимит 72 байта)
     if len(data.password.encode('utf-8')) > 72:
         raise HTTPException(status_code=400, detail="Пароль слишком длинный (макс 72 символа)")
     
@@ -120,9 +93,10 @@ def register(data: AuthIn, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Этот никнейм уже занят")
     
     try:
-        hashed_pw = pwd_context.hash(data.password)
+        # ИСПРАВЛЕНО: Прямое хеширование через bcrypt (без passlib)
+        hashed_pw = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     except Exception as e:
-        logger.error(f"BCrypt hashing error during registration: {e}")
+        logger.error(f"BCrypt hashing error: {e}")
         raise HTTPException(status_code=500, detail="Ошибка шифрования пароля")
     
     user = User(username=clean_name, password_hash=hashed_pw)
@@ -150,18 +124,17 @@ def register(data: AuthIn, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(data: AuthIn, db: Session = Depends(get_db)):
-    """Вход в систему. Полная защита от Timing Attacks."""
     clean_name = data.username.strip().lower()
     
     user = db.query(User).filter(User.username == clean_name).first()
     
-    # Константная проверка пароля для защиты от атак по времени (Timing Attacks)
-    # Если пользователь не найден, мы все равно выполняем verify с фиктивным хэшем
     if not user:
-        pwd_context.verify(data.password, DUMMY_HASH)
+        # Фиктивная проверка для защиты от Timing Attacks
+        bcrypt.checkpw(data.password.encode('utf-8'), b"$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Lf.9ddBSOUTjj.sKZ/1VC")
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
     
-    if not pwd_context.verify(data.password, user.password_hash):
+    # ИСПРАВЛЕНО: Прямая проверка через bcrypt
+    if not bcrypt.checkpw(data.password.encode('utf-8'), user.password_hash.encode('utf-8')):
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
     
     logger.info(f"🔑 User logged in: {clean_name} (ID: {user.id})")
