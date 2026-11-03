@@ -1,15 +1,18 @@
 import os
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import socketio
-from sqlalchemy import text
 
-from .db import engine, Base
-from . import models
+# Импортируем инициализацию БД и модели
+from .db import init_db
+from . import models  # Необходимо для регистрации моделей в Base.metadata перед init_db()
+
+# Импортируем роутеры
 from .auth import router as auth_router
 from .clicker import router as clicker_router
 from .cases import router as cases_router
@@ -18,59 +21,79 @@ from .upgrade import router as upgrade_router
 from .battles import router as battles_router
 from .mines import router as mines_router
 from .wheel import router as wheel_router, wheel_game_loop
+
+# Импортируем Socket.IO сервер
 from .ws import sio
 
-# Создаем все таблицы в базе данных
-Base.metadata.create_all(bind=engine)
+# ==========================================
+# НАСТРОЙКА ЛОГИРОВАНИЯ
+# ==========================================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-# ИСПРАВЛЕНО: Миграция для SQLite (он не поддерживает IF NOT EXISTS)
-def run_migrations():
-    with engine.connect() as conn:
-        try:
-            # Получаем список существующих колонок в таблице users
-            result = conn.execute(text("PRAGMA table_info(users);")).fetchall()
-            existing_cols = [row[1] for row in result]
-            
-            if "best_drop_price" not in existing_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN best_drop_price BIGINT DEFAULT 0;"))
-            if "best_drop_name" not in existing_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN best_drop_name VARCHAR(64);"))
-            if "last_bonus" not in existing_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN last_bonus TIMESTAMP;"))
-                
-            conn.commit()
-            print("=== МИГРАЦИЯ БАЗЫ ДАННЫХ УСПЕШНА ===")
-        except Exception as e:
-            print(f"=== ОШИБКА МИГРАЦИИ: {e} ===")
-
-run_migrations()
-
-# Фоновая задача для Колеса
+# ==========================================
+# УПРАВЛЕНИЕ ЖИЗНЕННЫМ ЦИКЛОМ (LIFESPAN)
+# ==========================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Запуск при старте сервера
-    asyncio.create_task(wheel_game_loop())
-    print("=== ФОНОВЫЙ ТАЙМЕР КОЛЕСА ЗАПУЩЕН ===")
-    yield
-    # Тут можно добавить код при выключении сервера
-    print("=== СЕРВЕР ОСТАНОВЛЕН ===")
+    """
+    Выполняется один раз при запуске приложения.
+    Гарантирует безопасную инициализацию БД и фоновых задач.
+    """
+    logger.info("=== 🚀 ЗАПУСК СЕРВЕРА PONYCASE ===")
+    
+    # 1. Безопасная инициализация и миграция БД (выполняется 1 раз)
+    init_db()
+    
+    # 2. Запуск фоновых задач (Колесо Фортуны)
+    try:
+        asyncio.create_task(wheel_game_loop())
+        logger.info("=== ⚙️ ФОНОВЫЙ ТАЙМЕР КОЛЕСА ЗАПУЩЕН ===")
+    except Exception as e:
+        logger.error(f"Не удалось запустить фоновую задачу колеса: {e}")
+    
+    yield  # Приложение работает и обрабатывает запросы
+    
+    # 3. Выполняется при корректном завершении работы сервера
+    logger.info("=== 🛑 СЕРВЕР ОСТАНОВЛЕН ===")
 
-# Инициализация FastAPI
-api = FastAPI(title="PonyCase API", lifespan=lifespan)
+# ==========================================
+# ИНИЦИАЛИЗАЦИЯ FASTAPI
+# ==========================================
+fastapi_app = FastAPI(
+    title="PonyCase API", 
+    description="Premium Case Opening & Mini-games Platform",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
+# Создание папки static, если её нет
 if not os.path.exists("static"): 
-    os.makedirs("static")
-api.mount("/static", StaticFiles(directory="static"), name="static")
+    os.makedirs("static", exist_ok=True)
 
-# ИСПРАВЛЕНО: Глобальный обработчик ошибок (не палим детали хакерам)
-@api.exception_handler(Exception)
+fastapi_app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ==========================================
+# ГЛОБАЛЬНЫЙ ОБРАБОТЧИК ОШИБОК
+# ==========================================
+@fastapi_app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Ошибку пишем в консоль сервера (видно в ZevCloud)
-    print(f"CRITICAL ERROR: {exc}") 
-    # Клиенту отдаем абстрактный текст
-    return JSONResponse(status_code=500, content={"detail": "Внутренняя ошибка сервера"})
+    """Перехватывает все необработанные исключения, логирует их и отдает клиенту безопасный ответ."""
+    logger.error(f"CRITICAL ERROR on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500, 
+        content={"detail": "Внутренняя ошибка сервера. Попробуйте позже."}
+    )
 
-api.add_middleware(
+# ==========================================
+# MIDDLEWARE (CORS)
+# ==========================================
+# ВНИМАНИЕ: Для продакшена замените ["*"] на конкретный домен фронтенда, 
+# например: allow_origins=["https://ponycase.zevcloud.ru"]
+fastapi_app.add_middleware(
     CORSMiddleware, 
     allow_origins=["*"], 
     allow_credentials=True, 
@@ -78,25 +101,34 @@ api.add_middleware(
     allow_headers=["*"]
 )
 
-# ПОДКЛЮЧЕНИЕ ВСЕХ РОУТЕРОВ
-api.include_router(auth_router,    prefix="/api/auth")
-api.include_router(clicker_router, prefix="/api/clicker")
-api.include_router(cases_router,   prefix="/api/cases")
-api.include_router(user_router,    prefix="/api/user")
-api.include_router(upgrade_router, prefix="/api/upgrade")
-api.include_router(battles_router, prefix="/api/battles")
-api.include_router(mines_router,   prefix="/api/mines")
-api.include_router(wheel_router,   prefix="/api/wheel")
+# ==========================================
+# ПОДКЛЮЧЕНИЕ РОУТЕРОВ
+# ==========================================
+fastapi_app.include_router(auth_router,    prefix="/api/auth", tags=["Auth"])
+fastapi_app.include_router(clicker_router, prefix="/api/clicker", tags=["Clicker"])
+fastapi_app.include_router(cases_router,   prefix="/api/cases", tags=["Cases"])
+fastapi_app.include_router(user_router,    prefix="/api/user", tags=["User"])
+fastapi_app.include_router(upgrade_router, prefix="/api/upgrade", tags=["Upgrade"])
+fastapi_app.include_router(battles_router, prefix="/api/battles", tags=["Battles"])
+fastapi_app.include_router(mines_router,   prefix="/api/mines", tags=["Mines"])
+fastapi_app.include_router(wheel_router,   prefix="/api/wheel", tags=["Wheel"])
 
-@api.get("/api/health")
-def health(): 
-    return {"ok": True}
+# ==========================================
+# БАЗОВЫЕ ЭНДПОИНТЫ
+# ==========================================
+@fastapi_app.get("/api/health", tags=["System"])
+def health_check(): 
+    return {"status": "ok", "message": "PonyCase API is running"}
 
-@api.get("/")
+@fastapi_app.get("/", include_in_schema=False)
 def serve_frontend():
+    """Отдает index.html для SPA-фронтенда."""
     if os.path.exists("index.html"): 
         return FileResponse("index.html")
-    return {"error": "index.html not found"}
+    return JSONResponse(status_code=404, content={"detail": "index.html not found"})
 
-# Оборачиваем FastAPI в Socket.IO
-app = socketio.ASGIApp(sio, other_asgi_app=api)
+# ==========================================
+# ИНТЕГРАЦИЯ SOCKET.IO
+# ==========================================
+# Оборачиваем FastAPI в Socket.IO ASGI App для одновременной работы REST и WebSockets
+app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)
