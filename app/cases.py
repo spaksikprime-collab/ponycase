@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
+
 from .db import get_db
 from .models import User, InventoryItem, CaseOpen, GameHistory
 from .auth import current_user
@@ -17,14 +17,9 @@ logger = logging.getLogger(__name__)
 # ==========================================
 # КОНФИГУРАЦИЯ
 # ==========================================
-# Порог цены для broadcast дропа (только дорогие дропы показываются в ленте)
-BROADCAST_PRICE_THRESHOLD = 5000
-
-# Максимальное количество кейсов за одно открытие
-MAX_CASES_PER_OPEN = 10
-
-# Set для хранения фоновых задач (предотвращает garbage collection)
-background_tasks = set()
+BROADCAST_PRICE_THRESHOLD = 5000  # Порог цены для показа дропа в общей ленте
+MAX_CASES_PER_OPEN = 10           # Максимум кейсов за одно открытие
+background_tasks = set()          # Хранилище фоновых задач (защита от GC)
 
 # ==========================================
 # МОДЕЛИ ЗАПРОСОВ
@@ -40,22 +35,17 @@ class OpenMulti(BaseModel):
 # ==========================================
 # РОУТЫ
 # ==========================================
-
 @router.get("/list")
 def list_cases():
     """Возвращает список всех доступных кейсов."""
     return [
-        {
-            "id": k,
-            "name": v["name"],
-            "price": v["price"]
-        }
+        {"id": k, "name": v["name"], "price": v["price"]}
         for k, v in CASES.items()
     ]
 
 @router.get("/preview/{case_id}")
 def preview_case(case_id: str):
-    """Возвращает стабильное превью содержимого кейса."""
+    """Возвращает стабильное превью содержимого кейса с честными шансами."""
     if case_id not in CASES:
         raise HTTPException(status_code=404, detail="Кейс не найден")
     return get_case_preview(case_id)
@@ -69,23 +59,16 @@ async def open_multi(
 ):
     """
     Открывает несколько кейсов с настоящей Provably Fair системой.
-    
-    Provably Fair логика:
-    - server_seed генерируется сервером
-    - client_seed передается клиентом (или генерируется сервером, если не передан)
-    - nonce инкрементируется для каждого открытия
-    - Результат можно верифицировать через HMAC-SHA256
     """
     if case_id not in CASES:
         raise HTTPException(status_code=404, detail="Кейс не найден")
     
-    # Блокируем пользователя для предотвращения race condition
+    # Блокируем пользователя для предотвращения race condition при списании баланса
     user_db = db.query(User).filter(User.id == user.id).with_for_update().first()
     
     case = CASES[case_id]
     total_price = case["price"] * data.count
     
-    # Начисляем пассивный доход перед проверкой баланса
     apply_passive(user_db, db)
     
     if user_db.balance < total_price:
@@ -94,31 +77,28 @@ async def open_multi(
             detail=f"Недостаточно копыт. Нужно {total_price} 🪙, у вас {user_db.balance} 🪙"
         )
 
-    # Списываем стоимость
     user_db.balance -= total_price
     
     results = []
-    expensive_drops = []  # Дропы для broadcast (дорогие)
+    expensive_drops = []
     
+    # ИСПРАВЛЕНО: Генерируем client_seed ОДИН РАЗ на весь запрос, если он не передан клиентом.
+    # Это критически важно для честности Provably Fair при мульти-открытии.
+    final_client_seed = data.client_seed if data.client_seed.strip() else gen_seed()
+
     try:
-        for i in range(data.count):
+        for _ in range(data.count):
             # Инкрементируем nonce атомарно
             user_db.nonce += 1
             
-            # Генерируем server_seed
+            # Серверный сид генерируется для каждого броска отдельно
             server_seed = gen_seed()
             
-            # Используем client_seed от клиента или генерируем свой
-            # Это делает систему настоящей Provably Fair
-            client_seed = data.client_seed if data.client_seed else gen_seed()
-            
             # Рассчитываем тикет через HMAC-SHA256
-            ticket = roll_ticket(server_seed, client_seed, user_db.nonce)
+            ticket = roll_ticket(server_seed, final_client_seed, user_db.nonce)
             
-            # Выбираем редкость на основе тикета
+            # Выбираем редкость и конкретного пони
             rarity = pick_rarity(case_id, ticket)
-            
-            # Выбираем конкретного пони и рассчитываем цену
             pony_id, price, color = pick_pony(rarity)
 
             # Создаем предмет в инвентаре
@@ -130,7 +110,7 @@ async def open_multi(
                 color=color
             )
             db.add(item)
-            db.flush()  # Получаем ID предмета
+            db.flush()  # Получаем ID предмета для ответа
             
             # Сохраняем данные для Provably Fair верификации
             db.add(CaseOpen(
@@ -138,9 +118,9 @@ async def open_multi(
                 case_id=case_id,
                 pony_id=pony_id,
                 rarity=rarity,
-                price=case["price"],
+                price=price,
                 server_seed=server_seed,
-                client_seed=client_seed,
+                client_seed=final_client_seed,
                 nonce=user_db.nonce,
                 ticket=ticket
             ))
@@ -155,19 +135,19 @@ async def open_multi(
             ))
             
             # Обновляем лучший дроп
-            if price > user_db.best_drop_price:
+            if price > (user_db.best_drop_price or 0):
                 user_db.best_drop_price = price
                 user_db.best_drop_name = pony_id
             
-            # Добавляем в результаты
+            # Добавляем в результаты (PF данные внутри каждого предмета)
             results.append({
                 "id": item.id,
                 "pony_id": pony_id,
                 "rarity": rarity,
                 "price": price,
                 "color": color,
-                "server_seed": server_seed,  # Для верификации
-                "client_seed": client_seed,
+                "server_seed": server_seed,
+                "client_seed": final_client_seed,
                 "nonce": user_db.nonce,
                 "ticket": ticket
             })
@@ -190,12 +170,8 @@ async def open_multi(
         for drop in expensive_drops:
             task = asyncio.create_task(
                 broadcast_drop(
-                    drop["username"],
-                    drop["avatar"],
-                    drop["pony_id"],
-                    drop["price"],
-                    drop["color"],
-                    drop["source"]
+                    drop["username"], drop["avatar"], drop["pony_id"],
+                    drop["price"], drop["color"], drop["source"]
                 )
             )
             background_tasks.add(task)
@@ -206,14 +182,11 @@ async def open_multi(
             f"(total: {total_price}🪙, expensive drops: {len(expensive_drops)})"
         )
         
+        # ИСПРАВЛЕНО: Убран дублирующий и вводящий в заблуждение верхнеуровневый ключ provably_fair.
+        # Все данные для верификации уже находятся внутри массива results.
         return {
             "results": results,
-            "balance": user_db.balance,
-            "provably_fair": {
-                "server_seed": server_seed,
-                "client_seed": client_seed,
-                "nonce": user_db.nonce
-            }
+            "balance": user_db.balance
         }
         
     except Exception as e:
@@ -221,13 +194,12 @@ async def open_multi(
         logger.error(f"Error opening cases for {user_db.username}: {e}")
         raise HTTPException(
             status_code=500,
-            detail="Ошибка при открытии кейсов. Деньги возвращены."
+            detail="Ошибка при открытии кейсов. Деньги возвращены на баланс."
         )
 
 # ==========================================
-# УТИЛИТЫ
+# УТИЛИТЫ ВЕРИФИКАЦИИ
 # ==========================================
-
 @router.get("/verify/{case_open_id}")
 def verify_case_open(case_open_id: int, db: Session = Depends(get_db)):
     """
@@ -245,7 +217,6 @@ def verify_case_open(case_open_id: int, db: Session = Depends(get_db)):
         case_open.nonce
     )
     
-    # Проверяем, что тикет совпадает
     is_valid = recalculated_ticket == case_open.ticket
     
     return {
@@ -262,6 +233,6 @@ def verify_case_open(case_open_id: int, db: Session = Depends(get_db)):
             "nonce": case_open.nonce,
             "ticket": case_open.ticket,
             "recalculated_ticket": recalculated_ticket,
-            "created_at": case_open.created_at.isoformat()
+            "created_at": case_open.created_at.isoformat() if case_open.created_at else None
         }
     }
