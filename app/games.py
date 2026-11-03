@@ -2,7 +2,7 @@ import hmac
 import hashlib
 import secrets
 import random
-from typing import Tuple, List, Dict # Добавили для совместимости
+from typing import Tuple, List, Dict
 
 PONY_DB = {
     "common": ["Applejack", "Fluttershy", "Pinkie Pie", "Rarity", "Rainbow Dash", "Twilight Sparkle"],
@@ -68,7 +68,6 @@ def pick_rarity(case_id: str, ticket: int) -> str:
 def pick_pony(rarity: str) -> Tuple[str, int, str]:
     base_mult = RARITY_BY_ID[rarity][3]
     pony_name = random.choice(PONY_DB.get(rarity, ["Unknown Pony"]))
-    # ИСПРАВЛЕНО: В реальном дропе цена тоже может быть случайной, это нормально
     price = int(100 * base_mult * random.uniform(0.5, 1.5))
     color = RARITY_BY_ID[rarity][4]
     return pony_name, price, color
@@ -81,13 +80,10 @@ def get_case_preview(case_id: str) -> List[Dict]:
     for rarity, weight in weights.items():
         chance = (weight / total_weight) * 100
         ponies = PONY_DB.get(rarity, ["Unknown"])
-        # Берем 2 случайные пони для превью
         sample_ponies = random.sample(ponies, min(2, len(ponies)))
         
         for p in sample_ponies:
             base_mult = RARITY_BY_ID[rarity][3]
-            # ИСПРАВЛЕНО: В превью показываем фиксированную среднюю цену, 
-            # чтобы игрок не видел "прыгающие" цифры при каждом обновлении
             price = int(100 * base_mult * 1.0) 
             color = RARITY_BY_ID[rarity][4]
             item_chance = chance / len(sample_ponies) 
